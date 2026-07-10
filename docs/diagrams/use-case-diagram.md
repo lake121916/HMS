@@ -313,3 +313,312 @@
 | AI Disease Prediction | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
 | AI Drug Interaction | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | ✓ | � | ✗ | ✓ |
 | AI Chatbot | ✗ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✓ |
+
+## Roles & Modules (Professional Overview)
+
+Each role has a secure, role-specific dashboard, permissions, navigation, and modules. Users can access only the features granted to their role.
+
+### Super Admin
+Purpose: Full system administration and configuration.
+
+Key Features:
+- Dashboard (system-wide metrics & alerts)
+- User management (create/disable users)
+- Role & permission management
+- Hospital settings & configuration
+- Department & branch management
+- Staff management and assignments
+- Analytics & executive reports
+- Audit logs and activity review
+- Database backup & restore
+- Billing configuration
+- System configuration and integrations
+- Notifications management
+- Profile & personal settings
+
+### Admin
+Purpose: Day-to-day hospital administration and oversight.
+
+Key Features:
+- Dashboard (operational metrics)
+- Patient management
+- Staff management
+- Department administration
+- Appointment & schedule management
+- Admissions & discharge workflows
+- Pharmacy and laboratory coordination
+- Billing & invoicing oversight
+- Reports (operational & financial)
+- Inventory management
+- Notifications & alerts
+- Profile
+
+### Receptionist
+Purpose: Front desk operations, patient intake and scheduling.
+
+Key Features:
+- Dashboard (today's queues & appointments)
+- Patient registration
+- Patient search and lookup
+- Appointment scheduling & rescheduling
+- Doctor schedules and availability
+- Queue & check-in management
+- Admissions initiation
+- Visitor registration
+- Notifications
+- Profile
+
+### Doctor
+Purpose: Clinical care and patient management.
+
+Dashboard Highlights:
+- Today's patients
+- Upcoming appointments
+- Pending lab results
+- Recent prescriptions
+- Emergency cases
+
+Modules:
+- Patients (list & search)
+- Medical records / EMR
+- Appointments
+- Vitals entry
+- Diagnosis & clinical notes (SOAP)
+- Prescriptions
+- Lab & radiology requests
+- Treatment plans & referrals
+- Admissions & discharge summaries
+- Messaging
+- Notifications
+- Reports
+- Profile
+
+### Nurse
+Purpose: Inpatient care and daily bedside workflows.
+
+Key Modules:
+- Dashboard (assigned patients)
+- Assigned patients & care list
+- Vitals recording
+- Medication administration
+- Nursing notes
+- Bed management
+- Patient monitoring
+- Admissions coordination
+- Care plans
+- Messaging & notifications
+- Profile
+
+### Lab Technician
+Purpose: Laboratory test processing and reporting.
+
+Key Modules:
+- Dashboard (test queues)
+- Test requests & sample tracking
+- Sample collection logging
+- Laboratory processing workflows
+- Results upload & verification
+- Report generation (PDF)
+- Completed & pending test lists
+- Notifications
+- Profile
+
+### Pharmacist
+Purpose: Pharmacy inventory, dispensing, and procurement.
+
+Key Modules:
+- Dashboard (stock & sales)
+- Prescriptions queue
+- Dispensing interface
+- Drug inventory & stock control
+- Supplier & purchase order management
+- Expiry tracking
+- Stock alerting
+- Sales & dispensing reports
+- Notifications
+- Profile
+
+### Cashier
+Purpose: Patient billing and payment processing.
+
+Key Modules:
+- Dashboard (payments & daily totals)
+- Patient billing
+- Invoice generation
+- Payment collection & reconciliation
+- Insurance claims processing
+- Refund handling
+- Payment history
+- Financial reports
+- Notifications
+- Profile
+
+### Hospital Manager
+Purpose: Operational oversight and performance management.
+
+Key Modules:
+- Dashboard (KPIs & occupancy)
+- Staff performance metrics
+- Department performance analytics
+- Admissions overview
+- Bed occupancy monitoring
+- Financial summary
+- Inventory overview
+- Reports & analytics
+- Notifications
+- Profile
+
+### Patient (Patient Portal)
+Purpose: Personal health access and self-service.
+
+Key Modules:
+- Dashboard (upcoming appointments, alerts)
+- My profile
+- Medical history & documents
+- Appointments booking & management
+- Prescriptions
+- Laboratory results
+- Billing & payments
+- Secure messaging
+- Notifications
+- Report download (PDF)
+
+### General Platform Features
+
+- Authentication: JWT, refresh tokens, role-based authorization, password reset, email verification, optional 2FA
+- Patient Management: EMR, patient timeline, allergies, chronic conditions, family history
+- Appointments: online booking, availability, calendar view, reschedule/cancel
+- Laboratory: test orders, results upload, PDF reports
+- Pharmacy: inventory, stock alerts, barcode support
+- Billing: invoices, multiple payment methods, insurance support
+- Reports: daily/weekly/monthly/yearly; export to PDF, Excel, CSV
+- Notifications: email, SMS, in-app
+- Audit logs: comprehensive activity recording
+- Global search: patients, clinicians, medicines, and reports
+
+## Cashier Responsibilities
+
+### 1. Patient Billing
+
+- Generate bills for:
+     - Consultation fees
+     - Laboratory tests
+     - Pharmacy purchases
+     - Admission charges
+     - Surgery fees
+     - Room/bed charges
+     - Medical procedures
+
+### 2. Receive Payments
+
+- Accept payments via:
+     - Cash
+     - Credit/Debit Card
+     - Mobile Money
+     - Bank Transfer
+     - Insurance
+
+### 3. Generate Invoices
+
+- Create printable invoices and receipts.
+- Email or print receipts for patients.
+
+### 4. Manage Insurance Claims
+
+- Verify insurance coverage.
+- Record insurance payments.
+- Track claim status.
+
+### 5. Payment History
+
+- View all patient payments.
+- Search previous transactions.
+- Reprint receipts.
+
+### 6. Refund Management
+
+- Process approved refunds.
+- Record refund reasons.
+- Maintain refund history.
+
+### 7. Outstanding Balances
+
+- View unpaid bills.
+- Record partial payments.
+- Track remaining balances.
+
+### 8. Daily Cash Report
+
+- Total collections.
+- Cash received.
+- Card payments.
+- Insurance payments.
+- Refunds.
+- Daily closing balance.
+
+### 9. Financial Reports
+
+- Daily income.
+- Weekly income.
+- Monthly income.
+- Revenue by department.
+- Payment method reports.
+
+### 10. Notifications
+
+- Pending payments.
+- Successful payments.
+- Failed transactions.
+- Insurance approvals.
+
+---
+
+## Cashier Dashboard
+
+The cashier dashboard provides an at-a-glance financial overview and quick actions for payment workflows.
+
+Key widgets and views:
+- Today's Revenue
+- Total Transactions
+- Pending Bills
+- Paid Bills
+- Outstanding Balance
+- Recent Payments
+- Insurance Claims
+- Daily Collection Chart
+
+
+## Dashboard — Billing & Finance
+
+Overview: The financial dashboard provides fast, role-appropriate access to billing, insurance, transaction history, reports, notifications, and profile/settings related to payments.
+
+### Billing
+- Create Bill: create and preview bills for services rendered.
+- Patient Bills: view and search all bills for a patient.
+- Outstanding Bills: list and filter unpaid or overdue invoices.
+- Payment Collection: record and reconcile payments (cash, card, insurance).
+- Refunds: process and track refund requests.
+
+### Insurance
+- Insurance Claims: submit and track claims to insurers.
+- Insurance Payments: record insurer settlements and reconciliations.
+
+### Transactions
+- Payment History: searchable ledger of all transactions.
+- Receipts: generate and reprint receipts for payments.
+
+### Reports
+- Daily Report: summary of daily revenue and settlements.
+- Monthly Report: month-to-date financial summary.
+- Revenue Report: breakdown by department, service, and payment method.
+
+### Notifications
+- Financial alerts: overdue payments, failed transactions, settlement notices.
+
+### Profile
+- Billing profile: payment methods, insurance details, billing contacts.
+
+### Settings
+- Billing settings: tax, discounts, invoice templates, payment gateways.
+
+

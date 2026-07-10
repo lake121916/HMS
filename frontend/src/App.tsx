@@ -33,6 +33,7 @@ import BedsPage from './pages/BedsPage';
 import ReportsPage from './pages/ReportsPage';
 import AdminPage from './pages/AdminPage';
 import UserManagementPage from './pages/UserManagementPage';
+import CashierDashboard from './pages/CashierDashboard';
 
 // ── Role permission map ──────────────────────────────────────────────────────
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -140,6 +141,9 @@ function App() {
             } />
             <Route path="reports" element={
               <ProtectedRoute page="reports"><ReportsPage /></ProtectedRoute>
+            } />
+            <Route path="cashier" element={
+              <ProtectedRoute page="payments"><CashierDashboard /></ProtectedRoute>
             } />
             <Route path="admin" element={
               <ProtectedRoute page="admin"><AdminPage /></ProtectedRoute>
