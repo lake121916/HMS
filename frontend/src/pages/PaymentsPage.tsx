@@ -606,6 +606,38 @@ const PaymentsPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {showRefundModal && selectedPaymentForRefund && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Refund Payment</h3>
+              <button onClick={closeRefundModal} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleSubmitRefund} className="px-6 py-5 space-y-4">
+              <div>
+                <p className="text-sm text-gray-500">Refunding payment for <strong>{selectedPaymentForRefund.patient_name}</strong> on invoice #{selectedPaymentForRefund.invoice_id}.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+                <input type="number" min="0" step="0.01" value={refundAmount} onChange={e => setRefundAmount(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Transaction ID</label>
+                <input type="text" value={selectedPaymentForRefund.transaction_id} disabled className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason</label>
+                <textarea value={refundReason} onChange={e => setRefundReason(e.target.value)} rows={3} className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-white" placeholder="Optional refund reason" />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={closeRefundModal} className="px-4 py-2 rounded-xl border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-900">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm hover:bg-red-700">Confirm Refund</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

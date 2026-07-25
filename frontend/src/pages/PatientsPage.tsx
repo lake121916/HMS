@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import { Plus, Search, Edit, Trash2, X, Eye, Users } from 'lucide-react';
@@ -25,6 +26,8 @@ const lbl = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
 const PatientsPage: React.FC = () => {
   const { can } = useRoleAccess();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -58,7 +61,7 @@ const PatientsPage: React.FC = () => {
     setForm({ firstName:'', lastName:'', email:'', phone:'', bloodType:'', dateOfBirth:'',
       address:'', gender:'male', allergies:'', emergencyContactName:'',
       emergencyContactPhone:'', insuranceNumber:'', medicalHistory:'' });
-    setShowModal(true);
+    navigate('/patients/new');
   };
 
   const openEdit = (p: Patient) => {
@@ -86,6 +89,7 @@ const PatientsPage: React.FC = () => {
         await api.post('/patients', form);
       }
       setShowModal(false);
+      if (location.pathname.endsWith('/new')) navigate('/patients');
       fetchPatients();
     } catch (e: any) { alert(e.response?.data?.message || 'Failed to save patient'); }
   };
@@ -97,6 +101,18 @@ const PatientsPage: React.FC = () => {
       fetchPatients();
     } catch (e: any) { alert(e.response?.data?.message || 'Failed to delete patient'); }
   };
+
+  React.useEffect(() => {
+    if (location.pathname.endsWith('/new')) {
+      setEditing(null);
+      setForm({ firstName:'', lastName:'', email:'', phone:'', bloodType:'', dateOfBirth:'',
+        address:'', gender:'male', allergies:'', emergencyContactName:'',
+        emergencyContactPhone:'', insuranceNumber:'', medicalHistory:'' });
+      setShowModal(true);
+    } else {
+      setShowModal(false);
+    }
+  }, [location.pathname]);
 
   return (
     <div className="space-y-6">

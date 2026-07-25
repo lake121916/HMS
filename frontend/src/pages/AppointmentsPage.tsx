@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import { useAuth } from '../contexts/AuthContext';
@@ -30,6 +31,9 @@ const lbl = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 const AppointmentsPage: React.FC = () => {
   const { can } = useRoleAccess();
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -56,7 +60,7 @@ const AppointmentsPage: React.FC = () => {
 
   const handleBook = () => {
     setFormData({ patientId:'', doctorId:'', appointmentDate:'', reason:'', notes:'' });
-    setShowModal(true);
+    navigate('/appointments/new');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,7 +73,7 @@ const AppointmentsPage: React.FC = () => {
         reason: formData.reason,
         notes: formData.notes || undefined,
       });
-      setShowModal(false);
+      closeModal();
       fetchAppointments();
     } catch (e: any) { alert(e.response?.data?.message || 'Failed to book appointment'); }
   };
@@ -80,6 +84,13 @@ const AppointmentsPage: React.FC = () => {
       await api.put(`/appointments/${appt.id}/cancel`, { reason: 'Cancelled by staff' });
       fetchAppointments();
     } catch (e: any) { alert(e.response?.data?.message || 'Failed to cancel appointment'); }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    if (location.pathname.endsWith('/new')) {
+      navigate('/appointments');
+    }
   };
 
   const openReschedule = (appt: Appointment) => {
@@ -99,6 +110,16 @@ const AppointmentsPage: React.FC = () => {
       fetchAppointments();
     } catch (e: any) { alert(e.response?.data?.message || 'Failed to reschedule'); }
   };
+
+  React.useEffect(() => {
+    if (location.pathname.endsWith('/new')) {
+      const patientId = searchParams.get('patient');
+      setFormData({ patientId: patientId || '', doctorId:'', appointmentDate:'', reason:'', notes:'' });
+      setShowModal(true);
+    } else {
+      setShowModal(false);
+    }
+  }, [location.pathname, searchParams]);
 
   const filtered = appointments.filter(a => {
     const q = search.toLowerCase();

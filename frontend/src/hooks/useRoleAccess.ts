@@ -54,14 +54,23 @@ const PERMISSIONS: Record<string, string[]> = {
 
   // Invoices
   'invoices:view':   ['super_admin','admin','hospital_manager','cashier','receptionist'],
-  'invoices:create': ['receptionist'],
+  'invoices:create': ['super_admin','admin','hospital_manager','receptionist'],
   'invoices:edit':   ['super_admin','admin','cashier'],
   'invoices:delete': ['super_admin','admin'],
   'invoices:payment':['super_admin','admin','cashier'],
 
   // Payments
   'payments:view':   ['super_admin','admin','hospital_manager','cashier','receptionist'],
-  'payments:create': ['receptionist'],
+  'payments:create': ['super_admin','admin','hospital_manager','cashier','receptionist'],
+
+  // New portal access
+  'reception:view':    ['super_admin','admin','hospital_manager','receptionist'],
+  'cashier:view':      ['super_admin','admin','hospital_manager','cashier'],
+  'insurance:view':    ['super_admin','admin','hospital_manager'],
+  'blood_bank:view':   ['super_admin','admin','hospital_manager'],
+  'audit:view':        ['super_admin','admin'],
+  'radiology:view':    ['super_admin','admin','hospital_manager','doctor'],
+  'finance_reports:view': ['super_admin','admin','hospital_manager','cashier'],
 
   // Medicines
   'medicines:view':   ['super_admin','admin','pharmacist','doctor','nurse'],

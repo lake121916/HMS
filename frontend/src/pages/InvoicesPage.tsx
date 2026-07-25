@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { Plus, Search, X, Eye, DollarSign, Trash2 } from 'lucide-react';
 import { useRoleAccess } from '../hooks/useRoleAccess';
@@ -38,6 +39,9 @@ const statusColors: Record<string, string> = {
 
 const InvoicesPage: React.FC = () => {
   const { can } = useRoleAccess();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -93,6 +97,7 @@ const InvoicesPage: React.FC = () => {
         discount: parseFloat(formData.discount),
       });
       setShowModal(false);
+      if (location.pathname.endsWith('/new')) navigate('/invoices');
       fetchInvoices();
     } catch (e) { alert('Failed to create invoice'); }
   };
@@ -118,6 +123,15 @@ const InvoicesPage: React.FC = () => {
     catch (e) { alert('Failed to delete invoice'); }
   };
 
+  React.useEffect(() => {
+    if (location.pathname.endsWith('/new')) {
+      setFormData({ patient_id: searchParams.get('patient') || '', subtotal: '', tax: '0', discount: '0', due_date: '', notes: '', admission_id: '' });
+      setShowModal(true);
+    } else {
+      setShowModal(false);
+    }
+  }, [location.pathname, searchParams]);
+
   const filtered = invoices.filter(inv =>
     inv.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
     String(inv.id).includes(search)
@@ -131,7 +145,10 @@ const InvoicesPage: React.FC = () => {
           <p className="mt-1 text-gray-600 dark:text-gray-400">Manage billing and invoices</p>
         </div>
         {can('invoices:create') && (
-          <button onClick={() => { setShowModal(true); setFormData({ patient_id: '', subtotal: '', tax: '0', discount: '0', due_date: '', notes: '', admission_id: '' }); }}
+          <button onClick={() => {
+              navigate('/invoices/new');
+              setFormData({ patient_id: '', subtotal: '', tax: '0', discount: '0', due_date: '', notes: '', admission_id: '' });
+            }}
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
             <Plus className="w-4 h-4 mr-2" /> New Invoice
           </button>

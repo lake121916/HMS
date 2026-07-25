@@ -32,7 +32,7 @@ const AdminPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
-  const [, setShowStaffModal] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [showDeptModal, setShowDeptModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -52,7 +52,7 @@ const AdminPage: React.FC = () => {
     is_active: true
   });
 
-  useEffect(() => { fetchAll(); }, [tab]);
+  useEffect(() => { fetchAll(); }, [tab, roleFilter]);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -99,17 +99,56 @@ const AdminPage: React.FC = () => {
         ...staffForm,
         departmentId: staffForm.departmentId ? parseInt(staffForm.departmentId) : undefined,
       });
-      setShowStaffModal(false);
-      showSuccess('Staff account created'); fetchAll();
-    } catch (e: any) { setFormError(e.response?.data?.message || 'Failed to create staff'); }
+      showSuccess('Staff account created');
+      setStaffForm({ firstName:'', lastName:'', email:'', password:'', role:'receptionist', phone:'', specialization:'', licenseNumber:'', departmentId:'' });
+      fetchAll();
+    } catch (e: any) {
+      setFormError(e.response?.data?.message || 'Failed to create staff');
+    }
   };
 
-  const handleCreateDept = async (e: React.FormEvent) => {
+  const handleSaveDept = async (e: React.FormEvent) => {
     e.preventDefault(); setFormError('');
     try {
-      await api.post('/admin/departments', deptForm);
-      setShowDeptModal(false); showSuccess('Department created'); fetchAll();
-    } catch (e: any) { setFormError(e.response?.data?.message || 'Failed'); }
+      if (selectedDepartment) {
+        await api.put(`/admin/departments/${selectedDepartment.id}`, deptForm);
+        showSuccess('Department updated');
+      } else {
+        await api.post('/admin/departments', deptForm);
+        showSuccess('Department created');
+      }
+      setShowDeptModal(false);
+      setSelectedDepartment(null);
+      setDeptForm({ name: '', description: '' });
+      fetchAll();
+    } catch (e: any) {
+      setFormError(e.response?.data?.message || 'Failed');
+    }
+  };
+
+  const handleEditDepartment = (dept: Department) => {
+    setSelectedDepartment(dept);
+    setDeptForm({ name: dept.name, description: dept.description || '' });
+    setFormError('');
+    setShowDeptModal(true);
+  };
+
+  const handleDeleteDepartment = async (dept: Department) => {
+    if (!window.confirm(`Delete department "${dept.name}"? This action cannot be undone.`)) return;
+    try {
+      await api.delete(`/admin/departments/${dept.id}`);
+      showSuccess('Department deleted');
+      fetchAll();
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Failed to delete department');
+    }
+  };
+
+  const handleCreateDeptClick = () => {
+    setSelectedDepartment(null);
+    setDeptForm({ name: '', description: '' });
+    setFormError('');
+    setShowDeptModal(true);
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -405,7 +444,7 @@ const AdminPage: React.FC = () => {
       {tab === 'departments' && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <button onClick={() => { setDeptForm({ name:'', description:'' }); setFormError(''); setShowDeptModal(true); }}
+            <button onClick={handleCreateDeptClick}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
               <Plus className="w-4 h-4" /> Add Department
             </button>
@@ -414,15 +453,27 @@ const AdminPage: React.FC = () => {
             {loading ? <p className="text-gray-400 text-sm">Loading...</p> :
               departments.map(d => (
                 <div key={d.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Building2 className="w-5 h-5 text-blue-600" />
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 dark:text-white">{d.name}</h3>
+                        {d.head_doctor_name && <p className="text-xs text-blue-600 mt-1 font-medium">Head: {d.head_doctor_name}</p>}
+                      </div>
                     </div>
-                    <span className="text-xs text-gray-400">{d.doctor_count} doctors</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleEditDepartment(d)} className="text-blue-600 hover:text-blue-800" title="Edit department"><Edit className="w-4 h-4" /></button>
+                      {currentUser?.role === 'super_admin' && (
+                        <button onClick={() => handleDeleteDepartment(d)} className="text-red-600 hover:text-red-800" title="Delete department"><Trash2 className="w-4 h-4" /></button>
+                      )}
+                    </div>
                   </div>
-                  <h3 className="font-bold text-gray-900 dark:text-white mt-3">{d.name}</h3>
-                  {d.description && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{d.description}</p>}
-                  {d.head_doctor_name && <p className="text-xs text-blue-600 mt-2 font-medium">Head: {d.head_doctor_name}</p>}
+                  <div className="mt-4">
+                    {d.description && <p className="text-xs text-gray-500 leading-relaxed">{d.description}</p>}
+                    <p className="text-xs text-gray-400 mt-3">{d.doctor_count} doctors assigned</p>
+                  </div>
                 </div>
               ))
             }
@@ -456,18 +507,20 @@ const AdminPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-900 dark:text-white">Add Department</h3>
-              <button onClick={() => setShowDeptModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              <h3 className="font-bold text-gray-900 dark:text-white">{selectedDepartment ? 'Edit Department' : 'Add Department'}</h3>
+              <button onClick={() => { setShowDeptModal(false); setSelectedDepartment(null); }} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
             </div>
             {formError && <p className="text-sm text-red-500 mb-3">{formError}</p>}
-            <form onSubmit={handleCreateDept} className="space-y-4">
+            <form onSubmit={handleSaveDept} className="space-y-4">
               <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
                 <input required value={deptForm.name} onChange={e => setDeptForm({...deptForm, name: e.target.value})} className={inputClass} placeholder="e.g. Cardiology" /></div>
               <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                 <textarea value={deptForm.description} onChange={e => setDeptForm({...deptForm, description: e.target.value})} rows={2} className={inputClass} /></div>
               <div className="flex gap-3">
-                <button type="button" onClick={() => setShowDeptModal(false)} className="flex-1 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
-                <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700">Create</button>
+                <button type="button" onClick={() => { setShowDeptModal(false); setSelectedDepartment(null); }} className="flex-1 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+                <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700">
+                  {selectedDepartment ? 'Update' : 'Create'}
+                </button>
               </div>
             </form>
           </div>

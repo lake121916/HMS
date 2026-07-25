@@ -27,6 +27,7 @@ import LabTestsPage from './pages/LabTestsPage';
 import AdmissionsPage from './pages/AdmissionsPage';
 import InvoicesPage from './pages/InvoicesPage';
 import PaymentsPage from './pages/PaymentsPage';
+import ReceptionPage from './pages/ReceptionPage';
 import MedicinesPage from './pages/MedicinesPage';
 import InventoryPage from './pages/InventoryPage';
 import BedsPage from './pages/BedsPage';
@@ -34,18 +35,23 @@ import ReportsPage from './pages/ReportsPage';
 import AdminPage from './pages/AdminPage';
 import UserManagementPage from './pages/UserManagementPage';
 import CashierDashboard from './pages/CashierDashboard';
+import InsurancePage from './pages/InsurancePage';
+import BloodBankPage from './pages/BloodBankPage';
+import AuditPage from './pages/AuditPage';
+import RadiologyPage from './pages/RadiologyPage';
+import FinanceReportsPage from './pages/FinanceReportsPage';
 
 // ── Role permission map ──────────────────────────────────────────────────────
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  super_admin: ['dashboard','patients','doctors','appointments','vitals','prescriptions','lab-tests','reports','admin','user-management'],
-  admin:       ['dashboard','patients','doctors','appointments','admissions','beds','invoices','payments','medicines','inventory','reports','admin','user-management'],
-  hospital_manager: ['dashboard','patients','doctors','appointments','admissions','beds','invoices','payments','reports'],
-  receptionist:['dashboard','patients','appointments','admissions','invoices','payments'],
-  doctor:      ['dashboard','patients','appointments','vitals','prescriptions','lab-tests','admissions'],
+  super_admin: ['dashboard','patients','doctors','appointments','vitals','prescriptions','lab-tests','reports','admin','user-management','insurance','blood-bank','audit','radiology','finance-reports'],
+  admin:       ['dashboard','patients','doctors','appointments','admissions','beds','invoices','payments','medicines','inventory','reports','admin','user-management','insurance','blood-bank','audit','radiology','finance-reports','cashier'],
+  hospital_manager: ['dashboard','patients','doctors','appointments','admissions','beds','invoices','payments','reports','insurance','blood-bank','radiology','finance-reports','cashier'],
+  receptionist:['dashboard','patients','appointments','admissions','invoices','payments','reception'],
+  doctor:      ['dashboard','patients','appointments','vitals','prescriptions','lab-tests','admissions','radiology'],
   nurse:       ['dashboard','patients','appointments','vitals','admissions','beds'],
   lab_technician: ['dashboard','lab-tests'],
   pharmacist:  ['dashboard','prescriptions','medicines','inventory'],
-  cashier:     ['dashboard','invoices','payments'],
+  cashier:     ['dashboard','invoices','payments','cashier','finance-reports'],
   patient:     ['dashboard','appointments'],
 };
 
@@ -106,10 +112,16 @@ function App() {
             <Route path="patients" element={
               <ProtectedRoute page="patients"><PatientsPage /></ProtectedRoute>
             } />
+            <Route path="patients/new" element={
+              <ProtectedRoute page="patients"><PatientsPage /></ProtectedRoute>
+            } />
             <Route path="doctors" element={
               <ProtectedRoute page="doctors"><DoctorsPage /></ProtectedRoute>
             } />
             <Route path="appointments" element={
+              <ProtectedRoute page="appointments"><AppointmentsPage /></ProtectedRoute>
+            } />
+            <Route path="appointments/new" element={
               <ProtectedRoute page="appointments"><AppointmentsPage /></ProtectedRoute>
             } />
             <Route path="vitals" element={
@@ -127,8 +139,32 @@ function App() {
             <Route path="invoices" element={
               <ProtectedRoute page="invoices"><InvoicesPage /></ProtectedRoute>
             } />
+            <Route path="invoices/new" element={
+              <ProtectedRoute page="invoices"><InvoicesPage /></ProtectedRoute>
+            } />
+            <Route path="reception" element={
+              <ProtectedRoute page="reception"><ReceptionPage /></ProtectedRoute>
+            } />
             <Route path="payments" element={
               <ProtectedRoute page="payments"><PaymentsPage /></ProtectedRoute>
+            } />
+            <Route path="cashier" element={
+              <ProtectedRoute page="cashier"><CashierDashboard /></ProtectedRoute>
+            } />
+            <Route path="insurance" element={
+              <ProtectedRoute page="insurance"><InsurancePage /></ProtectedRoute>
+            } />
+            <Route path="blood-bank" element={
+              <ProtectedRoute page="blood-bank"><BloodBankPage /></ProtectedRoute>
+            } />
+            <Route path="audit" element={
+              <ProtectedRoute page="audit"><AuditPage /></ProtectedRoute>
+            } />
+            <Route path="radiology" element={
+              <ProtectedRoute page="radiology"><RadiologyPage /></ProtectedRoute>
+            } />
+            <Route path="finance-reports" element={
+              <ProtectedRoute page="finance-reports"><FinanceReportsPage /></ProtectedRoute>
             } />
             <Route path="medicines" element={
               <ProtectedRoute page="medicines"><MedicinesPage /></ProtectedRoute>
@@ -141,9 +177,6 @@ function App() {
             } />
             <Route path="reports" element={
               <ProtectedRoute page="reports"><ReportsPage /></ProtectedRoute>
-            } />
-            <Route path="cashier" element={
-              <ProtectedRoute page="payments"><CashierDashboard /></ProtectedRoute>
             } />
             <Route path="admin" element={
               <ProtectedRoute page="admin"><AdminPage /></ProtectedRoute>

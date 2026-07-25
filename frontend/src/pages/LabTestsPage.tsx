@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Search, Edit, Trash2, X, FlaskConical, Upload, CheckCircle } from 'lucide-react';
+import { Plus, Search, Trash2, X, FlaskConical, Upload } from 'lucide-react';
 
 interface LabTest {
   id: number; patient_name: string; doctor_name: string; test_name: string; test_type: string;

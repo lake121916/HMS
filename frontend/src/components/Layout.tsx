@@ -1,10 +1,11 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useRoleAccess } from '../hooks/useRoleAccess';
 import {
   LayoutDashboard, Users, Stethoscope, Calendar, LogOut, Menu, X,
   Activity, Pill, FlaskConical, Bed, FileText, Shield,
-  Package, BarChart2, CreditCard, Settings, Bell
+  BarChart2, CreditCard, Settings, Bell, MapPin
 } from 'lucide-react';
 
 interface NavItem {
@@ -84,38 +85,71 @@ const Layout: React.FC = () => {
       { name: 'Patients', href: '/patients', icon: Users },
       { name: 'Doctors', href: '/doctors', icon: Stethoscope },
       { name: 'Appointments', href: '/appointments', icon: Calendar },
-      { name: 'Vitals', href: '/vitals', icon: Activity },
-      { name: 'Prescriptions', href: '/prescriptions', icon: Pill },
-      { name: 'Lab Tests', href: '/lab-tests', icon: FlaskConical },
-      { name: 'Admissions', href: '/admissions', icon: Bed },
-      { name: 'Beds', href: '/beds', icon: Bed },
-      { name: 'Invoices', href: '/invoices', icon: FileText },
-      { name: 'Payments', href: '/payments', icon: CreditCard },
-      { name: 'Medicines', href: '/medicines', icon: Pill },
-      { name: 'Inventory', href: '/inventory', icon: Package },
-      { name: 'Reports', href: '/reports', icon: BarChart2 },
-      { name: 'System Admin', href: '/admin', icon: Settings },
-      { name: 'Users', href: '/user-management', icon: Shield },
-    ];
+        { name: 'Reception', href: '/reception', icon: Calendar },
+        { name: 'Cashier Dashboard', href: '/cashier', icon: CreditCard },
+        { name: 'Vitals', href: '/vitals', icon: Activity },
+        { name: 'Prescriptions', href: '/prescriptions', icon: Pill },
+        { name: 'Lab Tests', href: '/lab-tests', icon: FlaskConical },
+        { name: 'Radiology', href: '/radiology', icon: FlaskConical },
+        { name: 'Admissions', href: '/admissions', icon: Bed },
+        { name: 'Beds', href: '/beds', icon: Bed },
+        { name: 'Invoices', href: '/invoices', icon: FileText },
+        { name: 'Payments', href: '/payments', icon: CreditCard },
+        { name: 'Insurance', href: '/insurance', icon: Shield },
+        { name: 'Blood Bank', href: '/blood-bank', icon: MapPin },
+        { name: 'Finance Reports', href: '/finance-reports', icon: BarChart2 },
+        { name: 'Reports', href: '/reports', icon: BarChart2 },
+        { name: 'Audit Logs', href: '/audit', icon: Shield },
+        { name: 'System Admin', href: '/admin', icon: Settings },
+        { name: 'Users', href: '/user-management', icon: Shield },
+      ];
 
     const roleMap: Record<string, string[]> = {
-      super_admin: ['Patients','Doctors','Appointments','Vitals','Prescriptions','Lab Tests','Reports','System Admin','Users'],
-      admin: ['Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Medicines','Inventory','Reports','System Admin','Users'],
-      hospital_manager: ['Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Reports'],
-      receptionist: ['Patients','Appointments','Admissions','Invoices','Payments'],
-      doctor: ['Patients','Appointments','Vitals','Prescriptions','Lab Tests','Admissions'],
+      super_admin: ['Patients','Doctors','Appointments','Vitals','Prescriptions','Lab Tests','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users'],
+      admin: ['Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Medicines','Inventory','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users','Cashier Dashboard'],
+      hospital_manager: ['Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Reports','Finance Reports','Radiology','Insurance','Blood Bank','Cashier Dashboard'],
+      receptionist: ['Patients','Appointments','Admissions','Invoices','Payments','Reception'],
+      doctor: ['Patients','Appointments','Vitals','Prescriptions','Lab Tests','Admissions','Radiology'],
       nurse: ['Patients','Appointments','Vitals','Admissions','Beds'],
       lab_technician: ['Lab Tests'],
       pharmacist: ['Prescriptions','Medicines','Inventory'],
-      cashier: ['Invoices','Payments'],
-      patient: ['Appointments'],
+      cashier: ['Invoices','Payments','Cashier Dashboard','Finance Reports'],
     };
 
     const allowedItems = roleMap[role] || [];
     return [...common, ...allItems.filter(item => allowedItems.includes(item.name))];
   };
 
-  const navigation = getNavigationByRole(user?.role || 'patient');
+  const { can } = useRoleAccess();
+  const navigation = getNavigationByRole(user?.role || 'patient')
+    .filter(item => {
+      // map nav item name to a permission check where applicable
+      const nameToPermission: Record<string, string | null> = {
+        'Patients': 'patients:view',
+        'Doctors': 'doctors:view',
+        'Appointments': 'appointments:view',
+        'Reception': 'reception:view',
+        'Cashier Dashboard': 'cashier:view',
+        'Vitals': 'vitals:view',
+        'Prescriptions': 'prescriptions:view',
+        'Lab Tests': 'lab_tests:view',
+        'Radiology': 'radiology:view',
+        'Admissions': 'admissions:view',
+        'Beds': 'beds:view',
+        'Invoices': 'invoices:view',
+        'Payments': 'payments:view',
+        'Insurance': 'insurance:view',
+        'Blood Bank': 'blood_bank:view',
+        'Finance Reports': 'finance_reports:view',
+        'Reports': 'reports:view',
+        'Audit Logs': 'audit:view',
+        'System Admin': 'admin:departments',
+        'Users': 'admin:users',
+      };
+      const perm = nameToPermission[item.name] || null;
+      if (!perm) return true; // no guard for this item
+      return can(perm);
+    });
 
   const getRoleColor = (role: string) => {
     const colors: Record<string, string> = {
