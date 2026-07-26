@@ -143,10 +143,6 @@ const HomePage: React.FC = () => {
             </p>
 
             <div className="flex flex-wrap gap-3 mb-8 fade-up in-view delay-300">
-              <Link to="/contact"
-                className="px-7 py-3.5 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold rounded-xl shadow-lg transition-all text-sm flex items-center gap-2 hover-lift">
-                Book Appointment <ArrowRight className="w-4 h-4" />
-              </Link>
               <Link to="/services"
                 className="px-7 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all text-sm flex items-center gap-2">
                 <Play className="w-4 h-4" /> Our Services
@@ -172,41 +168,6 @@ const HomePage: React.FC = () => {
                 <a href="tel:+251119990000" className="text-white font-extrabold text-base hover:text-yellow-300 transition-colors">
                   +251 11 999 0000
                 </a>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: quick appointment card */}
-          <div className="fade-up in-view delay-200">
-            <div className="bg-white/15 backdrop-blur-sm border border-white/30 rounded-3xl p-7 shadow-2xl float-anim">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center">
-                  <Stethoscope className="w-5 h-5 text-gray-900" />
-                </div>
-                <div>
-                  <h3 className="text-white font-bold text-sm">Quick Appointment</h3>
-                  <p className="text-blue-300 text-xs">We'll call you within 2 hours</p>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <input type="text" placeholder="Your Full Name"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300 text-sm focus:outline-none focus:border-white/50 transition-colors" />
-                <input type="tel" placeholder="Phone Number"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-blue-300 text-sm focus:outline-none focus:border-white/50 transition-colors" />
-                <select className="w-full px-4 py-3 bg-blue-900/80 border border-white/20 rounded-xl text-blue-200 text-sm focus:outline-none focus:border-white/50 transition-colors">
-                  <option value="">Select Department</option>
-                  <option>Maternity & Obstetrics</option>
-                  <option>Pediatrics</option>
-                  <option>General Medicine</option>
-                  <option>Emergency</option>
-                  <option>Laboratory</option>
-                </select>
-                <input type="date"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-blue-200 text-sm focus:outline-none focus:border-white/50 transition-colors" />
-                <Link to="/contact"
-                  className="w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold rounded-xl transition-all text-sm text-center block shadow-lg">
-                  Request Appointment →
-                </Link>
               </div>
             </div>
           </div>
@@ -459,10 +420,6 @@ const HomePage: React.FC = () => {
               Our team is available to assist you. Walk in, call, or book online today.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/contact"
-                className="px-8 py-4 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-colors shadow-xl inline-flex items-center justify-center gap-2 hover-lift">
-                Book Appointment <ArrowRight className="w-4 h-4" />
-              </Link>
               <a href="tel:+251111234567"
                 className="px-8 py-4 bg-white text-gray-900 font-bold rounded-xl hover:bg-gray-50 transition-colors shadow-xl inline-flex items-center justify-center gap-2 hover-lift">
                 <Phone className="w-4 h-4" /> Call Us Now

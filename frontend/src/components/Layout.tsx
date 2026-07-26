@@ -2,10 +2,12 @@ import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useRoleAccess } from '../hooks/useRoleAccess';
+import { useTheme } from '../contexts/ThemeContext';
 import {
   LayoutDashboard, Users, Stethoscope, Calendar, LogOut, Menu, X,
   Activity, Pill, FlaskConical, Bed, FileText, Shield,
-  BarChart2, CreditCard, Settings, Bell, MapPin
+  BarChart2, CreditCard, Settings, Bell, MapPin,
+  Palette, Sun, Moon, RefreshCw
 } from 'lucide-react';
 
 interface NavItem {
@@ -31,6 +33,8 @@ const Layout: React.FC = () => {
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [notifOpen, setNotifOpen] = React.useState(false);
+  const [themeOpen, setThemeOpen] = React.useState(false);
+  const { hue, saturation, isDark, setHue, setSaturation, setIsDark, resetTheme } = useTheme();
 
   // Fetch notifications on mount
   React.useEffect(() => {
@@ -75,6 +79,17 @@ const Layout: React.FC = () => {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [notifOpen]);
+
+  // Close theme dropdown on outside click
+  React.useEffect(() => {
+    if (!themeOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-theme-panel]')) setThemeOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [themeOpen]);
 
   const getNavigationByRole = (role: string): NavItem[] => {
     const common: NavItem[] = [
@@ -257,6 +272,109 @@ const Layout: React.FC = () => {
             </span>
           </div>
           <div className="flex items-center gap-3">
+            {/* Theme Customizer Popover */}
+            <div className="relative" data-theme-panel>
+              <button
+                onClick={() => setThemeOpen(!themeOpen)}
+                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                aria-label="Customize Colors"
+                title="Customize Theme"
+              >
+                <Palette className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-pulse" />
+              </button>
+
+              {themeOpen && (
+                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 z-50">
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-700 mb-3">
+                    <span className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <Palette className="w-4 h-4 text-blue-600" /> Customize Theme
+                    </span>
+                    <button
+                      onClick={resetTheme}
+                      className="text-xs text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 flex items-center gap-1"
+                      title="Reset to Default"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" /> Reset
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Theme Presets */}
+                    <div>
+                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-2">Preset Themes</span>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { name: 'Blue', hue: 221.2, sat: 83.2, color: 'bg-blue-600' },
+                          { name: 'Green', hue: 142.1, sat: 76.2, color: 'bg-emerald-600' },
+                          { name: 'Purple', hue: 262.1, sat: 83.3, color: 'bg-purple-600' },
+                          { name: 'Teal', hue: 174.7, sat: 83.9, color: 'bg-teal-600' },
+                          { name: 'Orange', hue: 24.6, sat: 95.0, color: 'bg-orange-600' },
+                          { name: 'Rose', hue: 346.8, sat: 87.2, color: 'bg-rose-600' },
+                        ].map((preset) => (
+                          <button
+                            key={preset.name}
+                            onClick={() => { setHue(preset.hue); setSaturation(preset.sat); }}
+                            className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs font-medium text-gray-700 dark:text-gray-300 w-full"
+                          >
+                            <span className={`w-3 h-3 rounded-full ${preset.color} shrink-0`} />
+                            {preset.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Hue Adjustment Slider */}
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Custom Color Hue</span>
+                        <span className="text-xs text-gray-400 font-mono">{Math.round(hue)}°</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="360"
+                        value={hue}
+                        onChange={(e) => setHue(parseInt(e.target.value))}
+                        className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        style={{
+                          background: 'linear-gradient(to right, #ef4444, #eab308, #22c55e, #06b6d4, #3b82f6, #a855f7, #ec4899, #ef4444)'
+                        }}
+                      />
+                    </div>
+
+                    {/* Saturation Adjustment Slider */}
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Color Saturation</span>
+                        <span className="text-xs text-gray-400 font-mono">{Math.round(saturation)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="30"
+                        max="100"
+                        value={saturation}
+                        onChange={(e) => setSaturation(parseInt(e.target.value))}
+                        className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                      />
+                    </div>
+
+                    {/* Dark/Light Mode */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Dark Appearance</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsDark(!isDark)}
+                        className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                        title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                      >
+                        {isDark ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-gray-500" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Notification Bell */}
             <div className="relative" data-notif-panel>
               <button

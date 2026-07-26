@@ -100,7 +100,7 @@ const LoginPage: React.FC = () => {
           {/* Patient registration CTA */}
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
             <p className="text-sm font-semibold text-gray-800">New Patient?</p>
-            <p className="text-xs text-gray-500 mt-1 mb-3">Create your patient account to book appointments and manage your health records.</p>
+            <p className="text-xs text-gray-500 mt-1 mb-3">Create your patient account to manage your health records.</p>
             <Link to="/register"
               className="block w-full py-2.5 border-2 border-blue-600 text-blue-600 font-bold rounded-xl text-sm hover:bg-blue-600 hover:text-white transition-all">
               Register as a Patient

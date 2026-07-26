@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Stethoscope, Menu, X, Phone, Mail, MapPin,
-  Facebook, Twitter, Instagram, Linkedin, ChevronRight
+  Facebook, Twitter, Instagram, Linkedin, ChevronRight, ChevronDown, Navigation
 } from 'lucide-react';
 import AIChatbot from './AIChatbot';
 
 const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [contactDropdown, setContactDropdown] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -28,7 +29,6 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     { label: 'Services', href: '/services' },
     { label: 'Departments', href: '/departments' },
     { label: 'Doctors', href: '/our-doctors' },
-    { label: 'Contact', href: '/contact' },
   ];
 
   const isActive = (href: string) => location.pathname === href;
@@ -79,15 +79,43 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                   {link.label}
                 </Link>
               ))}
+              {/* Contact Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setContactDropdown(!contactDropdown)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${
+                    contactDropdown || location.pathname === '/contact'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                  }`}
+                >
+                  Contact <ChevronDown className="w-4 h-4" />
+                </button>
+                {contactDropdown && (
+                  <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 py-3 min-w-56 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100 mb-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Quick Actions</p>
+                    </div>
+                    <Link
+                      to="/contact"
+                      onClick={() => setContactDropdown(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                    >
+                      <Navigation className="w-4 h-4 text-blue-500" />
+                      <span>Get Directions</span>
+                    </Link>
+                    <Link
+                      to="/contact"
+                      onClick={() => setContactDropdown(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                    >
+                      <Phone className="w-4 h-4 text-blue-500" />
+                      <span>Contact Information</span>
+                    </Link>
+                  </div>
+                )}
+              </div>
             </nav>
-
-            {/* CTA */}
-            <div className="hidden lg:flex items-center gap-3">
-              <Link to="/contact"
-                className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-                Book Appointment
-              </Link>
-            </div>
 
             {/* Mobile menu button */}
             <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100">
@@ -108,8 +136,23 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                 <ChevronRight className="w-4 h-4 opacity-50" />
               </Link>
             ))}
-            <div className="pt-3 flex flex-col gap-2 border-t border-gray-100 mt-2">
-              <Link to="/contact" className="px-4 py-2.5 text-sm font-medium bg-blue-600 text-white rounded-lg text-center">Book Appointment</Link>
+            <div className="pt-3 border-t border-gray-100 mt-2">
+              <button
+                onClick={() => setContactDropdown(!contactDropdown)}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-blue-50"
+              >
+                Contact <ChevronDown className={`w-4 h-4 opacity-50 transition-transform ${contactDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              {contactDropdown && (
+                <div className="mt-2 space-y-1 pl-4">
+                  <Link to="/contact" onClick={() => setContactDropdown(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:text-blue-600">
+                    <Navigation className="w-4 h-4 text-blue-500" /> Get Directions
+                  </Link>
+                  <Link to="/contact" onClick={() => setContactDropdown(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:text-blue-600">
+                    <Phone className="w-4 h-4 text-blue-500" /> Contact Information
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}

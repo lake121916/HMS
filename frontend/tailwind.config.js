@@ -15,6 +15,18 @@ export default {
     },
     extend: {
       colors: {
+        blue: {
+          50: "hsl(var(--blue-50) / <alpha-value>)",
+          100: "hsl(var(--blue-100) / <alpha-value>)",
+          200: "hsl(var(--blue-200) / <alpha-value>)",
+          300: "hsl(var(--blue-300) / <alpha-value>)",
+          400: "hsl(var(--blue-400) / <alpha-value>)",
+          500: "hsl(var(--blue-500) / <alpha-value>)",
+          600: "hsl(var(--blue-600) / <alpha-value>)",
+          700: "hsl(var(--blue-700) / <alpha-value>)",
+          800: "hsl(var(--blue-800) / <alpha-value>)",
+          900: "hsl(var(--blue-900) / <alpha-value>)",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

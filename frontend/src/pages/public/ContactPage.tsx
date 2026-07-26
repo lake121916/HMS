@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import PublicLayout from '../../components/PublicLayout';
 import {
   Phone, Mail, MapPin, Clock, Send,
-  CheckCircle, AlertCircle, Truck, MessageSquare,
-  MessageCircle
+  CheckCircle, AlertCircle, Truck
 } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 
@@ -42,12 +41,12 @@ const hours = [
 ];
 
 const ContactPage: React.FC = () => {
-  const [form, setForm] = useState({ name:'', email:'', phone:'', department:'', date:'', message:'', type:'appointment', smsNotification:false, emailNotification:true });
+  const [form, setForm] = useState({ name:'', email:'', phone:'', message:'' });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handle = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setForm({ ...form, [e.target.name]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value });
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,9 +70,9 @@ const ContactPage: React.FC = () => {
           <Reveal>
             <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-10 shadow-2xl max-w-3xl mx-auto">
               <span className="inline-block px-4 py-1.5 bg-blue-600 rounded-full text-xs font-bold uppercase tracking-wider mb-5 text-white">Get In Touch</span>
-              <h1 className="text-4xl lg:text-6xl font-extrabold mb-5 leading-tight text-gray-900">Contact &amp; Book Appointment</h1>
+              <h1 className="text-4xl lg:text-6xl font-extrabold mb-5 leading-tight text-gray-900">Contact Us</h1>
               <p className="text-gray-600 text-lg max-w-xl mx-auto leading-relaxed">
-                Ready to visit us? Book online, call our reception, or drop by — we're here for you.
+                Ready to visit us? Call our reception or drop by — we're here for you.
               </p>
             </div>
           </Reveal>
@@ -110,31 +109,22 @@ const ContactPage: React.FC = () => {
                   <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-5">
                     <CheckCircle className="w-10 h-10 text-green-600" />
                   </div>
-                  <h3 className="text-2xl font-extrabold text-gray-900 mb-3">Request Received!</h3>
+                  <h3 className="text-2xl font-extrabold text-gray-900 mb-3">Message Received!</h3>
                   <p className="text-gray-500 max-w-sm leading-relaxed mb-6 text-sm">
-                    Thank you, <strong>{form.name}</strong>! We've received your {form.type === 'appointment' ? 'appointment request' : 'message'}. Our team will contact you within 24 hours to confirm.
+                    Thank you, <strong>{form.name}</strong>! We've received your message. Our team will contact you within 24 hours.
                   </p>
-                  <button onClick={() => { setSubmitted(false); setForm({ name:'',email:'',phone:'',department:'',date:'',message:'',type:'appointment', smsNotification:false, emailNotification:true }); }}
+                  <button onClick={() => { setSubmitted(false); setForm({ name:'',email:'',phone:'',message:'' }); }}
                     className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors text-sm">
-                    Send Another Request
+                    Send Another Message
                   </button>
                 </div>
               ) : (
                 <>
                   <div className="mb-6">
-                    <h2 className="text-2xl font-extrabold text-gray-900">Book an Appointment</h2>
-                    <p className="text-gray-500 text-sm mt-1">Fill the form and we'll confirm within 24 hours.</p>
+                    <h2 className="text-2xl font-extrabold text-gray-900">Send Us a Message</h2>
+                    <p className="text-gray-500 text-sm mt-1">Fill the form and we'll respond within 24 hours.</p>
                   </div>
 
-                  {/* Type tabs */}
-                  <div className="flex gap-3 mb-6">
-                    {[{id:'appointment',label:'Book Appointment',icon:Clock},{id:'inquiry',label:'General Inquiry',icon:MessageSquare}].map(t => (
-                      <button key={t.id} type="button" onClick={() => setForm({...form, type:t.id})}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${form.type===t.id ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                        <t.icon className="w-4 h-4" />{t.label}
-                      </button>
-                    ))}
-                  </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -151,61 +141,13 @@ const ContactPage: React.FC = () => {
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Email Address</label>
                       <input name="email" type="email" value={form.email} onChange={handle} placeholder="abebe@email.com" className={inp} />
                     </div>
-                    {form.type === 'appointment' && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1">Department *</label>
-                          <select name="department" required value={form.department} onChange={handle} className={`${inp} bg-white`}>
-                            <option value="">Select Department</option>
-                            <option>Maternity & Obstetrics</option>
-                            <option>Pediatrics & Neonatology</option>
-                            <option>General Medicine</option>
-                            <option>Neurology</option>
-                            <option>Orthopedics & Surgery</option>
-                            <option>Ophthalmology</option>
-                            <option>Laboratory</option>
-                            <option>Radiology</option>
-                            <option>Emergency</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1">Preferred Date *</label>
-                          <input name="date" type="date" required value={form.date} onChange={handle}
-                            min={new Date().toISOString().split('T')[0]} className={inp} />
-                        </div>
-                      </div>
-                    )}
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        {form.type === 'appointment' ? 'Reason for Visit' : 'Your Message *'}
-                      </label>
-                      <textarea name="message" required={form.type==='inquiry'} value={form.message} onChange={handle} rows={4}
-                        placeholder={form.type==='appointment' ? 'Briefly describe your symptoms...' : 'How can we help you?'}
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Your Message *</label>
+                      <textarea name="message" required value={form.message} onChange={handle} rows={4}
+                        placeholder="How can we help you?"
                         className={`${inp} resize-none`} />
                     </div>
 
-                    {/* Notification Preferences */}
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                      <p className="text-sm font-semibold text-gray-700 mb-3">Notification Preferences</p>
-                      <div className="space-y-2">
-                        <label className="flex items-center gap-3 cursor-pointer">
-                          <input name="emailNotification" type="checkbox" checked={form.emailNotification} onChange={handle}
-                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm text-gray-600">Email notifications</span>
-                          </div>
-                        </label>
-                        <label className="flex items-center gap-3 cursor-pointer">
-                          <input name="smsNotification" type="checkbox" checked={form.smsNotification} onChange={handle}
-                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
-                          <div className="flex items-center gap-2">
-                            <MessageCircle className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm text-gray-600">SMS notifications</span>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
                     <div className="flex items-start gap-2 text-xs text-gray-500 bg-amber-50 border border-amber-200 rounded-xl p-3">
                       <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                       <span>For medical emergencies, call <strong>+251 11 999 0000</strong> immediately. Do not use this form.</span>
@@ -213,7 +155,7 @@ const ContactPage: React.FC = () => {
                     <button type="submit" disabled={loading}
                       className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-60 hover-lift">
                       {loading ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Sending...</>
-                        : <><Send className="w-4 h-4" />{form.type==='appointment' ? 'Request Appointment' : 'Send Message'}</>}
+                        : <><Send className="w-4 h-4" />Send Message</>}
                     </button>
                   </form>
                 </>

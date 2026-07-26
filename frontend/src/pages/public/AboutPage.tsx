@@ -1,9 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import PublicLayout from '../../components/PublicLayout';
 import {
   Target, Eye, Heart, Award, Users, Stethoscope,
-  CheckCircle, ArrowRight
+  CheckCircle
 } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 
@@ -114,9 +113,6 @@ const AboutPage: React.FC = () => (
               </div>
             ))}
           </div>
-          <Link to="/contact" className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm hover-lift">
-            Book an Appointment <ArrowRight className="w-4 h-4" />
-          </Link>
         </Reveal>
       </div>
     </section>
@@ -236,11 +232,7 @@ const AboutPage: React.FC = () => (
         <Reveal>
           <Stethoscope className="w-12 h-12 mx-auto mb-5 text-blue-300" />
           <h2 className="text-3xl font-extrabold mb-4">Join Our Healthcare Family</h2>
-          <p className="text-blue-200 mb-8 leading-relaxed">Experience care that puts you first. Book today and let us take care of you.</p>
-          <Link to="/contact"
-            className="px-8 py-3.5 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-bold rounded-xl inline-flex items-center gap-2 transition-colors shadow-lg hover-lift">
-            Book an Appointment <ArrowRight className="w-4 h-4" />
-          </Link>
+          <p className="text-blue-200 mb-8 leading-relaxed">Experience care that puts you first. Visit us today and let us take care of you.</p>
         </Reveal>
       </div>
     </section>

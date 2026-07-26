@@ -95,7 +95,7 @@ const DepartmentsPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6">
           <Reveal className="text-center mb-10">
             <p className="text-gray-500 text-sm max-w-xl mx-auto">
-              Click on any department to see services, staff details, and book an appointment.
+              Click on any department to see services and staff details.
             </p>
           </Reveal>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -143,10 +143,6 @@ const DepartmentsPage: React.FC = () => {
                           </span>
                         ))}
                       </div>
-                      <Link to="/contact" onClick={e => e.stopPropagation()}
-                        className={`inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg ${dept.color} text-white hover:opacity-90 transition-opacity`}>
-                        Book Appointment <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
                     </div>
                   )}
                 </div>
@@ -162,11 +158,11 @@ const DepartmentsPage: React.FC = () => {
           <Reveal>
             <h2 className="text-2xl font-extrabold mb-3">Need to Visit a Department?</h2>
             <p className="text-blue-200 mb-6 text-sm leading-relaxed">
-              Book your appointment online or visit our reception for walk-in services.
+              Visit our reception for walk-in services or call us for assistance.
             </p>
             <Link to="/contact"
               className="px-8 py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl hover:bg-yellow-300 transition-colors inline-flex items-center gap-2 shadow hover-lift">
-              Book Appointment <ArrowRight className="w-4 h-4" />
+              Contact Us <ArrowRight className="w-4 h-4" />
             </Link>
           </Reveal>
         </div>

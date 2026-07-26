@@ -195,7 +195,7 @@ const ServicesPage: React.FC = () => {
             <p className="text-gray-500 mb-8">Contact us or speak directly with a specialist about your needs.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/contact" className="px-8 py-3.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-sm inline-flex items-center justify-center gap-2 hover-lift">
-                Book Appointment <ArrowRight className="w-4 h-4" />
+                Contact Us <ArrowRight className="w-4 h-4" />
               </Link>
               <Link to="/our-doctors" className="px-8 py-3.5 border-2 border-blue-600 text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition-colors inline-flex items-center justify-center gap-2 hover-lift">
                 Meet Our Doctors

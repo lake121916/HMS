@@ -122,13 +122,6 @@ const DoctorsPublicPage: React.FC = () => {
                       <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 rounded-full px-2 py-0.5 shadow text-xs font-bold text-yellow-600">
                         <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />{doc.rating}
                       </div>
-                      {/* Hover CTA */}
-                      <div className="absolute bottom-4 left-0 right-0 px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <Link to="/contact"
-                          className="block w-full py-2 bg-yellow-400 text-gray-900 text-xs font-bold rounded-lg text-center hover:bg-yellow-300 transition-colors">
-                          Book Appointment →
-                        </Link>
-                      </div>
                     </div>
 
                     <div className="p-5">

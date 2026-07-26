@@ -68,6 +68,8 @@ app.use('/api/notifications', auditLog);
 app.use('/api/ai', auditLog);
 app.use('/api/reports', auditLog);
 app.use('/api/admin', auditLog);
+app.use('/api/blood-bank', auditLog);
+app.use('/api/insurance', auditLog);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -95,6 +97,8 @@ app.use('/api/ai', require('./routes/ai'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/telehealth', require('./routes/telehealth'));
+app.use('/api/blood-bank', require('./routes/bloodBank'));
+app.use('/api/insurance', require('./routes/insurance'));
 
 // Error handling
 app.use(notFound);
