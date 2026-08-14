@@ -121,11 +121,11 @@ const LoginPage: React.FC = () => {
 
           {/* Patient registration CTA */}
           <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-center">
-            <p className="text-sm font-semibold text-gray-800">New Patient?</p>
-            <p className="text-xs text-gray-500 mt-1 mb-3">Create your patient account to manage your health records.</p>
-            <Link to="/register"
+            <p className="text-sm font-semibold text-gray-800">Need an account?</p>
+            <p className="text-xs text-gray-500 mt-1 mb-3">Patient accounts are created by Reception. Please contact Reception to request access.</p>
+            <Link to="/contact"
               className="block w-full py-2.5 border-2 border-teal-500 text-teal-600 font-semibold rounded-xl text-sm hover:bg-teal-500 hover:text-white transition-all">
-              Register as a Patient
+              Contact Reception
             </Link>
           </div>
         </div>
