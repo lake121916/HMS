@@ -50,8 +50,12 @@ const LoginPage: React.FC = () => {
           </div>
 
           <div className="mt-6 w-full">
-            <div className="w-full h-48 bg-slate-700 rounded-lg opacity-90 flex items-center justify-center text-slate-200">
-              <span className="text-sm">Illustration / Hospital image</span>
+            <div className="w-full h-48 rounded-lg overflow-hidden">
+              <img
+                src="/images/hospital.jpg"
+                alt="Alem Ketema Enat Hospital"
+                className="w-full h-full object-cover block"
+              />
             </div>
           </div>
         </div>
