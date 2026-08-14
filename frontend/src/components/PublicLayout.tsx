@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Stethoscope, Menu, X, Phone, Mail, MapPin,
-  Facebook, Twitter, Instagram, Linkedin, ChevronRight, ChevronDown, Navigation
+  Facebook, Twitter, Instagram, Linkedin, ChevronRight, ChevronDown, Navigation, Search
 } from 'lucide-react';
 import AIChatbot from './AIChatbot';
 
@@ -49,110 +49,55 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         </div>
       </div>
 
-      {/* Main navbar */}
-      <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white shadow-lg' : 'bg-white/98'}`}>
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
+      {/* Main navbar - dark centered */}
+      <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'shadow-lg' : ''}`}>
+        <div className="bg-gray-900 text-white">
+          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
             <Link to="/home" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow">
-                <Stethoscope className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-tr from-cyan-400 to-sky-600 rounded-full flex items-center justify-center shadow">
+                <Stethoscope className="w-5 h-5 text-white" />
               </div>
-              <div>
-                <p className="text-sm font-bold text-gray-900 leading-tight">Alem Ketema Enat</p>
-                <p className="text-xs text-blue-600 font-medium leading-tight">Hospital</p>
+              <div className="hidden sm:block">
+                <p className="text-sm font-bold leading-tight">Alem Ketema Enat</p>
+                <p className="text-xs text-gray-300 font-medium leading-tight">Hospital</p>
               </div>
             </Link>
 
-            {/* Desktop nav */}
-            <nav className="hidden lg:flex items-center gap-1">
-              {navLinks.map(link => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isActive(link.href)
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                  }`}
-                >
+            <div className="hidden lg:flex items-center gap-6">
+              {navLinks.map((link, idx) => (
+                <Link key={link.href} to={link.href} className={`text-sm font-semibold uppercase tracking-wide px-2 py-2 transition ${isActive(link.href) ? 'text-white' : 'text-gray-300 hover:text-white'}`}>
                   {link.label}
                 </Link>
               ))}
-              {/* Contact Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setContactDropdown(!contactDropdown)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${
-                    contactDropdown || location.pathname === '/contact'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                  }`}
-                >
-                  Contact <ChevronDown className="w-4 h-4" />
-                </button>
-                {contactDropdown && (
-                  <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 py-3 min-w-56 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100 mb-2">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Quick Actions</p>
-                    </div>
-                    <Link
-                      to="/contact"
-                      onClick={() => setContactDropdown(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                    >
-                      <Navigation className="w-4 h-4 text-blue-500" />
-                      <span>Get Directions</span>
-                    </Link>
-                    <Link
-                      to="/contact"
-                      onClick={() => setContactDropdown(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                    >
-                      <Phone className="w-4 h-4 text-blue-500" />
-                      <span>Contact Information</span>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </nav>
+              <Link to="/news" className="text-sm font-semibold uppercase tracking-wide text-gray-300 hover:text-white">News</Link>
+              <Link to="/gallery" className="text-sm font-semibold uppercase tracking-wide text-gray-300 hover:text-white">Photo Gallery</Link>
+            </div>
 
-            {/* Mobile menu button */}
-            <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100">
-              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            <div className="flex items-center gap-3">
+              <button className="hidden md:inline-flex items-center gap-2 text-sm text-gray-300 hover:text-white">
+                <Search className="w-4 h-4" />
+              </button>
+              <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden p-2 rounded-lg text-gray-200 hover:bg-gray-800">
+                {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="lg:hidden border-t border-gray-100 bg-white px-6 py-4 space-y-1 shadow-lg">
-            {navLinks.map(link => (
-              <Link key={link.href} to={link.href}
-                className={`flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium ${
-                  isActive(link.href) ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-blue-50'
-                }`}>
-                {link.label}
-                <ChevronRight className="w-4 h-4 opacity-50" />
-              </Link>
-            ))}
-            <div className="pt-3 border-t border-gray-100 mt-2">
-              <button
-                onClick={() => setContactDropdown(!contactDropdown)}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-blue-50"
-              >
-                Contact <ChevronDown className={`w-4 h-4 opacity-50 transition-transform ${contactDropdown ? 'rotate-180' : ''}`} />
-              </button>
-              {contactDropdown && (
-                <div className="mt-2 space-y-1 pl-4">
-                  <Link to="/contact" onClick={() => setContactDropdown(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:text-blue-600">
-                    <Navigation className="w-4 h-4 text-blue-500" /> Get Directions
-                  </Link>
-                  <Link to="/contact" onClick={() => setContactDropdown(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:text-blue-600">
-                    <Phone className="w-4 h-4 text-blue-500" /> Contact Information
-                  </Link>
-                </div>
-              )}
+          <div className="lg:hidden bg-gray-900 text-gray-200 px-6 py-4">
+            <div className="space-y-2">
+              {navLinks.map(link => (
+                <Link key={link.href} to={link.href} className={`block px-4 py-3 rounded-md text-sm font-medium ${isActive(link.href) ? 'bg-gray-800 text-white' : 'hover:bg-gray-800'}`}>
+                  {link.label}
+                </Link>
+              ))}
+              <Link to="/news" className="block px-4 py-3 rounded-md text-sm font-medium hover:bg-gray-800">News</Link>
+              <Link to="/gallery" className="block px-4 py-3 rounded-md text-sm font-medium hover:bg-gray-800">Photo Gallery</Link>
+              <div className="pt-3 border-t border-gray-800 mt-3">
+                <Link to="/contact" className="block px-4 py-3 rounded-md text-sm font-medium hover:bg-gray-800">Contact Us</Link>
+              </div>
             </div>
           </div>
         )}

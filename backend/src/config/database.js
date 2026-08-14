@@ -9,7 +9,8 @@ if (process.env.DATABASE_URL) {
     ssl: { rejectUnauthorized: false },
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    // Increase connection timeout to avoid short network hiccups causing failures
+    connectionTimeoutMillis: parseInt(process.env.DB_CONN_TIMEOUT || '10000', 10),
   });
 } else {
   // Fallback to individual env vars for local development
@@ -21,7 +22,7 @@ if (process.env.DATABASE_URL) {
     password: process.env.DB_PASSWORD || '',
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: parseInt(process.env.DB_CONN_TIMEOUT || '10000', 10),
   });
 }
 
