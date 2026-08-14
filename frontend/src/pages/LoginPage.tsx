@@ -54,7 +54,7 @@ const LoginPage: React.FC = () => {
             <div className="w-full h-48 rounded-lg overflow-hidden">
               {!imgError ? (
                 <img
-                  src="/images/hospital.jpg"
+                  src="/images/hospital.jpg.webp"
                   alt="Alem Ketema Enat Hospital"
                   onError={() => setImgError(true)}
                   className="w-full h-full object-cover block"
