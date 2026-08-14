@@ -120,7 +120,7 @@ const Layout: React.FC = () => {
       ];
 
     const roleMap: Record<string, string[]> = {
-      super_admin: ['Patients','Doctors','Appointments','Vitals','Prescriptions','Lab Tests','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users'],
+    super_admin: ['Patients','Doctors','Appointments','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users'],
       admin: ['Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Medicines','Inventory','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users','Cashier Dashboard'],
       hospital_manager: ['Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Reports','Finance Reports','Radiology','Insurance','Blood Bank','Cashier Dashboard'],
       receptionist: ['Patients','Appointments','Admissions','Invoices','Payments','Reception'],
@@ -196,10 +196,10 @@ const Layout: React.FC = () => {
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-5 border-b border-gray-200 dark:border-gray-700 bg-slate-800">
+          <div className="flex items-center justify-between h-16 px-5 border-b border-gray-200 dark:border-gray-700 bg-slate-900">
             <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                <Stethoscope className="w-5 h-5 text-teal-300" />
+                <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
+                <Stethoscope className="w-5 h-5 text-teal-400" />
               </div>
                 <span className="text-base font-bold text-white leading-tight">Alem Ketema Enat Hospital</span>
             </div>
@@ -218,8 +218,8 @@ const Layout: React.FC = () => {
                   to={item.href}
                   className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${
                     isActive
-                          ? 'bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300 border-r-2 border-teal-600'
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white'
+                              ? 'bg-teal-50 text-teal-700 dark:bg-teal-900/10 dark:text-teal-400 border-l-4 border-teal-500 rounded-r-lg shadow-sm'
+                                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white'
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
