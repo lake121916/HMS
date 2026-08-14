@@ -11,6 +11,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,11 +52,21 @@ const LoginPage: React.FC = () => {
 
           <div className="mt-6 w-full">
             <div className="w-full h-48 rounded-lg overflow-hidden">
-              <img
-                src="/images/hospital.jpg"
-                alt="Alem Ketema Enat Hospital"
-                className="w-full h-full object-cover block"
-              />
+              {!imgError ? (
+                <img
+                  src="/images/hospital.jpg"
+                  alt="Alem Ketema Enat Hospital"
+                  onError={() => setImgError(true)}
+                  className="w-full h-full object-cover block"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center text-slate-200">
+                  <div className="text-center">
+                    <p className="font-semibold">Alem Ketema Enat Hospital</p>
+                    <p className="text-xs mt-1 text-slate-300">(photo not available)</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -124,14 +135,7 @@ const LoginPage: React.FC = () => {
           </div>
 
           {/* Patient registration CTA */}
-          <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-center">
-            <p className="text-sm font-semibold text-gray-800">Need an account?</p>
-            <p className="text-xs text-gray-500 mt-1 mb-3">Patient accounts are created by Reception. Please contact Reception to request access.</p>
-            <Link to="/contact"
-              className="block w-full py-2.5 border-2 border-teal-500 text-teal-600 font-semibold rounded-xl text-sm hover:bg-teal-500 hover:text-white transition-all">
-              Contact Reception
-            </Link>
-          </div>
+          {/* Patient accounts are managed by reception; no public registration here */}
         </div>
 
         {/* Footer note */}
