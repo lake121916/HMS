@@ -118,8 +118,15 @@ const HomePage: React.FC = () => {
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-24 flex flex-col items-center text-center gap-6">
           <div className="flex flex-col items-center gap-4">
-            <div className="h-36 w-36 rounded-full bg-white/10 ring-2 ring-white/20 flex items-center justify-center shadow-lg">
-              <div className="h-28 w-28 rounded-full bg-gradient-to-tr from-cyan-400 to-sky-600 flex items-center justify-center text-white text-3xl font-extrabold">AK</div>
+            <div className="h-36 w-36 rounded-full bg-white/6 ring-4 ring-white/10 flex items-center justify-center shadow-lg">
+              <div
+                className="h-28 w-28 rounded-full flex items-center justify-center text-white text-3xl font-extrabold"
+                style={{
+                  background: 'conic-gradient(#10B981 0deg 120deg, #F59E0B 120deg 240deg, #EF4444 240deg 360deg)'
+                }}
+              >
+                AK
+              </div>
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-[600] tracking-tight" style={{fontFamily: '"Great Vibes", serif'}}>
