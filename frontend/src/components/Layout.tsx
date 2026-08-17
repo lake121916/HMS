@@ -115,10 +115,11 @@ const Layout: React.FC = () => {
         { name: 'Audit Logs', href: '/audit', icon: Shield },
         { name: 'System Admin', href: '/admin', icon: Settings },
         { name: 'Users', href: '/user-management', icon: Shield },
+        { name: 'Management', href: '/admin', icon: Settings },
       ];
 
       const roleMap: Record<string, string[]> = {
-      super_admin: ['Dashboard','Patients','Doctors','Appointments','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users'],
+      super_admin: ['Dashboard','Patients','Appointments','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','Management'],
       admin: ['Dashboard','Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Medicines','Inventory','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users','Cashier Dashboard'],
       hospital_manager: ['Dashboard','Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Reports','Finance Reports','Radiology','Insurance','Blood Bank','Cashier Dashboard'],
       receptionist: ['Dashboard','Patients','Appointments','Admissions','Invoices','Payments','Reception'],
