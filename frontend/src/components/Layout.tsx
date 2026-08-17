@@ -92,9 +92,7 @@ const Layout: React.FC = () => {
   }, [themeOpen]);
 
   const getNavigationByRole = (role: string): NavItem[] => {
-    const common: NavItem[] = [
-      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    ];
+    const common: NavItem[] = [];
 
     const allItems: NavItem[] = [
       { name: 'Patients', href: '/patients', icon: Users },
@@ -119,16 +117,16 @@ const Layout: React.FC = () => {
         { name: 'Users', href: '/user-management', icon: Shield },
       ];
 
-    const roleMap: Record<string, string[]> = {
-    super_admin: ['Patients','Doctors','Appointments','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users'],
-      admin: ['Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Medicines','Inventory','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users','Cashier Dashboard'],
-      hospital_manager: ['Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Reports','Finance Reports','Radiology','Insurance','Blood Bank','Cashier Dashboard'],
-      receptionist: ['Patients','Appointments','Admissions','Invoices','Payments','Reception'],
-      doctor: ['Patients','Appointments','Vitals','Prescriptions','Lab Tests','Admissions','Radiology'],
-      nurse: ['Patients','Appointments','Vitals','Admissions','Beds'],
+      const roleMap: Record<string, string[]> = {
+      super_admin: ['Dashboard','Patients','Doctors','Appointments','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users'],
+      admin: ['Dashboard','Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Medicines','Inventory','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users','Cashier Dashboard'],
+      hospital_manager: ['Dashboard','Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Reports','Finance Reports','Radiology','Insurance','Blood Bank','Cashier Dashboard'],
+      receptionist: ['Dashboard','Patients','Appointments','Admissions','Invoices','Payments','Reception'],
+      doctor: ['Dashboard','Patients','Appointments','Vitals','Prescriptions','Lab Tests','Admissions','Radiology'],
+      nurse: ['Dashboard','Patients','Appointments','Vitals','Admissions','Beds'],
       lab_technician: ['Lab Tests'],
       pharmacist: ['Prescriptions','Medicines','Inventory'],
-      cashier: ['Invoices','Payments','Cashier Dashboard','Finance Reports'],
+      cashier: ['Dashboard','Invoices','Payments','Cashier Dashboard','Finance Reports'],
     };
 
     const allowedItems = roleMap[role] || [];
