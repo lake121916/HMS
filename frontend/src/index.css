@@ -81,7 +81,8 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    /* Site-wide hospital background (deep navy) */
+    @apply bg-[#08203a] text-slate-100;
     scroll-behavior: smooth;
   }
   img {
