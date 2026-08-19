@@ -115,7 +115,9 @@ const HomePage: React.FC = () => {
           <div className="w-full max-w-4xl relative">
             <img src="/images/hospital.jpg.webp" alt="Hospital building" className="w-full h-80 md:h-96 object-cover rounded-2xl shadow-lg" />
 
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
+            <div className="absolute inset-0">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-black/40 via-black/20 to-transparent" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
               <div className="h-36 w-36 rounded-full bg-white/90 ring-8 ring-white/80 flex items-center justify-center shadow-2xl">
                 <div
                   className="h-28 w-28 rounded-full flex items-center justify-center text-white text-3xl font-extrabold"
@@ -133,7 +135,7 @@ const HomePage: React.FC = () => {
 
               <p className="mt-3 text-white/90 max-w-2xl text-lg">Welcome to Alem Ketema Enat Hospital — compassionate care for mothers, children and families.</p>
 
-              <div className="mt-6 flex gap-4">
+              <div className="mt-6 flex gap-4 transform -translate-y-2 md:-translate-y-4">
                 <Link to="/contact" className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-xl transition hover:opacity-95">
                   Book Appointment
                 </Link>
@@ -141,6 +143,8 @@ const HomePage: React.FC = () => {
                   Explore Services
                 </Link>
               </div>
+            </div>
+          </div>
             </div>
           </div>
         </div>
