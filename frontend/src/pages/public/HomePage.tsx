@@ -110,8 +110,8 @@ const HomePage: React.FC = () => {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden">
-        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-12 flex flex-col items-center text-center">
+      <section className="relative overflow-visible">
+        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-16 flex flex-col items-center text-center">
           <div className="w-full max-w-4xl relative">
             <img src="/images/hospital.jpg.webp" alt="Hospital building" className="w-full h-80 md:h-96 object-cover rounded-2xl shadow-lg" />
 
@@ -143,8 +143,7 @@ const HomePage: React.FC = () => {
                   Explore Services
                 </Link>
               </div>
-            </div>
-          </div>
+              </div>
             </div>
           </div>
         </div>
