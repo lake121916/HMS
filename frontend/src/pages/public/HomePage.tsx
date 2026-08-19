@@ -110,38 +110,38 @@ const HomePage: React.FC = () => {
 
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden bg-background text-foreground">
-        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-20 flex flex-col items-center text-center gap-6">
-          <div className="flex flex-col items-center gap-4">
-            <div className="h-36 w-36 rounded-full bg-white/6 ring-4 ring-white/10 flex items-center justify-center shadow-lg">
-              <div
-                className="h-28 w-28 rounded-full flex items-center justify-center text-white text-3xl font-extrabold"
-                style={{
-                  background: 'conic-gradient(#10B981 0deg 120deg, #F59E0B 120deg 240deg, #EF4444 240deg 360deg)'
-                }}
-              >
-                AK
+      <section className="relative overflow-hidden">
+        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-12 flex flex-col items-center text-center">
+          <div className="w-full max-w-4xl relative">
+            <img src="/images/hospital.jpg.webp" alt="Hospital building" className="w-full h-80 md:h-96 object-cover rounded-2xl shadow-lg" />
+
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
+              <div className="h-36 w-36 rounded-full bg-white/90 ring-8 ring-white/80 flex items-center justify-center shadow-2xl">
+                <div
+                  className="h-28 w-28 rounded-full flex items-center justify-center text-white text-3xl font-extrabold"
+                  style={{
+                    background: 'conic-gradient(#10B981 0deg 120deg, #F59E0B 120deg 240deg, #EF4444 240deg 360deg)'
+                  }}
+                >
+                  AK
+                </div>
+              </div>
+
+              <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-[600] tracking-tight text-white drop-shadow-md" style={{fontFamily: '"Great Vibes", serif'}}>
+                Alem Ketema Enat Hospital
+              </h1>
+
+              <p className="mt-3 text-white/90 max-w-2xl text-lg">Welcome to Alem Ketema Enat Hospital — compassionate care for mothers, children and families.</p>
+
+              <div className="mt-6 flex gap-4">
+                <Link to="/contact" className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-xl transition hover:opacity-95">
+                  Book Appointment
+                </Link>
+                <Link to="/services" className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-secondary shadow-md transition hover:opacity-90">
+                  Explore Services
+                </Link>
               </div>
             </div>
-
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-[600] tracking-tight" style={{fontFamily: '"Great Vibes", serif'}}>
-              Alem Ketema Enat Hospital
-            </h1>
-
-            <p className="text-slate-600 max-w-2xl text-lg">Welcome to Alem Ketema Enat Hospital — compassionate care for mothers, children and families.</p>
-          </div>
-
-          <div className="mt-6 flex gap-4">
-            <Link to="/contact" className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-xl transition hover:opacity-95">
-              Book Appointment
-            </Link>
-            <Link to="/services" className="inline-flex items-center justify-center rounded-full border border-white/20 bg-card/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-card/10">
-              Explore Services
-            </Link>
-          </div>
-
-          <div className="mt-8 w-full flex justify-center">
-            <img src="/images/hospital.jpg.webp" alt="Hospital building" className="w-full max-w-4xl rounded-2xl shadow-lg object-cover" />
           </div>
         </div>
       </section>
