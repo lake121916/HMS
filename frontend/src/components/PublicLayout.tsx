@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Stethoscope, Menu, X, Phone, Mail, MapPin,
   Facebook, Twitter, Instagram, Linkedin, ChevronRight, ChevronDown, Navigation, Search
@@ -29,14 +29,89 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     { label: 'Services', href: '/services' },
     { label: 'Departments', href: '/departments' },
     { label: 'Doctors', href: '/our-doctors' },
+    { label: 'Contact', href: '/contact' },
   ];
 
   const isActive = (href: string) => location.pathname === href;
 
+  // Search box component — lightweight client-side search over public pages
+  function SearchBox() {
+    const navigate = useNavigate();
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState<{ label: string; href: string }[]>([]);
+
+    const searchable = [
+      ...navLinks,
+      { label: 'News', href: '/news' },
+      { label: 'Photo Gallery', href: '/gallery' },
+      { label: 'Contact', href: '/contact' },
+      { label: 'Staff Login', href: '/login' },
+    ];
+
+    useEffect(() => {
+      if (!open) {
+        setQuery('');
+        setResults([]);
+      }
+    }, [open]);
+
+    useEffect(() => {
+      const q = query.trim().toLowerCase();
+      if (!q) return setResults([]);
+      const res = searchable.filter(s => s.label.toLowerCase().includes(q));
+      setResults(res.slice(0, 6));
+    }, [query]);
+
+    const onSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (results.length > 0) {
+        navigate(results[0].href);
+      } else if (query.trim()) {
+        navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      }
+      setOpen(false);
+    };
+
+    return (
+      <div className="relative">
+        {!open ? (
+          <button onClick={() => setOpen(true)} className="hidden md:inline-flex items-center gap-2 text-sm text-gray-300 hover:text-white">
+            <Search className="w-4 h-4" />
+          </button>
+        ) : (
+          <form onSubmit={onSubmit} className="relative">
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search site..."
+              className="w-64 md:w-80 pl-3 pr-10 py-2 rounded-md bg-white text-gray-900 text-sm shadow-sm"
+            />
+            <button type="button" onClick={() => { setOpen(false); setQuery(''); }} className="absolute right-0 top-0 mt-2 mr-2 text-gray-500 hover:text-gray-700">✕</button>
+
+            {results.length > 0 && (
+              <div className="absolute left-0 mt-10 w-full bg-white shadow-lg rounded-md z-50 max-h-64 overflow-auto">
+                {results.map(r => (
+                  <Link key={r.href} to={r.href} onClick={() => setOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    {r.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+            {query && results.length === 0 && (
+              <div className="absolute left-0 mt-10 w-full bg-white shadow-lg rounded-md z-50 p-3 text-sm text-gray-600">No results — press Enter to search</div>
+            )}
+          </form>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col font-sans">
       {/* Top info bar */}
-      <div className="bg-blue-700 text-white text-xs py-2 hidden md:block">
+      <div className="bg-primary text-white text-xs py-2 hidden md:block">
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1.5"><Phone className="w-3 h-3" /> +251 11 123 4567</span>
@@ -51,12 +126,10 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
       {/* Main navbar - dark centered */}
       <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'shadow-lg' : ''}`}>
-        <div className="bg-gray-900 text-white">
+        <div className="bg-secondary text-white">
           <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
             <Link to="/home" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-tr from-cyan-400 to-sky-600 rounded-full flex items-center justify-center shadow">
-                <Stethoscope className="w-5 h-5 text-white" />
-              </div>
+              <img src="/images/hospital.jpg.webp" alt="Alem Ketema Enat Hospital" className="w-10 h-10 rounded-full object-cover shadow" />
               <div className="hidden sm:block">
                 <p className="text-sm font-bold leading-tight">Alem Ketema Enat</p>
                 <p className="text-xs text-gray-300 font-medium leading-tight">Hospital</p>
@@ -65,7 +138,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
             <div className="hidden lg:flex items-center gap-6">
               {navLinks.map((link, idx) => (
-                <Link key={link.href} to={link.href} className={`text-sm font-semibold uppercase tracking-wide px-2 py-2 transition ${isActive(link.href) ? 'text-white' : 'text-gray-300 hover:text-white'}`}>
+                <Link key={link.href} to={link.href} className={`text-sm font-semibold uppercase tracking-wide px-2 py-2 transition ${isActive(link.href) ? 'text-white' : 'text-gray-300 hover:text-primary'}`}>
                   {link.label}
                 </Link>
               ))}
@@ -73,10 +146,8 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
               <Link to="/gallery" className="text-sm font-semibold uppercase tracking-wide text-gray-300 hover:text-white">Photo Gallery</Link>
             </div>
 
-            <div className="flex items-center gap-3">
-              <button className="hidden md:inline-flex items-center gap-2 text-sm text-gray-300 hover:text-white">
-                <Search className="w-4 h-4" />
-              </button>
+            <div className="flex items-center gap-3 relative">
+              <SearchBox />
               <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden p-2 rounded-lg text-gray-200 hover:bg-gray-800">
                 {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -86,10 +157,10 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="lg:hidden bg-gray-900 text-gray-200 px-6 py-4">
+          <div className="lg:hidden bg-secondary text-gray-200 px-6 py-4">
             <div className="space-y-2">
               {navLinks.map(link => (
-                <Link key={link.href} to={link.href} className={`block px-4 py-3 rounded-md text-sm font-medium ${isActive(link.href) ? 'bg-gray-800 text-white' : 'hover:bg-gray-800'}`}>
+                <Link key={link.href} to={link.href} className={`block px-4 py-3 rounded-md text-sm font-medium ${isActive(link.href) ? 'bg-secondary/90 text-white' : 'hover:bg-secondary/80 hover:text-primary'}`}>
                   {link.label}
                 </Link>
               ))}
@@ -112,9 +183,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
           {/* Brand */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                <Stethoscope className="w-6 h-6 text-white" />
-              </div>
+              <img src="/images/hospital.jpg.webp" alt="Alem Ketema Enat Hospital" className="w-10 h-10 rounded-xl object-cover" />
               <div>
                 <p className="font-bold text-white text-sm">Alem Ketema Enat Hospital</p>
                 <p className="text-xs text-blue-400">Caring for Every Mother & Child</p>
