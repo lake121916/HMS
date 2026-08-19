@@ -19,31 +19,46 @@
     --blue-800: var(--theme-hue) var(--theme-saturation) 37%;
     --blue-900: var(--theme-hue) var(--theme-saturation) 28%;
 
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Site color palette (medical/professional) */
+    /* Main Background: #F5F9FC */
+    --background: 207 53% 97.5%;
+    /* Main Text: #263238 */
+    --foreground: 200 19% 18.5%;
+    /* Cards: #FFFFFF */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 200 19% 18.5%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
     
-    --primary: var(--blue-600);
+    /* Primary Blue: #1976D2 */
+    --primary: 210 79% 46%;
     --primary-foreground: 210 40% 98%;
     
-    --secondary: var(--theme-hue) 40% 96.1%;
-    --secondary-foreground: var(--theme-hue) 47.4% 11.2%;
+    /* Sidebar / Accent: #0F4C75 */
+    --secondary: 204 77% 26%;
+    --secondary-foreground: 210 40% 98%;
     
-    --muted: var(--theme-hue) 40% 96.1%;
-    --muted-foreground: var(--theme-hue) 16.3% 46.9%;
+    /* Secondary text: #607D8B */
+    --muted: 199.6 18% 46%;
+    --muted-foreground: 199.6 18% 46%;
     
-    --accent: var(--theme-hue) 40% 96.1%;
-    --accent-foreground: var(--theme-hue) 47.4% 11.2%;
+    --accent: 210 79% 46%;
+    --accent-foreground: 210 40% 98%;
     
-    --destructive: 0 84.2% 60.2%;
+    /* Error: #D32F2F */
+    --destructive: 0 65% 50.5%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: var(--theme-hue) 31.8% 91.4%;
-    --input: var(--theme-hue) 31.8% 91.4%;
-    --ring: var(--blue-600);
+    --border: 210 20% 92%;
+    --input: 210 20% 92%;
+    --ring: 210 79% 46%;
+    /* Success / Warning / Error tokens */
+    --success: 123.1 46% 33.5%; /* #2E7D32 */
+    --success-foreground: 210 40% 98%;
+    --warning: 27.1 98% 46.8%; /* #ED6C02 */
+    --warning-foreground: 210 40% 98%;
+    --error: 0 65% 50.5%; /* #D32F2F */
+    --error-foreground: 210 40% 98%;
     --radius: 0.5rem;
   }
 
@@ -81,8 +96,7 @@
     @apply border-border;
   }
   body {
-    /* Site-wide hospital background (deep navy) */
-    @apply bg-[#08203a] text-slate-100;
+    @apply bg-background text-foreground;
     scroll-behavior: smooth;
   }
   img {
