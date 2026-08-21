@@ -141,7 +141,7 @@ const Layout: React.FC = () => {
       nurse: ['Dashboard','Patients','Appointments','Vitals','Admissions','Beds'],
       lab_technician: ['Lab Tests'],
       pharmacist: ['Prescriptions','Medicines','Inventory'],
-      cashier: ['Dashboard','Invoices','Payments','Cashier Dashboard','Finance Reports'],
+      cashier: ['Invoices','Payments','Cashier Dashboard','Finance Reports'],
     };
 
     const allowedItems = roleMap[role] || [];
