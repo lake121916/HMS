@@ -27,9 +27,9 @@ const UnauthorizedPage: React.FC = () => {
             className="flex items-center justify-center gap-2 px-6 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-100 transition-colors text-sm">
             <ArrowLeft className="w-4 h-4" /> Go Back
           </button>
-          <Link to="/dashboard"
+          <Link to="/home"
             className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors text-sm">
-            <Home className="w-4 h-4" /> Dashboard
+            <Home className="w-4 h-4" /> Site Home
           </Link>
         </div>
       </div>

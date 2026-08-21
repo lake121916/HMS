@@ -18,8 +18,15 @@ const LoginPage: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      const user = await login(email, password);
+
+      // Redirect to a role-specific landing or to the public site (no common /dashboard)
+      const roleRouteMap: Record<string, string> = {
+        cashier: '/cashier',
+        receptionist: '/reception',
+      };
+      const target = (user && roleRouteMap[user.role]) ? roleRouteMap[user.role] : '/home';
+      navigate(target);
     } catch (err: any) {
       const message = err.response?.data?.message
         || (err.request ? 'Server did not respond. Please check your network connection.' : 'Login failed. Please check your credentials.');
@@ -54,7 +61,7 @@ const LoginPage: React.FC = () => {
             <div className="w-full h-48 rounded-lg overflow-hidden">
               {!imgError ? (
                 <img
-                  src="/images/hospital.jpg.webp"
+                  src="/images/hospital.webp"
                   alt="Alem Ketema Enat Hospital"
                   onError={() => setImgError(true)}
                   className="w-full h-full object-cover block"
