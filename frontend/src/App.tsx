@@ -9,6 +9,7 @@ import ServicesPage from './pages/public/ServicesPage';
 import DepartmentsPage from './pages/public/DepartmentsPage';
 import DoctorsPublicPage from './pages/public/DoctorsPublicPage';
 import ContactPage from './pages/public/ContactPage';
+import SearchResults from './pages/public/SearchResults';
 
 // Auth pages
 import LoginPage from './pages/LoginPage';
@@ -18,6 +19,7 @@ import UnauthorizedPage from './pages/UnauthorizedPage';
 // Protected HMS pages
 import Layout from './components/Layout';
 import DashboardPage from './pages/DashboardPage';
+import DoctorDashboardPage from './pages/DoctorDashboardPage';
 import PatientsPage from './pages/PatientsPage';
 import DoctorsPage from './pages/DoctorsPage';
 import AppointmentsPage from './pages/AppointmentsPage';
@@ -40,19 +42,29 @@ import BloodBankPage from './pages/BloodBankPage';
 import AuditPage from './pages/AuditPage';
 import RadiologyPage from './pages/RadiologyPage';
 import FinanceReportsPage from './pages/FinanceReportsPage';
+import PatientPortalPage from './pages/PatientPortalPage';
+
+// ── New workflow pages ───────────────────────────────────────────────────────
+import ReceptionistWorkflow from './pages/ReceptionistWorkflow';
+import TriageDashboard from './pages/TriageDashboard';
+import AssignmentDashboard from './pages/AssignmentDashboard';
+import DoctorConsultationPage from './pages/DoctorConsultationPage';
+import LabTechDashboard from './pages/LabTechDashboard';
+import PharmacyDashboard from './pages/PharmacyDashboard';
+import CashierWorkflow from './pages/CashierWorkflow';
 
 // ── Role permission map ──────────────────────────────────────────────────────
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  super_admin: ['dashboard','patients','doctors','appointments','vitals','prescriptions','lab-tests','reports','admin','user-management','insurance','blood-bank','audit','radiology','finance-reports'],
-  admin:       ['dashboard','patients','doctors','appointments','admissions','beds','invoices','payments','medicines','inventory','reports','admin','user-management','insurance','blood-bank','audit','radiology','finance-reports','cashier'],
+  super_admin:      ['dashboard','patients','doctors','appointments','vitals','prescriptions','lab-tests','reports','admin','user-management','insurance','blood-bank','audit','radiology','finance-reports','assignment','services-admin'],
+  admin:            ['dashboard','patients','doctors','appointments','admissions','beds','invoices','payments','medicines','inventory','reports','admin','user-management','insurance','blood-bank','audit','radiology','finance-reports','cashier','assignment','services-admin'],
   hospital_manager: ['dashboard','patients','doctors','appointments','admissions','beds','invoices','payments','reports','insurance','blood-bank','radiology','finance-reports','cashier'],
-  receptionist:['dashboard','patients','appointments','admissions','invoices','payments','reception'],
-  doctor:      ['dashboard','patients','appointments','vitals','prescriptions','lab-tests','admissions','radiology'],
-  nurse:       ['dashboard','patients','appointments','vitals','admissions','beds'],
-  lab_technician: ['dashboard','lab-tests'],
-  pharmacist:  ['dashboard','prescriptions','medicines','inventory'],
-  cashier:     ['dashboard','invoices','payments','cashier','finance-reports'],
-  patient:     ['dashboard','appointments'],
+  receptionist:     ['patients','appointments','admissions','invoices','reception','reception-workflow'],
+  doctor:           ['dashboard','doctor-dashboard','patients','appointments','vitals','prescriptions','lab-tests','admissions','radiology','consultation'],
+  nurse:            ['patients','appointments','vitals','admissions','beds','triage'],
+  lab_technician:   ['lab-tests','lab-dashboard'],
+  pharmacist:       ['prescriptions','medicines','inventory','pharmacy'],
+  cashier:          ['invoices','payments','cashier','finance-reports','cashier-workflow'],
+  patient:          ['patient-portal','appointments'],
 };
 
 // ── Auth guard ───────────────────────────────────────────────────────────────
@@ -98,6 +110,7 @@ function App() {
           <Route path="/departments" element={<DepartmentsPage />} />
           <Route path="/our-doctors" element={<DoctorsPublicPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/search" element={<SearchResults />} />
 
           {/* ── Auth ── */}
           <Route path="/login" element={<LoginPage />} />
@@ -108,6 +121,12 @@ function App() {
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="dashboard" element={
               <ProtectedRoute page="dashboard"><DashboardPage /></ProtectedRoute>
+            } />
+            <Route path="patient-portal" element={
+              <ProtectedRoute page="patient-portal"><PatientPortalPage /></ProtectedRoute>
+            } />
+            <Route path="doctor" element={
+              <ProtectedRoute page="doctor-dashboard"><DoctorDashboardPage /></ProtectedRoute>
             } />
             <Route path="patients" element={
               <ProtectedRoute page="patients"><PatientsPage /></ProtectedRoute>
@@ -183,6 +202,29 @@ function App() {
             } />
             <Route path="user-management" element={
               <ProtectedRoute page="user-management"><UserManagementPage /></ProtectedRoute>
+            } />
+
+            {/* ── New Workflow Routes ──────────────────────────────── */}
+            <Route path="reception-workflow" element={
+              <ProtectedRoute page="reception-workflow"><ReceptionistWorkflow /></ProtectedRoute>
+            } />
+            <Route path="triage" element={
+              <ProtectedRoute page="triage"><TriageDashboard /></ProtectedRoute>
+            } />
+            <Route path="assignment" element={
+              <ProtectedRoute page="assignment"><AssignmentDashboard /></ProtectedRoute>
+            } />
+            <Route path="consultation" element={
+              <ProtectedRoute page="consultation"><DoctorConsultationPage /></ProtectedRoute>
+            } />
+            <Route path="lab-dashboard" element={
+              <ProtectedRoute page="lab-dashboard"><LabTechDashboard /></ProtectedRoute>
+            } />
+            <Route path="pharmacy" element={
+              <ProtectedRoute page="pharmacy"><PharmacyDashboard /></ProtectedRoute>
+            } />
+            <Route path="cashier-workflow" element={
+              <ProtectedRoute page="cashier-workflow"><CashierWorkflow /></ProtectedRoute>
             } />
           </Route>
         </Routes>

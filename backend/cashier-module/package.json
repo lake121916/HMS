@@ -1,0 +1,24 @@
+{
+  "name": "alem-ketema-enat-cashier-module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-ready cashier payment module for Alem Ketema Enat Hospital",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "decimal.js": "^10.4.3",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.1",
+    "sequelize": "^6.37.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

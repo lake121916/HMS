@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import {
@@ -24,6 +26,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [revenueData, setRevenueData] = useState<any[]>([]);
   const [appointmentData, setAppointmentData] = useState<any[]>([]);
@@ -63,6 +66,27 @@ const DashboardPage: React.FC = () => {
   };
 
   useEffect(() => { fetchDashboardData(); }, [revenuePeriod]);
+
+  // If the user's role has a different landing than /dashboard, redirect them there.
+  useEffect(() => {
+    if (!user) return;
+    const roleRouteMap: Record<string, string> = {
+      super_admin: '/dashboard',
+      admin: '/dashboard',
+      hospital_manager: '/dashboard',
+      receptionist: '/reception',
+      doctor: '/doctor',
+      nurse: '/vitals',
+      lab_technician: '/lab-tests',
+      pharmacist: '/medicines',
+      cashier: '/cashier',
+      patient: '/patient-portal',
+    };
+    const target = roleRouteMap[user.role] || '/dashboard';
+    if (target !== '/dashboard') {
+      navigate(target, { replace: true });
+    }
+  }, [user, navigate]);
 
   const statCards = [
     { name: 'Total Patients', value: stats?.totalPatients ?? '—', icon: Users, color: 'bg-blue-500', trend: '+12%' },
@@ -255,14 +279,14 @@ const DashboardPage: React.FC = () => {
           { label: 'Lab Tests', href: '/lab-tests', icon: FlaskConical, color: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-900/20' },
           { label: 'Medicines', href: '/medicines', icon: Pill, color: 'text-green-600 bg-green-50 dark:bg-green-900/20' },
         ].map((item) => (
-          <a
+          <Link
             key={item.label}
-            href={item.href}
+            to={item.href}
             className={`flex flex-col items-center p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all ${item.color}`}
           >
             <item.icon className="w-7 h-7 mb-2" />
             <span className="text-xs font-medium">{item.label}</span>
-          </a>
+          </Link>
         ))}
       </div>
     </div>

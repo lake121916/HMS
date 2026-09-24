@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { useRoleAccess } from '../hooks/useRoleAccess';
 import {
-  Shield, Search, X, Calendar, Activity, ChevronLeft, ChevronRight, Info
+  Shield, Search, X, ChevronLeft, ChevronRight, Info
 } from 'lucide-react';
 
 interface AuditLog {
@@ -21,9 +19,6 @@ interface AuditLog {
 }
 
 const AuditPage: React.FC = () => {
-  const { can } = useRoleAccess();
-  const { user } = useAuth();
-  
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import {
-  Shield, Plus, Search, CheckCircle2, X, AlertCircle, FileText,
-  Clock, CheckCircle, Ban, RefreshCw
+  Shield, Plus, Search, FileText, X,
+  Clock, CheckCircle
 } from 'lucide-react';
 
 interface InsuranceClaim {
@@ -32,8 +31,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const InsurancePage: React.FC = () => {
   const { can } = useRoleAccess();
-  const { user } = useAuth();
-  
+
   const [claims, setClaims] = useState<InsuranceClaim[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

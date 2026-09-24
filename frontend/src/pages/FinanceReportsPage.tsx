@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { useRoleAccess } from '../hooks/useRoleAccess';
 import {
-  BarChart2, CreditCard, Calendar, ArrowLeft, TrendingUp, DollarSign,
-  Briefcase, Activity
+  BarChart2, ArrowLeft, TrendingUp, DollarSign,
+  Briefcase
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, BarChart, Bar, Legend
+  PieChart, Pie, Cell, BarChart, Bar
 } from 'recharts';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
@@ -26,14 +24,10 @@ interface ChartItem {
 }
 
 const FinanceReportsPage: React.FC = () => {
-  const { can } = useRoleAccess();
-  const { user } = useAuth();
-  
   const [stats, setStats] = useState<FinanceStats>({ today: 0, this_month: 0, this_year: 0 });
   const [revenueChart, setRevenueChart] = useState<ChartItem[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<{ name: string; value: number }[]>([]);
   const [deptRevenue, setDeptRevenue] = useState<{ name: string; revenue: number }[]>([]);
-  const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month');
 
   useEffect(() => {
@@ -41,7 +35,6 @@ const FinanceReportsPage: React.FC = () => {
   }, [period]);
 
   const fetchFinanceData = async () => {
-    setLoading(true);
     try {
       const res = await api.get(`/reports/revenue?period=${period}`);
       if (res.data.success) {
@@ -115,8 +108,6 @@ const FinanceReportsPage: React.FC = () => {
       }
     } catch (err) {
       console.error('Failed to fetch finance statistics:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -240,7 +231,7 @@ const FinanceReportsPage: React.FC = () => {
                   dataKey="value"
                 >
                   {paymentMethods.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip formatter={(value) => [`${value}%`, 'Share']} />

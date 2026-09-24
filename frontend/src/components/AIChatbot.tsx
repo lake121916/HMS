@@ -105,7 +105,7 @@ const AIChatbot: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-2xl transition-all hover:scale-110 group"
+          className="fixed bottom-5 right-4 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-2xl transition-all hover:scale-110 group sm:bottom-6 sm:right-6"
           aria-label="Open AI Chat"
         >
           <div className="relative">
@@ -120,7 +120,7 @@ const AIChatbot: React.FC = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all">
+        <div className="fixed bottom-4 right-3 z-50 w-96 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all sm:bottom-6 sm:right-6 sm:max-w-[calc(100vw-2rem)]">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">

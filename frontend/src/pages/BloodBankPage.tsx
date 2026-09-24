@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import {
-  MapPin, Plus, Search, CheckCircle, AlertCircle, Heart,
-  Users, Layers, Award, Droplet
+  Plus, Search, CheckCircle, AlertCircle, Heart,
+  Users, Award, Droplet, X
 } from 'lucide-react';
 
 interface BloodDonor {
@@ -32,8 +31,7 @@ const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
 const BloodBankPage: React.FC = () => {
   const { can } = useRoleAccess();
-  const { user } = useAuth();
-  
+
   const [inventory, setInventory] = useState<BloodInventory[]>([]);
   const [donors, setDonors] = useState<BloodDonor[]>([]);
   const [loading, setLoading] = useState(true);

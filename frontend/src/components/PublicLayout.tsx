@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Stethoscope, Menu, X, Phone, Mail, MapPin,
-  Facebook, Twitter, Instagram, Linkedin, ChevronRight, ChevronDown, Navigation, Search
+  Menu, X, Phone, Mail, MapPin,
+  Facebook, Twitter, Instagram, Linkedin, ChevronRight, Search
 } from 'lucide-react';
 import AIChatbot from './AIChatbot';
 
 const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [contactDropdown, setContactDropdown] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -137,7 +136,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             </Link>
 
             <div className="hidden lg:flex items-center gap-6">
-              {navLinks.map((link, idx) => (
+              {navLinks.map((link) => (
                 <Link key={link.href} to={link.href} className={`text-sm font-semibold uppercase tracking-wide px-2 py-2 transition ${isActive(link.href) ? 'text-white' : 'text-gray-300 hover:text-primary'}`}>
                   {link.label}
                 </Link>

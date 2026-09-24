@@ -37,26 +37,49 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // POST record payment
-router.post('/', authenticate, authorize('receptionist'), async (req, res) => {
+router.post('/', authenticate, authorize('receptionist', 'cashier', 'admin', 'super_admin'), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const { invoice_id, amount, payment_method, transaction_id, notes } = req.body;
+    const allowedMethods = ['cash', 'card', 'insurance', 'online', 'check', 'mobile_money', 'bank_transfer'];
+    const numericAmount = Number(amount);
+
+    if (!invoice_id || !Number.isFinite(numericAmount) || numericAmount <= 0 || !allowedMethods.includes(payment_method)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: 'invoice_id, a positive amount, and a valid payment method are required' });
+    }
+
+    const invoiceRes = await client.query(
+      `SELECT i.total_amount, COALESCE(SUM(p.amount), 0) AS amount_paid
+       FROM invoices i LEFT JOIN payments p ON p.invoice_id = i.id
+       WHERE i.id = $1 GROUP BY i.id`,
+      [invoice_id]
+    );
+    if (!invoiceRes.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Invoice not found' });
+    }
+    const balance = Number(invoiceRes.rows[0].total_amount) - Number(invoiceRes.rows[0].amount_paid);
+    if (numericAmount > balance + 0.01) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: `Payment exceeds the remaining invoice balance of ${balance.toFixed(2)}` });
+    }
 
     const payRes = await client.query(
       `INSERT INTO payments (invoice_id, amount, payment_method, transaction_id, received_by, notes)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [invoice_id, amount, payment_method, transaction_id || null, req.user.id, notes || null]
+      [invoice_id, numericAmount, payment_method, transaction_id || null, req.user.id, notes || null]
     );
 
     // Update invoice status based on total paid
-    const invoiceRes = await client.query('SELECT total_amount FROM invoices WHERE id = $1', [invoice_id]);
+    const invoiceTotalRes = await client.query('SELECT total_amount FROM invoices WHERE id = $1', [invoice_id]);
     const totalPaidRes = await client.query(
       'SELECT COALESCE(SUM(amount), 0) AS total_paid FROM payments WHERE invoice_id = $1',
       [invoice_id]
     );
     const totalPaid = parseFloat(totalPaidRes.rows[0].total_paid);
-    const invoiceTotal = parseFloat(invoiceRes.rows[0].total_amount);
+    const invoiceTotal = parseFloat(invoiceTotalRes.rows[0].total_amount);
 
     let newStatus = 'partial';
     if (totalPaid >= invoiceTotal) newStatus = 'paid';

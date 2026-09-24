@@ -70,6 +70,13 @@ app.use('/api/reports', auditLog);
 app.use('/api/admin', auditLog);
 app.use('/api/blood-bank', auditLog);
 app.use('/api/insurance', auditLog);
+app.use('/api/portal', auditLog);
+app.use('/api/workflow', auditLog);
+app.use('/api/fhir', auditLog);
+app.use('/api/encounters', auditLog);
+app.use('/api/radiology-orders', auditLog);
+app.use('/api/procedures', auditLog);
+app.use('/api/services', auditLog);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -99,6 +106,14 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/telehealth', require('./routes/telehealth'));
 app.use('/api/blood-bank', require('./routes/bloodBank'));
 app.use('/api/insurance', require('./routes/insurance'));
+app.use('/api/portal', require('./routes/portal'));
+app.use('/api/workflow', require('./routes/workflow'));
+app.use('/api/fhir', require('./routes/fhir'));
+// ── New workflow routes ──────────────────────────────────────
+app.use('/api/encounters', require('./routes/encounters'));
+app.use('/api/radiology-orders', require('./routes/radiologyOrders'));
+app.use('/api/procedures', require('./routes/procedures'));
+app.use('/api/services', require('./routes/services'));
 
 // Error handling
 app.use(notFound);
@@ -106,6 +121,7 @@ app.use(errorHandler);
 
 const http = require('http');
 const socketService = require('./services/socketService');
+const { sendAppointmentReminders } = require('./services/notificationService');
 
 const server = http.createServer(app);
 
@@ -117,6 +133,10 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
+  sendAppointmentReminders().catch(error => console.error('Reminder worker error:', error.message));
+  setInterval(() => {
+    sendAppointmentReminders().catch(error => console.error('Reminder worker error:', error.message));
+  }, 60 * 60 * 1000);
 });
 
 module.exports = server;

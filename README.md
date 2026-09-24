@@ -202,6 +202,22 @@ hospital-management-system/
 
 ## Installation
 
+### Workflow Foundations
+
+The current implementation also includes:
+- A patient self-service portal at `/patient-portal` for appointments, diagnoses, lab results, prescriptions, invoices, and notifications.
+- Server-side ownership checks for patient appointment reads, booking, rescheduling, and cancellation.
+- Clinical encounters, workflow status history, structured referrals, and persistent emergency triage queues.
+- Appointment reminders with in-app delivery and optional Twilio SMS delivery when Twilio environment variables are configured.
+- Read-only FHIR R4 mappings for `Patient` and `Appointment` under `/api/fhir/R4`.
+
+For an existing database, apply the new workflow migration from the backend directory:
+```bash
+npm run db:migrate
+```
+
+The migration adds the workflow tables and status columns without removing existing data. Fresh installations can continue using `database/schema.sql`.
+
 ### Prerequisites
 - Node.js (v18 or higher)
 - PostgreSQL (v14 or higher)

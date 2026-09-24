@@ -1,10 +1,10 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import PublicLayout from '../../components/PublicLayout';
 import {
   Heart, Shield, Clock, Award, Users, Stethoscope,
   FlaskConical, Baby, Bone, Brain, Eye,
-  ChevronRight, Star, Phone, ArrowRight, Play, CheckCircle
+  ChevronRight, Star, Phone
 } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 
@@ -22,32 +22,6 @@ const IMGS = {
   doc3:      'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=500&q=80&auto=format&fit=crop',
   doc4:      'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=500&q=80&auto=format&fit=crop',
 };
-
-function AnimatedCounter({ end, suffix = '', duration = 1800 }: { end: number; suffix?: string; duration?: number }) {
-  const [count, setCount] = useState(0);
-  const { ref, inView } = useInView({ threshold: 0.5 });
-  const started = useRef(false);
-
-  useEffect(() => {
-    if (!inView || started.current) return;
-    started.current = true;
-    const startTime = performance.now();
-    const tick = (now: number) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.floor(eased * end));
-      if (progress < 1) requestAnimationFrame(tick);
-      else setCount(end);
-    };
-    requestAnimationFrame(tick);
-  }, [inView, end, duration]);
-
-  return (
-    <span ref={ref as React.RefObject<HTMLSpanElement>}>
-      {count.toLocaleString()}{suffix}
-    </span>
-  );
-}
 
 function Reveal({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   const { ref, inView } = useInView();
@@ -114,10 +88,9 @@ const HomePage: React.FC = () => {
         <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-16 flex flex-col items-center text-center">
           <div className="w-full max-w-4xl relative">
             <img src="/images/hospital.jpg.webp" alt="Hospital building" className="w-full h-80 md:h-96 object-cover rounded-2xl shadow-lg" />
+            <div className="absolute inset-0 rounded-2xl bg-slate-950/55" aria-hidden="true" />
 
-            <div className="absolute inset-0">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-black/40 via-black/20 to-transparent" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
               <div className="h-36 w-36 rounded-full bg-white/90 ring-8 ring-white/80 flex items-center justify-center shadow-2xl">
                 <div
                   className="h-28 w-28 rounded-full flex items-center justify-center text-white text-3xl font-extrabold"
@@ -129,11 +102,11 @@ const HomePage: React.FC = () => {
                 </div>
               </div>
 
-              <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-[600] tracking-tight text-white drop-shadow-md" style={{fontFamily: '"Great Vibes", serif'}}>
+              <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-[600] tracking-tight text-white drop-shadow-[0_3px_8px_rgba(0,0,0,0.7)]" style={{fontFamily: '"Great Vibes", serif'}}>
                 Alem Ketema Enat Hospital
               </h1>
 
-              <p className="mt-3 text-white/90 max-w-2xl text-lg">Welcome to Alem Ketema Enat Hospital — compassionate care for mothers, children and families.</p>
+              <p className="mt-3 max-w-2xl text-lg font-medium text-white drop-shadow-[0_2px_5px_rgba(0,0,0,0.75)]">Welcome to Alem Ketema Enat Hospital — compassionate care for mothers, children and families.</p>
 
               <div className="mt-6 flex gap-4 transform -translate-y-2 md:-translate-y-4">
                 <Link to="/contact" className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-xl transition hover:opacity-95">
@@ -142,7 +115,6 @@ const HomePage: React.FC = () => {
                 <Link to="/services" className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-secondary shadow-md transition hover:opacity-90">
                   Explore Services
                 </Link>
-              </div>
               </div>
             </div>
           </div>
@@ -173,42 +145,53 @@ const HomePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              {stats.map((item, index) => (
-                <Reveal key={item.label} delay={index * 100} className="rounded-3xl border border-border bg-card p-8 shadow-sm">
-                  <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-cyan-100 text-cyan-700 mb-4">
-                    <item.icon className="w-5 h-5" />
-                  </div>
-                  <p className="text-4xl font-black text-slate-900">{item.value}{item.suffix}</p>
-                  <p className="mt-3 text-sm text-slate-500">{item.label}</p>
-                </Reveal>
-              ))}
+            <div className="rounded-[2rem] bg-blue-50 p-5 shadow-inner ring-1 ring-blue-100 sm:p-7">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {stats.map((item, index) => (
+                  <Reveal key={item.label} delay={index * 100} className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                    <div className="flex items-center gap-4">
+                      <div className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
+                        <item.icon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-3xl font-black text-slate-900">{item.value}{item.suffix}</p>
+                        <p className="mt-1 text-sm text-slate-500">{item.label}</p>
+                      </div>
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-20 bg-slate-950 text-slate-100">
+      <section className="py-20 bg-slate-50 text-slate-900">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-14">
-            <span className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-300">What We Offer</span>
+            <span className="text-sm font-bold uppercase tracking-[0.28em] text-blue-600">What We Offer</span>
             <h2 className="mt-4 text-3xl sm:text-4xl font-black">Comprehensive hospital services in one trusted system.</h2>
-            <p className="mt-4 max-w-2xl mx-auto text-sm leading-relaxed text-slate-300">From routine checkups to emergency care, our services cover the health needs of every family member.</p>
+            <p className="mt-4 max-w-2xl mx-auto text-sm leading-relaxed text-slate-600">From routine checkups to emergency care, our services cover the health needs of every family member.</p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {services.map((service, index) => (
               <Reveal key={service.title} delay={index * 90} className="group">
-                <div className="overflow-hidden rounded-[2rem] bg-card/5 border border-border shadow-xl shadow-slate-950/12 transition hover:-translate-y-1 flex flex-col h-full">
+                <div className="overflow-hidden rounded-[2rem] bg-white border border-slate-200 shadow-lg transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl flex flex-col h-full">
                   <div className="relative h-56 overflow-hidden">
                     <img src={service.img} alt={service.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/10 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-slate-900/5 to-transparent" />
                   </div>
                   <div className="p-6 flex-1 flex flex-col">
-                    <span className={`inline-flex rounded-2xl px-3 py-2 text-xs font-semibold bg-card text-foreground`}>{service.title}</span>
-                    <p className="mt-4 text-sm leading-relaxed text-slate-200 flex-1">{service.desc}</p>
+                    <div className="flex items-center gap-3">
+                      <span className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${service.color}`}>
+                        <service.icon className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <span className="text-base font-bold text-slate-900">{service.title}</span>
+                    </div>
+                    <p className="mt-4 text-sm leading-relaxed text-slate-600 flex-1">{service.desc}</p>
                     <div className="mt-5">
-                      <Link to="/services" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary/90">
+                      <Link to="/services" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700">
                         Learn more <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -243,22 +226,22 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-r from-cyan-500 via-sky-600 to-blue-700 text-white">
+      <section className="py-20 bg-gradient-to-r from-blue-50 to-slate-50 text-slate-900">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-14">
-            <span className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-100">Patient Stories</span>
+            <span className="text-sm font-bold uppercase tracking-[0.28em] text-blue-600">Patient Stories</span>
             <h2 className="mt-4 text-3xl sm:text-4xl font-black">What Our Patients Say</h2>
-            <p className="mt-4 max-w-2xl mx-auto text-sm leading-relaxed text-sky-100">Trusted care from families who rely on our emergency, pediatric and maternity services.</p>
+            <p className="mt-4 max-w-2xl mx-auto text-sm leading-relaxed text-slate-600">Trusted care from families who rely on our emergency, pediatric and maternity services.</p>
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {testimonials.slice(0, 3).map((testimonial, index) => (
               <Reveal key={testimonial.name} delay={index * 100}>
-                <div className="rounded-3xl bg-white/10 border border-white/15 p-6 shadow-lg shadow-slate-950/20 hover-lift transition">
+                <div className="rounded-3xl bg-white border border-slate-200 p-6 shadow-lg hover-lift transition">
                   <div className="flex items-center gap-4 mb-4">
                     <img src={testimonial.img} alt={testimonial.name} className="h-12 w-12 rounded-full object-cover border border-white/20" />
                     <div>
-                      <p className="font-semibold text-white">{testimonial.name}</p>
-                      <p className="text-sm text-sky-100/80">{testimonial.role}</p>
+                      <p className="font-semibold text-slate-900">{testimonial.name}</p>
+                      <p className="text-sm text-slate-500">{testimonial.role}</p>
                     </div>
                   </div>
                   <div className="flex gap-1 mb-4 text-yellow-300">
@@ -266,7 +249,7 @@ const HomePage: React.FC = () => {
                       <Star key={starIndex} className="w-4 h-4" />
                     ))}
                   </div>
-                  <p className="text-sm leading-relaxed text-sky-100">“{testimonial.text}”</p>
+                  <p className="text-sm leading-relaxed text-slate-600">"{testimonial.text}"</p>
                 </div>
               </Reveal>
             ))}
@@ -279,19 +262,19 @@ const HomePage: React.FC = () => {
           {[IMGS.building, IMGS.team, IMGS.maternity, IMGS.lab].map((src, i) => (
             <div key={i} className="relative overflow-hidden h-48 group">
               <img src={src} alt={`Gallery ${i+1}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-blue-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-blue-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
           ))}
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-r from-yellow-400 to-orange-400">
+      <section className="py-20 bg-gradient-to-r from-blue-700 to-blue-800 text-white">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <Reveal>
-            <h2 className="text-3xl lg:text-4xl font-extrabold text-gray-900 mb-4">Ready to Schedule Your Visit?</h2>
-            <p className="text-gray-800 mb-8 text-lg max-w-xl mx-auto">Our team is available to assist you. Walk in, call, or book online today.</p>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-white mb-4">Ready to Schedule Your Visit?</h2>
+            <p className="text-blue-100 mb-8 text-lg max-w-xl mx-auto">Our team is available to assist you. Walk in or call us today.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="tel:+251111234567" className="px-8 py-4 bg-white text-gray-900 font-bold rounded-xl hover:bg-gray-50 transition-colors shadow-xl inline-flex items-center justify-center gap-2 hover-lift">
+              <a href="tel:+251111234567" className="px-8 py-4 bg-white text-blue-700 font-bold rounded-xl hover:bg-blue-50 transition-colors shadow-xl inline-flex items-center justify-center gap-2 hover-lift">
                 <Phone className="w-4 h-4" /> Call Us Now
               </a>
             </div>

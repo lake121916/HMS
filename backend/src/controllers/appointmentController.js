@@ -1,6 +1,30 @@
 const pool = require('../config/database');
 const { sendSuccess, sendError, handleAsync } = require('../utils/response');
 
+const getPatientIdForUser = async (userId) => {
+  const result = await pool.query('SELECT id FROM patients WHERE user_id = $1', [userId]);
+  return result.rows[0]?.id || null;
+};
+
+const canAccessAppointment = async (appointment, user) => {
+  if (['super_admin', 'admin', 'receptionist', 'hospital_manager'].includes(user.role)) return true;
+  if (user.role === 'patient') return (await getPatientIdForUser(user.id)) === appointment.patient_id;
+  if (user.role === 'doctor') {
+    const result = await pool.query('SELECT id FROM doctors WHERE user_id = $1', [user.id]);
+    return result.rows[0]?.id === appointment.doctor_id;
+  }
+  return false;
+};
+
+const notifyAppointmentPatient = async (appointment, title, message) => {
+  await pool.query(
+    `INSERT INTO notifications (user_id, patient_id, type, title, message, channel)
+     SELECT p.user_id, p.id, 'appointment', $1, $2, 'in_app'
+     FROM patients p WHERE p.id = $3 AND p.user_id IS NOT NULL`,
+    [title, message, appointment.patient_id]
+  );
+};
+
 const getAllAppointments = handleAsync(async (req, res) => {
   const { patientId, doctorId, date, status } = req.query;
 
@@ -79,11 +103,20 @@ const getAppointmentById = handleAsync(async (req, res) => {
     return sendError(res, 'Appointment not found', 404);
   }
 
+  if (!(await canAccessAppointment(result.rows[0], req.user))) {
+    return sendError(res, 'You are not allowed to access this appointment', 403);
+  }
+
   sendSuccess(res, result.rows[0]);
 });
 
 const bookAppointment = handleAsync(async (req, res) => {
-  const { patientId, doctorId, appointmentDate, reason, notes } = req.body;
+  let { patientId, doctorId, appointmentDate, reason, notes } = req.body;
+
+  if (req.user.role === 'patient') {
+    patientId = await getPatientIdForUser(req.user.id);
+    if (!patientId) return sendError(res, 'Patient profile not found', 403);
+  }
 
   if (!patientId || !doctorId || !appointmentDate) {
     return sendError(res, 'patientId, doctorId, and appointmentDate are required', 400);
@@ -107,6 +140,8 @@ const bookAppointment = handleAsync(async (req, res) => {
     [patientId, doctorId, appointmentDate, reason, notes || null]
   );
 
+  await notifyAppointmentPatient(result.rows[0], 'Appointment booked', `Your appointment is scheduled for ${new Date(appointmentDate).toLocaleString()}.`);
+
   sendSuccess(res, result.rows[0], 'Appointment booked successfully', 201);
 });
 
@@ -123,6 +158,9 @@ const rescheduleAppointment = handleAsync(async (req, res) => {
   if (!existing.rows.length) {
     return sendError(res, 'Appointment not found', 404);
   }
+  if (!(await canAccessAppointment(existing.rows[0], req.user))) {
+    return sendError(res, 'You are not allowed to reschedule this appointment', 403);
+  }
   if (existing.rows[0].status === 'cancelled' || existing.rows[0].status === 'completed') {
     return sendError(res, `Cannot reschedule a ${existing.rows[0].status} appointment`, 400);
   }
@@ -137,6 +175,8 @@ const rescheduleAppointment = handleAsync(async (req, res) => {
     [newDate, updatedNotes, id]
   );
 
+  await notifyAppointmentPatient(result.rows[0], 'Appointment rescheduled', `Your appointment has been moved to ${new Date(newDate).toLocaleString()}.`);
+
   sendSuccess(res, result.rows[0], 'Appointment rescheduled successfully');
 });
 
@@ -147,6 +187,9 @@ const cancelAppointment = handleAsync(async (req, res) => {
   const existing = await pool.query('SELECT * FROM appointments WHERE id = $1', [id]);
   if (!existing.rows.length) {
     return sendError(res, 'Appointment not found', 404);
+  }
+  if (!(await canAccessAppointment(existing.rows[0], req.user))) {
+    return sendError(res, 'You are not allowed to cancel this appointment', 403);
   }
   if (existing.rows[0].status === 'cancelled') {
     return sendError(res, 'Appointment is already cancelled', 400);
@@ -164,6 +207,8 @@ const cancelAppointment = handleAsync(async (req, res) => {
      WHERE id = $2 RETURNING *`,
     [updatedNotes, id]
   );
+
+  await notifyAppointmentPatient(result.rows[0], 'Appointment cancelled', 'Your appointment has been cancelled. Please contact reception if you need a new time.');
 
   sendSuccess(res, result.rows[0], 'Appointment cancelled successfully');
 });

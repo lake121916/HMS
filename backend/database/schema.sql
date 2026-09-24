@@ -283,7 +283,7 @@ CREATE TABLE payments (
     invoice_id INTEGER NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     amount DECIMAL(12, 2) NOT NULL,
-    payment_method VARCHAR(50) CHECK (payment_method IN ('cash', 'card', 'insurance', 'online', 'check')),
+    payment_method VARCHAR(50) CHECK (payment_method IN ('cash', 'card', 'insurance', 'online', 'check', 'mobile_money', 'bank_transfer')),
     transaction_id VARCHAR(255),
     received_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     notes TEXT,
@@ -301,8 +301,71 @@ CREATE TABLE notifications (
     is_read BOOLEAN DEFAULT false,
     sent_via_email BOOLEAN DEFAULT false,
     sent_via_sms BOOLEAN DEFAULT false,
+    channel VARCHAR(20) NOT NULL DEFAULT 'in_app',
+    delivered_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE clinical_encounters (
+    id SERIAL PRIMARY KEY,
+    patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    doctor_id INTEGER REFERENCES doctors(id) ON DELETE SET NULL,
+    appointment_id INTEGER REFERENCES appointments(id) ON DELETE SET NULL,
+    chief_complaint TEXT,
+    examination_notes TEXT,
+    assessment TEXT,
+    treatment_plan TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'signed', 'amended')),
+    signed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE workflow_status_history (
+    id SERIAL PRIMARY KEY,
+    entity_type VARCHAR(40) NOT NULL,
+    entity_id INTEGER NOT NULL,
+    from_status VARCHAR(50),
+    to_status VARCHAR(50) NOT NULL,
+    changed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE referrals (
+    id SERIAL PRIMARY KEY,
+    patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    referring_facility VARCHAR(255),
+    referring_clinician VARCHAR(255),
+    clinical_summary TEXT NOT NULL,
+    urgency VARCHAR(20) NOT NULL DEFAULT 'routine' CHECK (urgency IN ('routine', 'urgent', 'emergency')),
+    receiving_department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    assigned_doctor_id INTEGER REFERENCES doctors(id) ON DELETE SET NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'received' CHECK (status IN ('received', 'under_review', 'accepted', 'scheduled', 'completed', 'rejected')),
+    attachment_url VARCHAR(500),
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE triage_cases (
+    id SERIAL PRIMARY KEY,
+    patient_id INTEGER REFERENCES patients(id) ON DELETE SET NULL,
+    patient_name VARCHAR(255) NOT NULL,
+    symptoms TEXT NOT NULL,
+    triage_level VARCHAR(20) NOT NULL CHECK (triage_level IN ('critical', 'urgent', 'standard', 'non_urgent')),
+    arrival_source VARCHAR(50) NOT NULL DEFAULT 'walk_in',
+    assigned_department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    assigned_doctor_id INTEGER REFERENCES doctors(id) ON DELETE SET NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting', 'in_assessment', 'admitted', 'discharged', 'transferred')),
+    notes TEXT,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE prescriptions ADD COLUMN workflow_status VARCHAR(40) NOT NULL DEFAULT 'created';
+ALTER TABLE lab_tests ADD COLUMN workflow_status VARCHAR(40) NOT NULL DEFAULT 'ordered';
 
 -- Create Audit Logs table
 CREATE TABLE audit_logs (
@@ -338,6 +401,10 @@ CREATE INDEX idx_payments_invoice_id ON payments(invoice_id);
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
+CREATE INDEX idx_encounters_patient ON clinical_encounters(patient_id);
+CREATE INDEX idx_workflow_history_entity ON workflow_status_history(entity_type, entity_id);
+CREATE INDEX idx_referrals_status ON referrals(status);
+CREATE INDEX idx_triage_status ON triage_cases(status, triage_level);
 
 -- Insert default departments
 INSERT INTO departments (name, description) VALUES

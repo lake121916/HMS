@@ -20,10 +20,18 @@ const LoginPage: React.FC = () => {
     try {
       const user = await login(email, password);
 
-      // Redirect to a role-specific landing or to the public site (no common /dashboard)
+      // Redirect to a role-specific landing route
       const roleRouteMap: Record<string, string> = {
-        cashier: '/cashier',
+        super_admin: '/dashboard',
+        admin: '/dashboard',
+        hospital_manager: '/dashboard',
         receptionist: '/reception',
+        doctor: '/doctor',
+        nurse: '/vitals',
+        lab_technician: '/lab-tests',
+        pharmacist: '/medicines',
+        cashier: '/cashier',
+        patient: '/patient-portal',
       };
       const target = (user && roleRouteMap[user.role]) ? roleRouteMap[user.role] : '/home';
       navigate(target);

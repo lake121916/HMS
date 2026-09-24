@@ -40,21 +40,46 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// POST order test — doctor orders; lab_technician cannot order
+// POST order test — doctor orders; lab_technician cannot order (auto-billing enabled)
 router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), async (req, res) => {
   try {
-    const { patient_id, test_name, test_type, priority, notes } = req.body;
+    const { patient_id, test_name, test_type, priority, notes, encounter_id } = req.body;
     let doctorId = req.body.doctor_id;
     if (req.user.role === 'doctor') {
       const doc = await pool.query('SELECT id FROM doctors WHERE user_id=$1', [req.user.id]);
       if (doc.rows.length) doctorId = doc.rows[0].id;
     }
     const result = await pool.query(
-      `INSERT INTO lab_tests (patient_id, doctor_id, test_name, test_type, priority, notes, status)
-       VALUES ($1,$2,$3,$4,$5,$6,'pending') RETURNING *`,
-      [patient_id, doctorId||null, test_name, test_type||null, priority||'normal', notes||null]
+      `INSERT INTO lab_tests (patient_id, doctor_id, test_name, test_type, priority, notes, status, encounter_id)
+       VALUES ($1,$2,$3,$4,$5,$6,'pending',$7) RETURNING *`,
+      [patient_id, doctorId||null, test_name, test_type||null, priority||'normal', notes||null, encounter_id||null]
     );
-    res.status(201).json({ success: true, data: { labTest: result.rows[0] } });
+    const labTest = result.rows[0];
+
+    // ── Auto-billing ─────────────────────────────────────────
+    const billing = require('../services/billingService');
+    const { alreadyExisted, invoice } = await billing.billLabOrder({
+      labOrderId: labTest.id,
+      patientId: patient_id,
+      encounterId: encounter_id || null,
+      doctorId,
+      testName: test_name,
+      createdBy: req.user.id
+    }).catch(e => { console.error('Lab billing error:', e.message); return { alreadyExisted: false, invoice: null }; });
+
+    // Update encounter status
+    if (encounter_id) {
+      await pool.query(
+        `UPDATE patient_encounters SET status = 'services_ordered', updated_at = NOW()
+         WHERE id = $1 AND status = 'in_consultation'`,
+        [encounter_id]
+      );
+    }
+
+    res.status(201).json({
+      success: true,
+      data: { labTest, invoiceBilled: !alreadyExisted, invoice }
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -65,12 +90,20 @@ router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), asyn
 router.put('/:id', authenticate, authorize('lab_technician', 'doctor', 'super_admin', 'admin'), async (req, res) => {
   try {
     const { status, notes } = req.body;
+    const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+    if (status && !validStatuses.includes(status)) return res.status(400).json({ success: false, message: 'Invalid lab status' });
+    const existing = await pool.query('SELECT status, patient_id FROM lab_tests WHERE id = $1', [req.params.id]);
+    if (!existing.rows.length) return res.status(404).json({ success: false, message: 'Not found' });
+    const workflowStatus = status === 'pending' ? 'ordered' : status === 'in_progress' ? 'in_progress' : status === 'completed' ? 'ready' : status === 'cancelled' ? 'cancelled' : null;
     const result = await pool.query(
-      `UPDATE lab_tests SET status=COALESCE($1,status), notes=COALESCE($2,notes), updated_at=NOW()
-       WHERE id=$3 RETURNING *`,
-      [status||null, notes||null, req.params.id]
+      `UPDATE lab_tests SET status=COALESCE($1,status), workflow_status=COALESCE($2,workflow_status), notes=COALESCE($3,notes), updated_at=NOW()
+      WHERE id=$4 RETURNING *`,
+      [status||null, workflowStatus, notes||null, req.params.id]
     );
-    if (!result.rows.length) return res.status(404).json({ success: false, message: 'Not found' });
+    await pool.query(`INSERT INTO workflow_status_history (entity_type, entity_id, from_status, to_status, changed_by, notes) VALUES ('lab_test',$1,$2,$3,$4,$5)`, [req.params.id, existing.rows[0].status, status || existing.rows[0].status, req.user.id, notes || null]);
+    if (status && status !== existing.rows[0].status) {
+      await pool.query(`INSERT INTO notifications (user_id, patient_id, type, title, message, channel) SELECT p.user_id, p.id, 'lab_result', $1, $2, 'in_app' FROM patients p WHERE p.id = $3 AND p.user_id IS NOT NULL`, ['Lab test updated', `Your lab test status is now ${workflowStatus || status}.`, existing.rows[0].patient_id]);
+    }
     res.json({ success: true, data: { labTest: result.rows[0] } });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });
@@ -87,6 +120,7 @@ router.post('/:id/result', authenticate, authorize('lab_technician', 'super_admi
       [req.params.id, req.user.id, results, reference_range||null, is_abnormal||false, notes||null]
     );
     await pool.query(`UPDATE lab_tests SET status='completed', updated_at=NOW() WHERE id=$1`, [req.params.id]);
+    await pool.query(`UPDATE lab_tests SET workflow_status='ready' WHERE id=$1`, [req.params.id]);
     res.status(201).json({ success: true, data: { result: resResult.rows[0] } });
   } catch (err) {
     console.error(err);

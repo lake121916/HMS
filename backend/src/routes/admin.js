@@ -98,7 +98,7 @@ router.put('/users/:id/reset-password', authenticate, authorize('super_admin', '
 
 // ── Departments ───────────────────────────────────────────────────────────────
 
-router.get('/departments', authenticate, authorize('super_admin', 'admin', 'hospital_manager'), handleAsync(async (req, res) => {
+router.get('/departments', authenticate, authorize('super_admin', 'admin', 'hospital_manager', 'receptionist', 'doctor', 'nurse'), handleAsync(async (req, res) => {
   const result = await pool.query(
     `SELECT dep.*, 
       d.first_name || ' ' || d.last_name AS head_doctor_name,

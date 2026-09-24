@@ -3,7 +3,7 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import {
-  FlaskConical, Plus, Search, Trash2, X, Upload, CheckCircle,
+  FlaskConical, Plus, Search, Trash2, X, Upload,
   AlertCircle, Activity, Play, Eye, EyeOff, Sliders
 } from 'lucide-react';
 

@@ -57,16 +57,14 @@ const AdminPage: React.FC = () => {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [usersRes, statsRes] = await Promise.allSettled([
+      const [usersRes, statsRes, deptRes] = await Promise.allSettled([
         api.get(`/admin/users${roleFilter ? `?role=${roleFilter}` : ''}`),
         api.get('/admin/stats'),
+        api.get('/admin/departments'),
       ]);
       if (usersRes.status === 'fulfilled') setUsers(usersRes.value.data.data.users || []);
       if (statsRes.status === 'fulfilled') setStats(statsRes.value.data.data);
-      if (tab === 'departments') {
-        const deptRes = await api.get('/admin/departments');
-        setDepartments(deptRes.data.data.departments || []);
-      }
+      if (deptRes.status === 'fulfilled') setDepartments(deptRes.value.data.data.departments || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -416,18 +414,46 @@ const AdminPage: React.FC = () => {
                   </select></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
-                  <input value={staffForm.phone} onChange={e => setStaffForm({...staffForm, phone: e.target.value})} className={inputClass} placeholder="+251 91 234 5678" /></div>
-                <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department ID</label>
-                  <input type="number" value={staffForm.departmentId} onChange={e => setStaffForm({...staffForm, departmentId: e.target.value})} className={inputClass} placeholder="Optional" /></div>
-              </div>
-              {(staffForm.role === 'doctor') && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Specialization</label>
-                    <input value={staffForm.specialization} onChange={e => setStaffForm({...staffForm, specialization: e.target.value})} className={inputClass} placeholder="e.g. Pediatrics" /></div>
-                  <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">License Number</label>
-                    <input value={staffForm.licenseNumber} onChange={e => setStaffForm({...staffForm, licenseNumber: e.target.value})} className={inputClass} /></div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                  <input value={staffForm.phone} onChange={e => setStaffForm({...staffForm, phone: e.target.value})} className={inputClass} placeholder="+251 91 234 5678" />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center justify-between">
+                    <span>Department {staffForm.role === 'doctor' && <span className="text-red-500 font-bold">*</span>}</span>
+                    {staffForm.role === 'doctor' && <span className="text-[10px] font-semibold text-blue-600 uppercase bg-blue-50 px-1.5 py-0.5 rounded">Doctor's Dept</span>}
+                  </label>
+                  <select
+                    required={staffForm.role === 'doctor'}
+                    value={staffForm.departmentId}
+                    onChange={e => setStaffForm({...staffForm, departmentId: e.target.value})}
+                    className={`${inputClass} ${staffForm.role === 'doctor' && !staffForm.departmentId ? 'border-blue-400 ring-2 ring-blue-100 dark:ring-blue-900/30' : ''}`}
+                  >
+                    <option value="">-- Select Department --</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {staffForm.role === 'doctor' && (
+                <>
+                  {!staffForm.departmentId && (
+                    <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-700 dark:text-amber-300">
+                      ⚠️ <strong>Doctor Department Selection Required:</strong> Please assign this doctor to a primary medical department so they can receive triage & consultation routing.
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Specialization</label>
+                      <input value={staffForm.specialization} onChange={e => setStaffForm({...staffForm, specialization: e.target.value})} className={inputClass} placeholder="e.g. Pediatrics" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">License Number</label>
+                      <input value={staffForm.licenseNumber} onChange={e => setStaffForm({...staffForm, licenseNumber: e.target.value})} className={inputClass} placeholder="MD-12345" />
+                    </div>
+                  </div>
+                </>
               )}
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700">
                 The staff member will use their email and the password you set to log in. Share credentials securely.
