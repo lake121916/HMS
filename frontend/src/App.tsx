@@ -52,19 +52,30 @@ import DoctorConsultationPage from './pages/DoctorConsultationPage';
 import LabTechDashboard from './pages/LabTechDashboard';
 import PharmacyDashboard from './pages/PharmacyDashboard';
 import CashierWorkflow from './pages/CashierWorkflow';
+import ServicesAdminPage from './pages/ServicesAdminPage';
 
 // ── Role permission map ──────────────────────────────────────────────────────
+const ALL_PAGES = [
+  'dashboard', 'doctor-dashboard', 'patients', 'doctors', 'appointments',
+  'vitals', 'prescriptions', 'lab-tests', 'admissions', 'invoices', 'payments',
+  'reception', 'medicines', 'inventory', 'beds', 'reports', 'admin',
+  'user-management', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
+  'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
+  'assignment', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
+  'services-admin'
+];
+
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  super_admin:      ['dashboard','patients','doctors','appointments','vitals','prescriptions','lab-tests','reports','admin','user-management','insurance','blood-bank','audit','radiology','finance-reports','assignment','services-admin'],
-  admin:            ['dashboard','patients','doctors','appointments','admissions','beds','invoices','payments','medicines','inventory','reports','admin','user-management','insurance','blood-bank','audit','radiology','finance-reports','cashier','assignment','services-admin'],
-  hospital_manager: ['dashboard','patients','doctors','appointments','admissions','beds','invoices','payments','reports','insurance','blood-bank','radiology','finance-reports','cashier'],
-  receptionist:     ['patients','appointments','admissions','invoices','reception','reception-workflow'],
-  doctor:           ['dashboard','doctor-dashboard','patients','appointments','vitals','prescriptions','lab-tests','admissions','radiology','consultation'],
-  nurse:            ['patients','appointments','vitals','admissions','beds','triage'],
-  lab_technician:   ['lab-tests','lab-dashboard'],
-  pharmacist:       ['prescriptions','medicines','inventory','pharmacy'],
-  cashier:          ['invoices','payments','cashier','finance-reports','cashier-workflow'],
-  patient:          ['patient-portal','appointments'],
+  super_admin:      ALL_PAGES,
+  admin:            ALL_PAGES,
+  hospital_manager: ALL_PAGES,
+  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'invoices', 'reception', 'reception-workflow', 'vitals'],
+  doctor:           ['dashboard', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
+  nurse:            ['dashboard', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage'],
+  lab_technician:   ['dashboard', 'lab-tests', 'lab-dashboard', 'patients'],
+  pharmacist:       ['dashboard', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
+  cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'finance-reports', 'cashier-workflow'],
+  patient:          ['patient-portal', 'appointments'],
 };
 
 // ── Auth guard ───────────────────────────────────────────────────────────────
@@ -84,11 +95,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; page?: string }> = (
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  // Page-level role check
+  // Page-level role check: redirect to dashboard instead of unauthorized page
   if (page && user) {
     const allowed = ROLE_PERMISSIONS[user.role] || [];
     if (!allowed.includes(page)) {
-      return <Navigate to="/unauthorized" replace />;
+      return <Navigate to="/dashboard" replace />;
     }
   }
 
@@ -225,6 +236,9 @@ function App() {
             } />
             <Route path="cashier-workflow" element={
               <ProtectedRoute page="cashier-workflow"><CashierWorkflow /></ProtectedRoute>
+            } />
+            <Route path="services-admin" element={
+              <ProtectedRoute page="services-admin"><ServicesAdminPage /></ProtectedRoute>
             } />
           </Route>
         </Routes>

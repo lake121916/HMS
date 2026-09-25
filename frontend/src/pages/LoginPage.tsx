@@ -37,6 +37,7 @@ const LoginPage: React.FC = () => {
       navigate(target);
     } catch (err: any) {
       const message = err.response?.data?.message
+        || (err.response?.data?.errors && err.response.data.errors[0]?.message)
         || (err.request ? 'Server did not respond. Please check your network connection.' : 'Login failed. Please check your credentials.');
       setError(message);
     } finally {

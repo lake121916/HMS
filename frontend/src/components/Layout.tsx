@@ -441,6 +441,37 @@ const Layout: React.FC = () => {
           </div>
         </div>
 
+        {/* Top Quick Navigation Bar */}
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-700/80 px-4 py-2.5 overflow-x-auto shadow-xs">
+          <div className="flex items-center gap-3 min-w-max">
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mr-1 hidden sm:inline-block">
+              Quick Nav:
+            </span>
+            {[
+              { label: 'Patients', href: '/patients', icon: Users, color: 'text-blue-600 bg-blue-50/80 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/60 border-blue-200 dark:border-blue-800' },
+              { label: 'Appointments', href: '/appointments', icon: Calendar, color: 'text-purple-600 bg-purple-50/80 hover:bg-purple-100 dark:bg-purple-950/40 dark:text-purple-300 dark:hover:bg-purple-900/60 border-purple-200 dark:border-purple-800' },
+              { label: 'Invoices', href: '/invoices', icon: FileText, color: 'text-red-600 bg-red-50/80 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-900/60 border-red-200 dark:border-red-800' },
+              { label: 'Admissions', href: '/admissions', icon: Bed, color: 'text-orange-600 bg-orange-50/80 hover:bg-orange-100 dark:bg-orange-950/40 dark:text-orange-300 dark:hover:bg-orange-900/60 border-orange-200 dark:border-orange-800' },
+              { label: 'Lab Tests', href: '/lab-tests', icon: FlaskConical, color: 'text-cyan-600 bg-cyan-50/80 hover:bg-cyan-100 dark:bg-cyan-950/40 dark:text-cyan-300 dark:hover:bg-cyan-900/60 border-cyan-200 dark:border-cyan-800' },
+              { label: 'Medicines', href: '/medicines', icon: Pill, color: 'text-emerald-600 bg-emerald-50/80 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60 border-emerald-200 dark:border-emerald-800' },
+            ].map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+                    isActive ? 'ring-2 ring-blue-500 shadow-sm scale-105 ' + item.color : item.color
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Page content */}
         <main className="p-4 lg:p-8">
           <Outlet />

@@ -23,7 +23,15 @@ router.post(
   authController.registerPatient
 );
 
-router.post('/login', authController.login);
+router.post(
+  '/login',
+  [
+    body('email').isEmail().withMessage('Valid email is required'),
+    body('password').notEmpty().withMessage('Password is required'),
+  ],
+  validate,
+  authController.login
+);
 
 router.post(
   '/refresh',

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import {
@@ -9,7 +8,7 @@ import {
 } from 'recharts';
 import {
   Users, Stethoscope, Calendar, Activity, TrendingUp,
-  DollarSign, Pill, FlaskConical, FileText, Bed, AlertCircle, RefreshCw
+  DollarSign, FileText, Bed, AlertCircle, RefreshCw
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -268,27 +267,6 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Quick Links */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        {[
-          { label: 'Patients', href: '/patients', icon: Users, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' },
-          { label: 'Appointments', href: '/appointments', icon: Calendar, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20' },
-          { label: 'Invoices', href: '/invoices', icon: FileText, color: 'text-red-600 bg-red-50 dark:bg-red-900/20' },
-          { label: 'Admissions', href: '/admissions', icon: Bed, color: 'text-orange-600 bg-orange-50 dark:bg-orange-900/20' },
-          { label: 'Lab Tests', href: '/lab-tests', icon: FlaskConical, color: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-900/20' },
-          { label: 'Medicines', href: '/medicines', icon: Pill, color: 'text-green-600 bg-green-50 dark:bg-green-900/20' },
-        ].map((item) => (
-          <Link
-            key={item.label}
-            to={item.href}
-            className={`flex flex-col items-center p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all ${item.color}`}
-          >
-            <item.icon className="w-7 h-7 mb-2" />
-            <span className="text-xs font-medium">{item.label}</span>
-          </Link>
-        ))}
-      </div>
     </div>
   );
 };

@@ -98,29 +98,73 @@ router.post('/:id/send-to-triage', authenticate, authorize('receptionist', 'admi
 });
 
 // ══════════════════════════════════════════════════════════════
-// 3. TRIAGE QUEUE  (Nurse, Doctor, Admin)
+// 3. TRIAGE QUEUE  (Nurse, Doctor, Admin) - Supports 3 Triage Stages
 // ══════════════════════════════════════════════════════════════
 router.get('/triage-queue', authenticate,
   authorize('nurse', 'doctor', 'admin', 'super_admin', 'receptionist'), async (req, res) => {
   try {
+    const { status } = req.query;
+    let statusFilter = "pe.status IN ('waiting_for_triage', 'in_triage')";
+    const params = [];
+
+    if (status === 'waiting') {
+      statusFilter = "pe.status = 'waiting_for_triage'";
+    } else if (status === 'in_triage') {
+      statusFilter = "pe.status = 'in_triage'";
+    } else if (status === 'completed') {
+      statusFilter = "pe.status IN ('triage_completed', 'department_assigned', 'doctor_assigned', 'waiting_for_doctor', 'in_consultation')";
+    } else if (status === 'all') {
+      statusFilter = "pe.status IN ('waiting_for_triage', 'in_triage', 'triage_completed', 'department_assigned', 'doctor_assigned', 'waiting_for_doctor', 'in_consultation')";
+    }
+
     const result = await pool.query(`
-      SELECT pe.*, p.first_name, p.last_name, p.date_of_birth, p.gender, p.phone,
-             ta.priority, ta.chief_complaint, ta.assessed_at
+      SELECT pe.*, p.first_name, p.last_name, p.date_of_birth, p.gender, p.phone, p.blood_type, p.allergies,
+             ta.temperature, ta.blood_pressure_systolic, ta.blood_pressure_diastolic,
+             ta.heart_rate, ta.respiratory_rate, ta.oxygen_saturation, ta.weight, ta.height,
+             ta.priority, ta.chief_complaint, ta.preliminary_observations, ta.assessed_at,
+             d.name AS department_name,
+             doc.first_name || ' ' || doc.last_name AS doctor_name
       FROM patient_encounters pe
       JOIN patients p ON p.id = pe.patient_id
       LEFT JOIN triage_assessments ta ON ta.encounter_id = pe.id
-      WHERE pe.status = 'waiting_for_triage'
+      LEFT JOIN encounter_assignments ea ON ea.encounter_id = pe.id
+      LEFT JOIN departments d ON d.id = ea.department_id
+      LEFT JOIN doctors doc ON doc.id = ea.doctor_id
+      WHERE ${statusFilter}
       ORDER BY
         CASE COALESCE(ta.priority,'normal')
           WHEN 'emergency' THEN 1 WHEN 'urgent' THEN 2 ELSE 3
         END,
         pe.created_at ASC
-    `);
+    `, params);
+
     res.json({ success: true, data: { encounters: result.rows } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
+});
+
+// START TRIAGE ASSESSMENT (Nurse starts triaging patient → status becomes in_triage)
+router.post('/:id/start-triage', authenticate, authorize('nurse', 'admin', 'super_admin'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const enc = await client.query('SELECT * FROM patient_encounters WHERE id = $1', [req.params.id]);
+    if (!enc.rows.length) return res.status(404).json({ success: false, message: 'Encounter not found' });
+    
+    if (enc.rows[0].status !== 'waiting_for_triage' && enc.rows[0].status !== 'in_triage') {
+      return res.status(400).json({ success: false, message: `Cannot start triage from status: ${enc.rows[0].status}` });
+    }
+
+    await transitionStatus(client, req.params.id, 'in_triage', req.user.id, 'Nurse started active triage assessment');
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'Triage assessment started' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  } finally { client.release(); }
 });
 
 // ══════════════════════════════════════════════════════════════
@@ -132,7 +176,7 @@ router.post('/:id/triage', authenticate, authorize('nurse', 'admin', 'super_admi
     await client.query('BEGIN');
     const enc = await client.query('SELECT * FROM patient_encounters WHERE id = $1', [req.params.id]);
     if (!enc.rows.length) return res.status(404).json({ success: false, message: 'Encounter not found' });
-    if (enc.rows[0].status !== 'waiting_for_triage') {
+    if (enc.rows[0].status !== 'waiting_for_triage' && enc.rows[0].status !== 'in_triage') {
       return res.status(400).json({ success: false, message: `Cannot triage from status: ${enc.rows[0].status}` });
     }
 

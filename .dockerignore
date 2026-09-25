@@ -1,0 +1,9 @@
+node_modules
+.venv
+.git
+.vscode
+dist
+build
+*.log
+.env
+.env.local

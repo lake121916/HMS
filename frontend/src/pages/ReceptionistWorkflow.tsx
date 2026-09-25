@@ -35,6 +35,7 @@ interface Encounter {
 const statusColors: Record<string, string> = {
   registered: 'bg-slate-100 text-slate-700',
   waiting_for_triage: 'bg-amber-100 text-amber-700',
+  in_triage: 'bg-blue-100 text-blue-700',
   triage_completed: 'bg-blue-100 text-blue-700',
   department_assigned: 'bg-indigo-100 text-indigo-700',
   doctor_assigned: 'bg-violet-100 text-violet-700',
@@ -50,6 +51,7 @@ const statusColors: Record<string, string> = {
 const statusLabels: Record<string, string> = {
   registered: 'Registered',
   waiting_for_triage: 'Waiting for Triage',
+  in_triage: 'In Triage',
   triage_completed: 'Triage Completed',
   department_assigned: 'Dept. Assigned',
   doctor_assigned: 'Doctor Assigned',
