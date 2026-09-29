@@ -130,13 +130,16 @@ socketService.init(server);
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV}`);
-  sendAppointmentReminders().catch(error => console.error('Reminder worker error:', error.message));
-  setInterval(() => {
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV}`);
     sendAppointmentReminders().catch(error => console.error('Reminder worker error:', error.message));
-  }, 60 * 60 * 1000);
-});
+    setInterval(() => {
+      sendAppointmentReminders().catch(error => console.error('Reminder worker error:', error.message));
+    }, 60 * 60 * 1000);
+  });
+}
 
-module.exports = server;
+module.exports = app;
+

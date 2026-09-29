@@ -143,6 +143,9 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
               ))}
               <Link to="/news" className="text-sm font-semibold uppercase tracking-wide text-gray-300 hover:text-white">News</Link>
               <Link to="/gallery" className="text-sm font-semibold uppercase tracking-wide text-gray-300 hover:text-white">Photo Gallery</Link>
+              <Link to="/login" className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:opacity-90">
+                Login
+              </Link>
             </div>
 
             <div className="flex items-center gap-3 relative">

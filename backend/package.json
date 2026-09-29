@@ -40,7 +40,8 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "nodemon": "^3.0.2"
-    ,"node-pg-migrate": "^7.6.0"
+    "node-pg-migrate": "^7.6.0",
+    "nodemon": "^3.0.2",
+    "supertest": "^7.3.0"
   }
 }

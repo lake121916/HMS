@@ -86,36 +86,35 @@ const HomePage: React.FC = () => {
     <PublicLayout>
       <section className="relative overflow-visible">
         <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-16 flex flex-col items-center text-center">
-          <div className="w-full max-w-4xl relative">
-            <img src="/images/hospital.jpg.webp" alt="Hospital building" className="w-full h-80 md:h-96 object-cover rounded-2xl shadow-lg" />
-            <div className="absolute inset-0 rounded-2xl bg-slate-950/55" aria-hidden="true" />
+          <div className="w-full max-w-4xl">
+            <img src="/images/hospital.jpg.webp" alt="Hospital building" className="w-full h-96 md:h-[500px] object-contain object-top rounded-2xl shadow-lg" />
+          </div>
 
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
-              <div className="h-36 w-36 rounded-full bg-white/90 ring-8 ring-white/80 flex items-center justify-center shadow-2xl">
-                <div
-                  className="h-28 w-28 rounded-full flex items-center justify-center text-white text-3xl font-extrabold"
-                  style={{
-                    background: 'conic-gradient(#10B981 0deg 120deg, #F59E0B 120deg 240deg, #EF4444 240deg 360deg)'
-                  }}
-                >
-                  AK
-                </div>
+          <div className="mt-8 max-w-4xl">
+            <div className="h-36 w-36 rounded-full bg-white/90 ring-8 ring-white/80 flex items-center justify-center shadow-2xl mx-auto">
+              <div
+                className="h-28 w-28 rounded-full flex items-center justify-center text-white text-3xl font-extrabold"
+                style={{
+                  background: 'conic-gradient(#10B981 0deg 120deg, #F59E0B 120deg 240deg, #EF4444 240deg 360deg)'
+                }}
+              >
+                AK
               </div>
+            </div>
 
-              <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-[600] tracking-tight text-white drop-shadow-[0_3px_8px_rgba(0,0,0,0.7)]" style={{fontFamily: '"Great Vibes", serif'}}>
-                Alem Ketema Enat Hospital
-              </h1>
+            <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-[600] tracking-tight text-gray-900" style={{fontFamily: '"Great Vibes", serif'}}>
+              Alem Ketema Enat Hospital
+            </h1>
 
-              <p className="mt-3 max-w-2xl text-lg font-medium text-white drop-shadow-[0_2px_5px_rgba(0,0,0,0.75)]">Welcome to Alem Ketema Enat Hospital — compassionate care for mothers, children and families.</p>
+            <p className="mt-3 max-w-2xl text-lg font-medium text-gray-600">Welcome to Alem Ketema Enat Hospital — compassionate care for mothers, children and families.</p>
 
-              <div className="mt-6 flex gap-4 transform -translate-y-2 md:-translate-y-4">
-                <Link to="/contact" className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-xl transition hover:opacity-95">
-                  Book Appointment
-                </Link>
-                <Link to="/services" className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-secondary shadow-md transition hover:opacity-90">
-                  Explore Services
-                </Link>
-              </div>
+            <div className="mt-6 flex gap-4 justify-center">
+              <Link to="/contact" className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-xl transition hover:opacity-95">
+                Book Appointment
+              </Link>
+              <Link to="/services" className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-secondary shadow-md transition hover:opacity-90">
+                Explore Services
+              </Link>
             </div>
           </div>
         </div>
@@ -180,7 +179,6 @@ const HomePage: React.FC = () => {
                 <div className="overflow-hidden rounded-[2rem] bg-white border border-slate-200 shadow-lg transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl flex flex-col h-full">
                   <div className="relative h-56 overflow-hidden">
                     <img src={service.img} alt={service.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-slate-900/5 to-transparent" />
                   </div>
                   <div className="p-6 flex-1 flex flex-col">
                     <div className="flex items-center gap-3">
@@ -262,7 +260,6 @@ const HomePage: React.FC = () => {
           {[IMGS.building, IMGS.team, IMGS.maternity, IMGS.lab].map((src, i) => (
             <div key={i} className="relative overflow-hidden h-48 group">
               <img src={src} alt={`Gallery ${i+1}`} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-blue-900/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
           ))}
         </div>
