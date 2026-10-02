@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState } from 'react';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  usePrescriptions, useCreatePrescription,
+  useUpdatePrescription, useDispensePrescription, useDeletePrescription,
+} from '../hooks/useApi';
 import { Plus, Search, Edit, Trash2, X, CheckCircle, Pill } from 'lucide-react';
 
 interface Prescription {
@@ -16,23 +19,26 @@ const lbl = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 const PrescriptionsPage: React.FC = () => {
   const { can } = useRoleAccess();
   const { user } = useAuth();
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterDispensed, setFilterDispensed] = useState<'' | 'false' | 'true'>('');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Prescription | null>(null);
   const [form, setForm] = useState({ patient_id:'', diagnosis_id:'', medication_name:'', dosage:'', frequency:'', duration:'', instructions:'' });
 
-  useEffect(() => { fetchPrescriptions(); }, [filterDispensed]);
+  // ── TanStack Query ──────────────────────────────────────────────────────
+  const dispensedParam = filterDispensed === '' ? undefined : filterDispensed === 'true';
+  const { data, isLoading } = usePrescriptions({ is_dispensed: dispensedParam });
+  const prescriptions = (data ?? []) as Prescription[];
 
-  const fetchPrescriptions = async () => {
-    try {
-      const params = filterDispensed ? `?is_dispensed=${filterDispensed}` : '';
-      const r = await api.get(`/prescriptions${params}`);
-      setPrescriptions(r.data.data.prescriptions || []);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+  const createPrescription   = useCreatePrescription();
+  const updatePrescription   = useUpdatePrescription(editing?.id ?? 0);
+  const dispensePrescription = useDispensePrescription();
+  const deletePrescription   = useDeletePrescription();
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Delete this prescription?')) return;
+    try { await deletePrescription.mutateAsync(id); }
+    catch (e: any) { alert(e.response?.data?.message || 'Failed'); }
   };
 
   const openAdd = () => {
@@ -51,23 +57,15 @@ const PrescriptionsPage: React.FC = () => {
     e.preventDefault();
     try {
       const payload = { ...form, patient_id: parseInt(form.patient_id), diagnosis_id: form.diagnosis_id ? parseInt(form.diagnosis_id) : undefined };
-      if (editing) { await api.put(`/prescriptions/${editing.id}`, payload); }
-      else { await api.post('/prescriptions', payload); }
-      setShowModal(false); fetchPrescriptions();
+      if (editing) { await updatePrescription.mutateAsync(payload as Record<string, unknown>); }
+      else { await createPrescription.mutateAsync(payload as Record<string, unknown>); }
+      setShowModal(false);
     } catch (e: any) { alert(e.response?.data?.message || 'Failed'); }
   };
 
   const handleDispense = async (id: number) => {
     if (!window.confirm('Mark this prescription as dispensed?')) return;
-    try {
-      await api.put(`/prescriptions/${id}`, { is_dispensed: true });
-      fetchPrescriptions();
-    } catch (e: any) { alert(e.response?.data?.message || 'Failed'); }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Delete this prescription?')) return;
-    try { await api.delete(`/prescriptions/${id}`); fetchPrescriptions(); }
+    try { await dispensePrescription.mutateAsync(id); }
     catch (e: any) { alert(e.response?.data?.message || 'Failed'); }
   };
 
@@ -76,6 +74,8 @@ const PrescriptionsPage: React.FC = () => {
     p.medication_name?.toLowerCase().includes(search.toLowerCase()) ||
     p.doctor_name?.toLowerCase().includes(search.toLowerCase())
   );
+
+
 
   return (
     <div className="space-y-6">
@@ -127,7 +127,7 @@ const PrescriptionsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {loading ? (
+              {isLoading ? (
                 <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No prescriptions found</td></tr>

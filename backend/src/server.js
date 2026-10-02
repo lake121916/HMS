@@ -6,7 +6,7 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const pool = require('./config/database');
 const { errorHandler, notFound } = require('./middleware/error');
-const auditLog = require('./middleware/audit');
+const auditLog = require('./middleware/auditLog');
 
 const app = express();
 
@@ -64,6 +64,7 @@ app.use('/api/beds', auditLog);
 app.use('/api/admissions', auditLog);
 app.use('/api/invoices', auditLog);
 app.use('/api/payments', auditLog);
+app.use('/api/cashier', auditLog);
 app.use('/api/notifications', auditLog);
 app.use('/api/ai', auditLog);
 app.use('/api/reports', auditLog);
@@ -99,6 +100,7 @@ app.use('/api/beds', require('./routes/beds'));
 app.use('/api/admissions', require('./routes/admissions'));
 app.use('/api/invoices', require('./routes/invoices'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/cashier', require('./routes/cashier'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/reports', require('./routes/reports'));

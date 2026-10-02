@@ -1,7 +1,31 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
+const { body, param } = require('express-validator');
+const validate = require('../middleware/validation');
 const { authenticate, authorize } = require('../middleware/auth');
+
+// ── Prescription validators ─────────────────────────────────────────────────
+const prescriptionCreateRules = [
+  body('patient_id').isInt({ min: 1 }).withMessage('Valid patient_id required'),
+  body('medication_name').notEmpty().trim().isLength({ max: 200 }).withMessage('Medication name is required (max 200 chars)'),
+  body('dosage').notEmpty().trim().isLength({ max: 100 }).withMessage('Dosage is required (max 100 chars)'),
+  body('frequency').notEmpty().trim().isLength({ max: 100 }).withMessage('Frequency is required'),
+  body('duration').notEmpty().trim().isLength({ max: 100 }).withMessage('Duration is required'),
+  body('instructions').optional({ nullable: true }).isString().trim().isLength({ max: 1000 }),
+  body('quantity').optional().isInt({ min: 1, max: 9999 }).withMessage('Quantity must be 1–9999'),
+  body('encounter_id').optional({ nullable: true }).isInt({ min: 1 }),
+  body('diagnosis_id').optional({ nullable: true }).isInt({ min: 1 }),
+];
+
+const prescriptionUpdateRules = [
+  body('medication_name').optional().notEmpty().trim().isLength({ max: 200 }),
+  body('dosage').optional().notEmpty().trim().isLength({ max: 100 }),
+  body('frequency').optional().notEmpty().trim().isLength({ max: 100 }),
+  body('duration').optional().notEmpty().trim().isLength({ max: 100 }),
+  body('instructions').optional({ nullable: true }).isString().trim().isLength({ max: 1000 }),
+  body('is_dispensed').optional().isBoolean().withMessage('is_dispensed must be a boolean'),
+];
 
 // GET prescriptions
 router.get('/', authenticate, async (req, res) => {
@@ -40,7 +64,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // POST create — doctor only (auto-billing enabled)
-router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), async (req, res) => {
+router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), prescriptionCreateRules, validate, async (req, res) => {
   try {
     const { patient_id, diagnosis_id, medication_name, dosage, frequency, duration, instructions,
             encounter_id, quantity = 1 } = req.body;
@@ -89,7 +113,7 @@ router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), asyn
 });
 
 // PUT update — doctor updates content; pharmacist marks dispensed
-router.put('/:id', authenticate, authorize('doctor', 'pharmacist', 'super_admin', 'admin'), async (req, res) => {
+router.put('/:id', authenticate, authorize('doctor', 'pharmacist', 'super_admin', 'admin'), prescriptionUpdateRules, validate, async (req, res) => {
   try {
     const { medication_name, dosage, frequency, duration, instructions, is_dispensed } = req.body;
     const existing = await pool.query('SELECT workflow_status, patient_id FROM prescriptions WHERE id = $1', [req.params.id]);

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { MessageSquare, X, Send, Bot, User, Sparkles } from 'lucide-react';
+
 
 interface Message {
   id: string;
@@ -99,28 +101,32 @@ const AIChatbot: React.FC = () => {
     }
   };
 
-  return (
+  return createPortal(
     <>
-      {/* Chat Button */}
+      {/* Trigger Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-5 right-4 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-2xl transition-all hover:scale-110 group sm:bottom-6 sm:right-6"
+          className="fixed bottom-6 right-6 z-[9999] bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-2xl transition-all duration-200 hover:scale-110 group"
           aria-label="Open AI Chat"
         >
           <div className="relative">
             <MessageSquare className="w-6 h-6" />
             <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-yellow-400 animate-pulse" />
           </div>
-          <span className="absolute -top-12 right-0 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          {/* Tooltip — sits above the button, never overlaps content */}
+          <span className="absolute bottom-full right-0 mb-2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
             AI Assistant
           </span>
         </button>
       )}
 
-      {/* Chat Window */}
+      {/* Chat Window — portal-rendered, always on top, anchored above the trigger */}
       {isOpen && (
-        <div className="fixed bottom-4 right-3 z-50 w-96 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all sm:bottom-6 sm:right-6 sm:max-w-[calc(100vw-2rem)]">
+        <div
+          className="fixed bottom-[5.5rem] right-6 z-[9999] w-[24rem] max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          style={{ maxHeight: 'min(600px, calc(100vh - 7rem))' }}
+        >
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -145,7 +151,7 @@ const AIChatbot: React.FC = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 max-h-96">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -219,7 +225,7 @@ const AIChatbot: React.FC = () => {
         </div>
       )}
     </>
-  );
+  , document.body);
 };
 
 export default AIChatbot;

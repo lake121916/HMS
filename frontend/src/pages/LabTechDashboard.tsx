@@ -20,6 +20,7 @@ interface LabTest {
   results?: string;
   is_abnormal?: boolean;
   encounter_id?: number;
+  payment_status?: string;
 }
 
 const priorityColors: Record<string, string> = {
@@ -181,9 +182,22 @@ const LabTechDashboard: React.FC = () => {
                     test.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
                   {test.status.replace('_',' ')}
                 </span>
-                {test.status === 'pending' && (
+                {test.payment_status === 'UNPAID' && (
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700">
+                    Payment Required
+                  </span>
+                )}
+                {test.status === 'pending' && test.payment_status !== 'UNPAID' && (
                   <button onClick={e => { e.stopPropagation(); markInProgress(test.id); }}
                     className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition">
+                    Start
+                  </button>
+                )}
+                {test.status === 'pending' && test.payment_status === 'UNPAID' && (
+                  <button disabled
+                    className="text-xs px-2 py-1 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed"
+                    title="Payment required to start test"
+                  >
                     Start
                   </button>
                 )}

@@ -63,22 +63,114 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
+// POST create clinical invoice (for lab, pharmacy, radiology services)
+router.post('/clinical', authenticate, authorize('doctor', 'nurse', 'lab_technician', 'pharmacist'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { encounter_id, items } = req.body;
+    
+    if (!encounter_id || !items || !Array.isArray(items)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: 'Invalid clinical invoice data' });
+    }
+
+    // Check if clinical invoice already exists for this encounter
+    const existingInvoice = await client.query(
+      `SELECT id, total_amount, paid_amount FROM invoices WHERE encounter_id = $1 AND invoice_type = 'clinical'`,
+      [encounter_id]
+    );
+
+    let invoiceId;
+    if (existingInvoice.rows.length > 0) {
+      // Update existing invoice
+      invoiceId = existingInvoice.rows[0].id;
+      const currentTotal = parseFloat(existingInvoice.rows[0].total_amount);
+      const additionalTotal = items.reduce((sum, item) => sum + parseFloat(item.total), 0);
+      const newTotal = currentTotal + additionalTotal;
+
+      await client.query(
+        `UPDATE invoices SET total_amount = $1, updated_at = NOW() WHERE id = $2`,
+        [newTotal, invoiceId]
+      );
+
+      // Add new items
+      for (const item of items) {
+        await client.query(
+          `INSERT INTO invoice_items (invoice_id, service, quantity, unit_price, total)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [invoiceId, item.service, item.quantity, item.unit_price, item.total]
+        );
+      }
+    } else {
+      // Create new clinical invoice
+      const total_amount = items.reduce((sum, item) => sum + parseFloat(item.total), 0);
+      
+      const result = await pool.query(
+        `INSERT INTO invoices (patient_id, encounter_id, invoice_type, subtotal, tax, discount, total_amount, notes, status)
+         SELECT $1, $2, 'clinical', $3, 0, 0, $4, 'Clinical services', 'UNPAID' RETURNING *
+         FROM encounters WHERE id = $2`,
+        [total_amount, encounter_id, total_amount, encounter_id]
+      );
+
+      invoiceId = result.rows[0].id;
+
+      // Add items
+      for (const item of items) {
+        await client.query(
+          `INSERT INTO invoice_items (invoice_id, service, quantity, unit_price, total)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [invoiceId, item.service, item.quantity, item.unit_price, item.total]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+
+    res.status(201).json({ success: true, data: { invoice_id, message: 'Clinical invoice created/updated' } });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error creating clinical invoice:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  } finally {
+    client.release();
+  }
+});
+
 // POST create invoice
 router.post('/', authenticate, authorize('receptionist'), async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
     const { patient_id, admission_id, due_date, subtotal, tax = 0, discount = 0, notes, items } = req.body;
     const total_amount = parseFloat(subtotal) + parseFloat(tax) - parseFloat(discount);
 
     const result = await pool.query(
       `INSERT INTO invoices (patient_id, admission_id, due_date, subtotal, tax, discount, total_amount, notes, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending') RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'UNPAID') RETURNING *`,
       [patient_id, admission_id || null, due_date || null, subtotal, tax, discount, total_amount, notes || null]
     );
 
+    // Create invoice items if provided
+    if (items && Array.isArray(items) && items.length > 0) {
+      for (const item of items) {
+        await client.query(
+          `INSERT INTO invoice_items (invoice_id, service, quantity, unit_price, total)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [result.rows[0].id, item.service, item.quantity, item.unit_price, item.total]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+
     res.status(201).json({ success: true, data: { invoice: result.rows[0] } });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Error creating invoice:', error);
     res.status(500).json({ success: false, message: 'Server error' });
+  } finally {
+    client.release();
   }
 });
 

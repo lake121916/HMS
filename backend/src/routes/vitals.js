@@ -1,7 +1,37 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
+const { body, param, query: qv } = require('express-validator');
+const validate = require('../middleware/validation');
 const { authenticate, authorize } = require('../middleware/auth');
+
+// ── Reusable vital field validators ────────────────────────────────────────
+const vitalFields = [
+  body('patient_id').isInt({ min: 1 }).withMessage('Valid patient_id is required'),
+  body('temperature').optional({ nullable: true })
+    .isFloat({ min: 30, max: 45 }).withMessage('Temperature must be between 30–45 °C'),
+  body('blood_pressure_systolic').optional({ nullable: true })
+    .isInt({ min: 60, max: 300 }).withMessage('Systolic BP must be 60–300 mmHg'),
+  body('blood_pressure_diastolic').optional({ nullable: true })
+    .isInt({ min: 40, max: 200 }).withMessage('Diastolic BP must be 40–200 mmHg'),
+  body('heart_rate').optional({ nullable: true })
+    .isInt({ min: 20, max: 300 }).withMessage('Heart rate must be 20–300 bpm'),
+  body('respiratory_rate').optional({ nullable: true })
+    .isInt({ min: 5, max: 60 }).withMessage('Respiratory rate must be 5–60 /min'),
+  body('oxygen_saturation').optional({ nullable: true })
+    .isFloat({ min: 50, max: 100 }).withMessage('SpO₂ must be 50–100%'),
+  body('weight').optional({ nullable: true })
+    .isFloat({ min: 0.5, max: 500 }).withMessage('Weight must be 0.5–500 kg'),
+  body('height').optional({ nullable: true })
+    .isFloat({ min: 20, max: 300 }).withMessage('Height must be 20–300 cm'),
+  body('blood_glucose').optional({ nullable: true })
+    .isFloat({ min: 1, max: 100 }).withMessage('Blood glucose must be 1–100 mmol/L'),
+  body('notes').optional({ nullable: true })
+    .isString().trim().isLength({ max: 1000 }).withMessage('Notes must be ≤ 1000 characters'),
+];
+
+const vitalUpdateFields = vitalFields.slice(1); // patient_id not required on update
+
 
 // GET vitals — doctors & nurses see all; patients see only their own
 router.get('/', authenticate, async (req, res) => {
@@ -38,7 +68,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // POST record vitals — nurse and doctor only
-router.post('/', authenticate, authorize('nurse', 'doctor', 'super_admin', 'admin'), async (req, res) => {
+router.post('/', authenticate, authorize('nurse', 'doctor', 'super_admin', 'admin'), vitalFields, validate, async (req, res) => {
   try {
     const { patient_id, temperature, blood_pressure_systolic, blood_pressure_diastolic,
       heart_rate, respiratory_rate, oxygen_saturation, weight, height, blood_glucose, notes } = req.body;
@@ -63,7 +93,7 @@ router.post('/', authenticate, authorize('nurse', 'doctor', 'super_admin', 'admi
 });
 
 // PUT update vitals — nurse or doctor who recorded it, or admin
-router.put('/:id', authenticate, authorize('nurse', 'doctor', 'super_admin', 'admin'), async (req, res) => {
+router.put('/:id', authenticate, authorize('nurse', 'doctor', 'super_admin', 'admin'), vitalUpdateFields, validate, async (req, res) => {
   try {
     const { temperature, blood_pressure_systolic, blood_pressure_diastolic,
       heart_rate, respiratory_rate, oxygen_saturation, weight, height, blood_glucose, notes } = req.body;

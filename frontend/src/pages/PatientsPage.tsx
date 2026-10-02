@@ -1,25 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import api from '../services/api';
 import { useRoleAccess } from '../hooks/useRoleAccess';
+import { usePatients, useCreatePatient, useUpdatePatient, useDeletePatient } from '../hooks/useApi';
+import type { Patient } from '../hooks/useApi';
 import { Plus, Search, Edit, Trash2, X, Eye, Users } from 'lucide-react';
 
-interface Patient {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  blood_type: string;
-  date_of_birth: string;
-  address?: string;
-  gender?: string;
-  allergies?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  insurance_number?: string;
-  medical_history?: string;
-}
 
 const inp = 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white';
 const lbl = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
@@ -28,11 +13,8 @@ const PatientsPage: React.FC = () => {
   const { can } = useRoleAccess();
   const location = useLocation();
   const navigate = useNavigate();
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [editing, setEditing] = useState<Patient | null>(null);
@@ -43,18 +25,14 @@ const PatientsPage: React.FC = () => {
     emergencyContactPhone:'', insuranceNumber:'', medicalHistory:''
   });
 
-  useEffect(() => { fetchPatients(); }, [page, search]);
+  // ── TanStack Query hooks ──────────────────────────────────────────────────
+  const { data, isLoading } = usePatients({ page, search });
+  const patients = data?.patients ?? [];
+  const totalPages = data?.pagination?.totalPages ?? 1;
 
-  const fetchPatients = async () => {
-    try {
-      const params = new URLSearchParams({ page: String(page), limit: '12' });
-      if (search) params.append('search', search);
-      const r = await api.get(`/patients?${params}`);
-      setPatients(r.data.data.patients || []);
-      setTotalPages(r.data.data.pagination?.totalPages || 1);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
+  const createPatient = useCreatePatient();
+  const updatePatient = useUpdatePatient(editing?.id ?? 0);
+  const deletePatient = useDeletePatient();
 
   const openAdd = () => {
     setEditing(null);
@@ -84,21 +62,19 @@ const PatientsPage: React.FC = () => {
     e.preventDefault();
     try {
       if (editing) {
-        await api.put(`/patients/${editing.id}`, form);
+        await updatePatient.mutateAsync(form as Record<string, unknown>);
       } else {
-        await api.post('/patients', form);
+        await createPatient.mutateAsync(form as Record<string, unknown>);
       }
       setShowModal(false);
       if (location.pathname.endsWith('/new')) navigate('/patients');
-      fetchPatients();
     } catch (e: any) { alert(e.response?.data?.message || 'Failed to save patient'); }
   };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Delete this patient? All related records will also be removed.')) return;
     try {
-      await api.delete(`/patients/${id}`);
-      fetchPatients();
+      await deletePatient.mutateAsync(id);
     } catch (e: any) { alert(e.response?.data?.message || 'Failed to delete patient'); }
   };
 
@@ -152,7 +128,7 @@ const PatientsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {loading ? (
+              {isLoading ? (
                 Array.from({length:5}).map((_,i)=>(
                   <tr key={i}><td colSpan={6} className="px-4 py-3">
                     <div className="animate-pulse h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4" />

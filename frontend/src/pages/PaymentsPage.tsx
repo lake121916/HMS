@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { Search, DollarSign, TrendingUp, CreditCard, AlertCircle, X, Plus } from 'lucide-react';
+import { fmt, toNum } from '../utils/format';
 
 interface Payment {
   id: number;
@@ -76,10 +77,10 @@ const PaymentsPage: React.FC = () => {
   };
 
   const openPaymentModal = (invoice: Invoice) => {
-    const remaining = Math.max(0, invoice.total_amount - (invoice.amount_paid || 0));
+    const remaining = Math.max(0, toNum(invoice.total_amount) - toNum(invoice.amount_paid));
     setSelectedInvoice(invoice);
     setPaymentData({
-      amount: remaining.toFixed(2),
+      amount: fmt(remaining),
       payment_method: 'cash',
       transaction_id: '',
       notes: '',
@@ -115,7 +116,7 @@ const PaymentsPage: React.FC = () => {
 
   const openRefundModal = (payment: Payment) => {
     setSelectedPaymentForRefund(payment);
-    setRefundAmount(payment.amount.toFixed(2));
+    setRefundAmount(fmt(payment.amount));
     setRefundReason('');
     setShowRefundModal(true);
   };
@@ -427,9 +428,9 @@ const PaymentsPage: React.FC = () => {
                 <tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
                   <td className="px-4 py-3 text-sm font-medium text-blue-600 dark:text-blue-400">#{inv.id}</td>
                   <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{inv.patient_name}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">${inv.total_amount.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-sm text-green-600 dark:text-green-400">${inv.amount_paid.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-sm text-red-600 dark:text-red-400">${Math.max(0, inv.total_amount - inv.amount_paid).toFixed(2)}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">${fmt(inv.total_amount)}</td>
+                  <td className="px-4 py-3 text-sm text-green-600 dark:text-green-400">${fmt(inv.amount_paid)}</td>
+                  <td className="px-4 py-3 text-sm text-red-600 dark:text-red-400">${Math.max(0, toNum(inv.total_amount) - toNum(inv.amount_paid)).toFixed(2)}</td>
                   <td className="px-4 py-3 text-sm capitalize text-gray-900 dark:text-white">{inv.status}</td>
                   <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}</td>
                   <td className="px-4 py-3">
@@ -464,15 +465,15 @@ const PaymentsPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-xl bg-gray-50 dark:bg-gray-900/20 p-4">
                   <p className="text-xs uppercase tracking-wide text-gray-500">Invoice Total</p>
-                  <p className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">${selectedInvoice.total_amount.toFixed(2)}</p>
+                  <p className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">${fmt(selectedInvoice.total_amount)}</p>
                 </div>
                 <div className="rounded-xl bg-gray-50 dark:bg-gray-900/20 p-4">
                   <p className="text-xs uppercase tracking-wide text-gray-500">Amount Paid</p>
-                  <p className="mt-2 text-lg font-semibold text-green-600 dark:text-green-300">${selectedInvoice.amount_paid.toFixed(2)}</p>
+                  <p className="mt-2 text-lg font-semibold text-green-600 dark:text-green-300">${fmt(selectedInvoice.amount_paid)}</p>
                 </div>
                 <div className="rounded-xl bg-gray-50 dark:bg-gray-900/20 p-4 sm:col-span-2">
                   <p className="text-xs uppercase tracking-wide text-gray-500">Remaining Balance</p>
-                  <p className="mt-2 text-lg font-semibold text-red-600 dark:text-red-300">${Math.max(0, selectedInvoice.total_amount - selectedInvoice.amount_paid).toFixed(2)}</p>
+                  <p className="mt-2 text-lg font-semibold text-red-600 dark:text-red-300">${Math.max(0, toNum(selectedInvoice.total_amount) - toNum(selectedInvoice.amount_paid)).toFixed(2)}</p>
                 </div>
               </div>
 
@@ -588,9 +589,9 @@ const PaymentsPage: React.FC = () => {
                   <tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
                     <td className="px-4 py-3 text-sm font-medium text-blue-600 dark:text-blue-400">#{inv.id}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{inv.patient_name}</td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">${inv.total_amount.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-sm text-green-600 dark:text-green-400">${inv.amount_paid.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-sm text-red-600 dark:text-red-400">${Math.max(0, inv.total_amount - inv.amount_paid).toFixed(2)}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">${fmt(inv.total_amount)}</td>
+                    <td className="px-4 py-3 text-sm text-green-600 dark:text-green-400">${fmt(inv.amount_paid)}</td>
+                    <td className="px-4 py-3 text-sm text-red-600 dark:text-red-400">${Math.max(0, toNum(inv.total_amount) - toNum(inv.amount_paid)).toFixed(2)}</td>
                     <td className="px-4 py-3 text-sm capitalize text-gray-900 dark:text-white">{inv.status}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}</td>
                     <td className="px-4 py-3">

@@ -112,7 +112,23 @@ const ReceptionistWorkflow: React.FC = () => {
     try {
       const res = await api.post('/patients', regForm);
       const patient = res.data.data.patient;
-      showToast('success', `Patient ${patient.first_name} ${patient.last_name} registered!`);
+      
+      // Automatically create registration invoice
+      void api.post('/invoices', {
+        patient_id: patient.id,
+        subtotal: 50,
+        tax: 0,
+        discount: 0,
+        notes: 'Patient registration fee',
+        items: [{
+          service: 'Patient Registration',
+          quantity: 1,
+          unit_price: 50,
+          total: 50
+        }]
+      });
+      
+      showToast('success', `Patient ${patient.first_name} ${patient.last_name} registered! Registration invoice created.`);
       setSelectedPatient(patient);
       setShowRegForm(false);
       setRegForm({

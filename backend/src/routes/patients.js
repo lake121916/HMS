@@ -28,6 +28,18 @@ router.put(
   '/:id',
   authenticate,
   authorize('admin', 'receptionist', 'doctor', 'nurse'),
+  [
+    body('firstName').optional().notEmpty().withMessage('First name cannot be empty').trim(),
+    body('lastName').optional().notEmpty().withMessage('Last name cannot be empty').trim(),
+    body('email').optional().isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('phone').optional().isMobilePhone('any').withMessage('Valid phone number is required'),
+    body('dateOfBirth').optional().isISO8601().withMessage('Valid date of birth required'),
+    body('gender').optional().isIn(['male', 'female', 'other']).withMessage('Invalid gender value'),
+    body('bloodType').optional().isIn(['A+','A-','B+','B-','AB+','AB-','O+','O-','']).withMessage('Invalid blood type'),
+    body('allergies').optional().isString().trim().isLength({ max: 500 }),
+    body('medicalHistory').optional().isString().trim().isLength({ max: 2000 }),
+  ],
+  validate,
   patientController.updatePatient
 );
 

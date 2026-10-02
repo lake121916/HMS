@@ -58,6 +58,17 @@ interface FullEncounter extends EncounterSummary {
   billing?: { invoice: any; items: any[] };
 }
 
+interface Service {
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+  unit_price: number;
+  department_id: number | null;
+  department_name?: string;
+  is_active: boolean;
+}
+
 type Tab = 'consult' | 'prescriptions' | 'labs' | 'radiology' | 'procedures' | 'billing';
 
 const priorityColors: Record<string, string> = {
@@ -73,6 +84,7 @@ const DoctorConsultationPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{type:'success'|'error';msg:string}|null>(null);
+  const [services, setServices] = useState<Service[]>([]);
 
   // Form states
   const [consultForm, setConsultForm] = useState({ consultation_notes: '', diagnosis: '', icd_code: '', treatment_plan: '', follow_up_instructions: '' });
@@ -81,7 +93,10 @@ const DoctorConsultationPage: React.FC = () => {
   const [radForm, setRadForm] = useState({ study_type: '', body_part: '', clinical_indication: '', priority: 'routine', notes: '' });
   const [procForm, setProcForm] = useState({ procedure_name: '', description: '', priority: 'routine', notes: '' });
 
-  useEffect(() => { fetchQueue(); }, []);
+  useEffect(() => {
+    fetchQueue();
+    fetchServices();
+  }, []);
 
   const showToast = (type: 'success'|'error', msg: string) => {
     setToast({ type, msg });
@@ -95,6 +110,14 @@ const DoctorConsultationPage: React.FC = () => {
       setQueue(res.data.data.encounters || []);
     } catch { showToast('error', 'Failed to load queue'); }
     finally { setLoading(false); }
+  };
+
+  const fetchServices = async () => {
+    try {
+      const res = await api.get('/services');
+      const raw = res.data.data.services || res.data.data || [];
+      setServices(raw.filter((s: Service) => s.is_active));
+    } catch { console.error('Failed to load services'); }
   };
 
   const openEncounter = async (enc: EncounterSummary) => {
@@ -147,12 +170,30 @@ const DoctorConsultationPage: React.FC = () => {
     if (!activeEncounter) return;
     setSubmitting(true);
     try {
+      // Get the selected service price
+      const selectedService = services.find(s => s.name === rxForm.medication_name);
+      const price = selectedService ? selectedService.unit_price : 0;
+      
+      // Create prescription with billing
       await api.post('/prescriptions', {
         ...rxForm,
         patient_id: activeEncounter.patient_id,
         encounter_id: activeEncounter.id,
         quantity: parseInt(rxForm.quantity) || 1,
+        unit_price: price,
       });
+      
+      // Create or update clinical invoice
+      await api.post('/invoices/clinical', {
+        encounter_id: activeEncounter.id,
+        items: [{
+          service: rxForm.medication_name,
+          quantity: parseInt(rxForm.quantity) || 1,
+          unit_price: price,
+          total: price * (parseInt(rxForm.quantity) || 1)
+        }]
+      });
+      
       showToast('success', `Prescription for ${rxForm.medication_name} created & billed!`);
       setRxForm({ medication_name: '', dosage: '', frequency: '', duration: '', instructions: '', quantity: '1' });
       await refreshEncounter();
@@ -166,11 +207,29 @@ const DoctorConsultationPage: React.FC = () => {
     if (!activeEncounter) return;
     setSubmitting(true);
     try {
+      // Get the selected service price
+      const selectedService = services.find(s => s.name === labForm.test_name);
+      const price = selectedService ? selectedService.unit_price : 0;
+      
+      // Create lab test with billing
       await api.post('/lab-tests', {
         ...labForm,
         patient_id: activeEncounter.patient_id,
         encounter_id: activeEncounter.id,
+        unit_price: price,
       });
+      
+      // Create or update clinical invoice
+      await api.post('/invoices/clinical', {
+        encounter_id: activeEncounter.id,
+        items: [{
+          service: labForm.test_name,
+          quantity: 1,
+          unit_price: price,
+          total: price
+        }]
+      });
+      
       showToast('success', `Lab test "${labForm.test_name}" ordered & billed!`);
       setLabForm({ test_name: '', test_type: '', priority: 'normal', notes: '' });
       await refreshEncounter();
@@ -544,16 +603,14 @@ const DoctorConsultationPage: React.FC = () => {
                   <form onSubmit={orderLabTest} className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="col-span-2">
-                        <label className="text-xs font-medium text-slate-600">Test Name *</label>
-                        <input required value={labForm.test_name} onChange={e => setLabForm(f=>({...f,test_name:e.target.value}))}
-                          placeholder="e.g. CBC, Liver Function Test, Blood Glucose"
-                          className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-slate-600">Test Type</label>
-                        <input value={labForm.test_type} onChange={e => setLabForm(f=>({...f,test_type:e.target.value}))}
-                          placeholder="e.g. Hematology, Biochemistry"
-                          className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300" />
+                        <label className="text-xs font-medium text-slate-600">Select Lab Test *</label>
+                        <select required value={labForm.test_name} onChange={e => setLabForm(f=>({...f,test_name:e.target.value}))}
+                          className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300">
+                          <option value="">Select a lab test...</option>
+                          {services.filter(s => s.category === 'laboratory').map(s => (
+                            <option key={s.id} value={s.name}>{s.name} - ${s.unit_price}</option>
+                          ))}
+                        </select>
                       </div>
                       <div>
                         <label className="text-xs font-medium text-slate-600">Priority</label>
@@ -611,13 +668,14 @@ const DoctorConsultationPage: React.FC = () => {
                   </h3>
                   <form onSubmit={orderRadiology} className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs font-medium text-slate-600">Study Type *</label>
+                      <div className="col-span-2">
+                        <label className="text-xs font-medium text-slate-600">Select Radiology Service *</label>
                         <select required value={radForm.study_type} onChange={e => setRadForm(f=>({...f,study_type:e.target.value}))}
                           className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                          <option value="">Select...</option>
-                          {['X-Ray','CT Scan','MRI','Ultrasound','Mammography','Fluoroscopy','Nuclear Medicine','PET Scan','Echocardiogram'].map(s =>
-                            <option key={s} value={s}>{s}</option>)}
+                          <option value="">Select a radiology service...</option>
+                          {services.filter(s => s.category === 'radiology').map(s => (
+                            <option key={s.id} value={s.name}>{s.name} - ${s.unit_price}</option>
+                          ))}
                         </select>
                       </div>
                       <div>
@@ -680,10 +738,14 @@ const DoctorConsultationPage: React.FC = () => {
                   <form onSubmit={orderProcedure} className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="col-span-2">
-                        <label className="text-xs font-medium text-slate-600">Procedure Name *</label>
-                        <input required value={procForm.procedure_name} onChange={e => setProcForm(f=>({...f,procedure_name:e.target.value}))}
-                          placeholder="e.g. IV Cannulation, ECG, Wound Dressing"
-                          className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300" />
+                        <label className="text-xs font-medium text-slate-600">Select Procedure *</label>
+                        <select required value={procForm.procedure_name} onChange={e => setProcForm(f=>({...f,procedure_name:e.target.value}))}
+                          className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300">
+                          <option value="">Select a procedure...</option>
+                          {services.filter(s => s.category === 'surgery' || s.category === 'nursing' || s.category === 'other').map(s => (
+                            <option key={s.id} value={s.name}>{s.name} - ${s.unit_price}</option>
+                          ))}
+                        </select>
                       </div>
                       <div className="col-span-2">
                         <label className="text-xs font-medium text-slate-600">Description</label>

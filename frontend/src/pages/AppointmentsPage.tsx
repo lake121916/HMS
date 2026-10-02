@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import api from '../services/api';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  useAppointments, useCreateAppointment,
+  useCancelAppointment, useRescheduleAppointment,
+} from '../hooks/useApi';
 import { Plus, Calendar, Clock, User, CheckCircle, XCircle, X, RefreshCw, Search } from 'lucide-react';
+
 
 interface Appointment {
   id: number;
@@ -13,7 +17,7 @@ interface Appointment {
   doctor_name?: string;
   appointment_date: string;
   status: string;
-  reason: string;
+  reason?: string;
   notes?: string;
 }
 
@@ -34,8 +38,6 @@ const AppointmentsPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -46,17 +48,13 @@ const AppointmentsPage: React.FC = () => {
   });
   const [rescheduleData, setRescheduleData] = useState({ newDate: '', reason: '' });
 
-  useEffect(() => { fetchAppointments(); }, [statusFilter]);
+  // ── TanStack Query ──────────────────────────────────────────────────────
+  const { data, isLoading, refetch } = useAppointments({ status: statusFilter });
+  const appointments = data?.appointments ?? [];
 
-  const fetchAppointments = async () => {
-    setLoading(true);
-    try {
-      const params = statusFilter ? `?status=${statusFilter}` : '';
-      const res = await api.get(`/appointments${params}`);
-      setAppointments(res.data.data.appointments || []);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
+  const createAppointment   = useCreateAppointment();
+  const cancelAppointment   = useCancelAppointment();
+  const rescheduleAppointment = useRescheduleAppointment();
 
   const handleBook = () => {
     setFormData({ patientId:'', doctorId:'', appointmentDate:'', reason:'', notes:'' });
@@ -66,7 +64,7 @@ const AppointmentsPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/appointments', {
+      await createAppointment.mutateAsync({
         patientId: parseInt(formData.patientId),
         doctorId: parseInt(formData.doctorId),
         appointmentDate: formData.appointmentDate,
@@ -74,15 +72,13 @@ const AppointmentsPage: React.FC = () => {
         notes: formData.notes || undefined,
       });
       closeModal();
-      fetchAppointments();
     } catch (e: any) { alert(e.response?.data?.message || 'Failed to book appointment'); }
   };
 
   const handleCancel = async (appt: Appointment) => {
     if (!window.confirm(`Cancel appointment for ${appt.patient_name || 'this patient'}?`)) return;
     try {
-      await api.put(`/appointments/${appt.id}/cancel`, { reason: 'Cancelled by staff' });
-      fetchAppointments();
+      await cancelAppointment.mutateAsync({ id: appt.id, reason: 'Cancelled by staff' });
     } catch (e: any) { alert(e.response?.data?.message || 'Failed to cancel appointment'); }
   };
 
@@ -102,14 +98,15 @@ const AppointmentsPage: React.FC = () => {
   const handleReschedule = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.put(`/appointments/${selectedAppt?.id}/reschedule`, {
+      await rescheduleAppointment.mutateAsync({
+        id: selectedAppt!.id,
         newDate: rescheduleData.newDate,
         reason: rescheduleData.reason || 'Rescheduled',
       });
       setShowRescheduleModal(false);
-      fetchAppointments();
     } catch (e: any) { alert(e.response?.data?.message || 'Failed to reschedule'); }
   };
+
 
   React.useEffect(() => {
     if (location.pathname.endsWith('/new')) {
@@ -141,9 +138,9 @@ const AppointmentsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <button onClick={fetchAppointments} disabled={loading}
+          <button onClick={() => refetch()} disabled={isLoading}
             className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors disabled:opacity-50">
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           {can('appointments:create') && (
             <button onClick={handleBook}
@@ -183,7 +180,7 @@ const AppointmentsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {loading ? (
+              {isLoading ? (
                 <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">
                   <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin opacity-40" />
                   Loading...

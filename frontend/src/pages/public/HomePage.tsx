@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import PublicLayout from '../../components/PublicLayout';
 import {
@@ -91,16 +91,8 @@ const HomePage: React.FC = () => {
           </div>
 
           <div className="mt-8 max-w-4xl">
-            <div className="h-36 w-36 rounded-full bg-white/90 ring-8 ring-white/80 flex items-center justify-center shadow-2xl mx-auto">
-              <div
-                className="h-28 w-28 rounded-full flex items-center justify-center text-white text-3xl font-extrabold"
-                style={{
-                  background: 'conic-gradient(#10B981 0deg 120deg, #F59E0B 120deg 240deg, #EF4444 240deg 360deg)'
-                }}
-              >
-                AK
-              </div>
-            </div>
+
+
 
             <h1 className="mt-6 text-4xl sm:text-5xl md:text-6xl font-[600] tracking-tight text-gray-900" style={{fontFamily: '"Great Vibes", serif'}}>
               Alem Ketema Enat Hospital

@@ -1,451 +1,466 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import {
+  DollarSign, Users, FileText, Clock, CreditCard, Smartphone,
+  Building2, Shield, RefreshCw, Search, Filter, Printer, Download,
+  TrendingUp, CheckCircle2, AlertTriangle
+} from 'lucide-react';
+import { fmt } from '../utils/format';
+import StatCard from '../components/cashier/StatCard';
+import InvoiceTable from '../components/cashier/InvoiceTable';
+import PaymentModal from '../components/cashier/PaymentModal';
+import ReceiptPreview from '../components/cashier/ReceiptPreview';
 
-interface PaymentRecord {
-  id: string;
-  patient: string;
-  method: 'Cash' | 'Card' | 'Insurance' | 'Mobile Money' | 'Bank Transfer' | 'Online';
-  amount: number;
-  reference?: string;
-  time: string;
-}
-
-interface InvoiceSummary {
+interface Invoice {
   id: number;
+  invoice_number: string;
   patient_name: string;
+  patient_id: string;
+  invoice_type: string;
+  encounter_number?: string;
   total_amount: number;
   amount_paid: number;
+  created_at: string;
+  status: string;
+  items?: Array<{ service: string; quantity: number; unit_price: number; total: number }>;
+}
+
+interface Payment {
+  id: number;
+  receipt_number: string;
+  invoice_number: string;
+  patient_name: string;
+  patient_id: string;
+  amount: number;
+  payment_method: string;
+  payment_date: string;
+  cashier_name: string;
   status: string;
 }
 
-const todayExample: PaymentRecord[] = [
-  { id: 'TXN-101', patient: 'Selam Bekele', method: 'Card', amount: 4200, reference: 'CARD-8891', time: '09:15' },
-  { id: 'TXN-102', patient: 'Abebe Tadesse', method: 'Cash', amount: 2500, reference: 'CASH-204', time: '10:23' },
-  { id: 'TXN-103', patient: 'Meron Alemu', method: 'Insurance', amount: 6800, reference: 'INS-117', time: '11:10' },
-  { id: 'TXN-104', patient: 'Kebede Worku', method: 'Mobile Money', amount: 1800, reference: 'MM-420', time: '13:42' },
-];
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('en-ET', {
-    style: 'currency',
-    currency: 'ETB',
-    maximumFractionDigits: 2,
-  }).format(value);
-
-const PaymentMethodStyles: Record<string, string> = {
-  Cash: 'bg-green-100 text-green-800',
-  Card: 'bg-blue-100 text-blue-800',
-  Insurance: 'bg-purple-100 text-purple-800',
-  'Mobile Money': 'bg-cyan-100 text-cyan-800',
-  'Bank Transfer': 'bg-amber-100 text-amber-800',
-  Online: 'bg-indigo-100 text-indigo-800',
-};
-
-const normalizeMethod = (method: PaymentRecord['method']) => {
-  switch (method) {
-    case 'Cash':
-      return 'cash';
-    case 'Card':
-      return 'card';
-    case 'Insurance':
-      return 'insurance';
-    case 'Mobile Money':
-      return 'mobile_money';
-    case 'Bank Transfer':
-      return 'bank_transfer';
-    case 'Online':
-      return 'online';
-    default:
-      return 'cash';
-  }
-};
+interface DashboardStats {
+  todayPayments: number;
+  todayTransactions: number;
+  unpaidInvoices: number;
+  paidInvoices: number;
+  outstandingAmount: number;
+  cashPayments: number;
+  cardPayments: number;
+  telebirrPayments: number;
+  bankPayments: number;
+  insurancePayments: number;
+}
 
 const CashierDashboard: React.FC = () => {
-  const [payments, setPayments] = useState<PaymentRecord[]>(todayExample);
-  const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
-  const [query, setQuery] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'unpaid' | 'payments' | 'receipts' | 'billing'>('dashboard');
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(false);
-
-  const fetchPayments = async () => {
-    try {
-      const res = await api.get('/payments');
-      const rows = res.data?.data?.payments || [];
-      const mapped = rows.map((entry: any) => ({
-        id: `TXN-${entry.id}`,
-        patient: entry.patient_name || 'Patient',
-        method: String(entry.payment_method || 'cash').split('_').map((part: string) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ') as PaymentRecord['method'],
-        amount: Number(entry.amount || 0),
-        reference: entry.transaction_id || '—',
-        time: new Date(entry.payment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      }));
-      setPayments(mapped.length ? mapped : todayExample);
-    } catch (error) {
-      setPayments(todayExample);
-    }
-  };
-
-  const fetchInvoices = async () => {
-    try {
-      const res = await api.get('/invoices');
-      const rows = res.data?.data?.invoices || [];
-      setInvoices(rows.filter((invoice: InvoiceSummary) => invoice.status !== 'paid'));
-    } catch (error) {
-      setInvoices([]);
-    }
-  };
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<Payment | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   useEffect(() => {
-    fetchPayments();
-    fetchInvoices();
-  }, []);
+    fetchDashboardData();
+  }, [activeTab, statusFilter]);
 
-  const filtered = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    if (!term) return payments;
-    return payments.filter(payment =>
-      payment.patient.toLowerCase().includes(term) ||
-      payment.id.toLowerCase().includes(term) ||
-      payment.method.toLowerCase().includes(term)
-    );
-  }, [payments, query]);
-
-  const totalRevenue = useMemo(
-    () => payments.reduce((sum, payment) => sum + payment.amount, 0),
-    [payments]
-  );
-
-  const paidBills = useMemo(() => payments.length, [payments]);
-  const pendingBills = 7;
-  const outstandingBalance = 14500;
-
-  const handleSavePayment = async (form: {
-    patient: string;
-    method: PaymentRecord['method'];
-    amount: number;
-    reference?: string;
-    invoiceId?: number;
-  }) => {
+  const fetchDashboardData = async () => {
     setLoading(true);
-
-    if (!form.invoiceId) {
-      alert('Please select an invoice before saving the payment.');
-      setLoading(false);
-      return;
-    }
-
     try {
-      await api.post('/payments', {
-        invoice_id: form.invoiceId,
-        amount: Number(form.amount),
-        payment_method: normalizeMethod(form.method),
-        transaction_id: form.reference?.trim() || undefined,
-        notes: `Cashier payment received from ${form.patient.trim()}`,
-      });
-
-      await fetchPayments();
-      await fetchInvoices();
-      setLoading(false);
-      setIsOpen(false);
+      if (activeTab === 'dashboard') {
+        const statsRes = await api.get('/cashier/stats');
+        setStats(statsRes.data.data);
+      } else if (activeTab === 'unpaid') {
+        const invoicesRes = await api.get('/cashier/invoices/unpaid');
+        setInvoices(invoicesRes.data.data.invoices || []);
+      } else if (activeTab === 'payments') {
+        const paymentsRes = await api.get('/cashier/payments/history');
+        setPayments(paymentsRes.data.data.payments || []);
+      } else if (activeTab === 'receipts') {
+        const paymentsRes = await api.get('/cashier/payments/history');
+        setPayments(paymentsRes.data.data.payments || []);
+      }
     } catch (error) {
-      console.error('Payment submission error:', error);
+      showToast('error', 'Failed to load data');
+    } finally {
       setLoading(false);
-      alert('The payment could not be saved. Please check the invoice and try again.');
     }
   };
 
+  const showToast = (type: 'success' | 'error', msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const handleViewInvoice = async (invoice: Invoice) => {
+    try {
+      const res = await api.get(`/invoices/${invoice.id}`);
+      setSelectedInvoice({ ...invoice, items: res.data.data.items || [] });
+      setShowPaymentModal(true);
+    } catch (error) {
+      showToast('error', 'Failed to load invoice details');
+    }
+  };
+
+  const handlePayInvoice = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSubmit = async (paymentData: any) => {
+    try {
+      await api.post('/cashier/payments/process', paymentData);
+      showToast('success', 'Payment processed successfully');
+      setShowPaymentModal(false);
+      fetchDashboardData();
+    } catch (error: any) {
+      throw error;
+    }
+  };
+
+  const handleViewReceipt = (payment: Payment) => {
+    setSelectedReceipt(payment);
+    setShowReceiptModal(true);
+  };
+
+  const handlePrintReceipt = () => {
+    window.print();
+  };
+
+  const handleDownloadReceipt = () => {
+    if (selectedReceipt) {
+      const link = document.createElement('a');
+      link.href = `/api/cashier/receipt/${selectedReceipt.receipt_number}`;
+      link.download = `receipt_${selectedReceipt.receipt_number}.pdf`;
+      link.click();
+    }
+  };
+
+  const filteredInvoices = invoices.filter(inv =>
+    inv.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
+    inv.invoice_number?.toLowerCase().includes(search.toLowerCase()) ||
+    inv.patient_id?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const filteredPayments = payments.filter(pay =>
+    pay.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
+    pay.receipt_number?.toLowerCase().includes(search.toLowerCase()) ||
+    pay.invoice_number?.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cashier Dashboard</h1>
-          <p className="text-sm text-gray-500">Track daily collections and record patient payments by method.</p>
+    <div className="space-y-6">
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-2xl shadow-xl border text-sm font-semibold flex items-center gap-2 transition-all ${
+          toast.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
+        }`}>
+          {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <AlertTriangle className="w-5 h-5 text-red-500" />}
+          <span>{toast.msg}</span>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 rounded-3xl text-white shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center border border-emerald-400/30">
+            <DollarSign className="w-6 h-6 text-emerald-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
+              Cashier Dashboard
+              <span className="text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full">
+                Financial Station
+              </span>
+            </h1>
+            <p className="text-xs text-slate-300 mt-0.5">
+              Invoice management, payment processing, and receipt generation
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <button
+          onClick={fetchDashboardData}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+        </button>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+        {[
+          { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
+          { id: 'unpaid', label: 'Unpaid Invoices', icon: FileText },
+          { id: 'payments', label: 'Payments', icon: DollarSign },
+          { id: 'receipts', label: 'Receipts', icon: Printer },
+          { id: 'billing', label: 'Patient Billing', icon: Users },
+        ].map((tab) => (
           <button
-            onClick={() => setIsOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-bold rounded-t-2xl transition-all whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'bg-emerald-600 text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
           >
-            Receive Payment
+            <tab.icon className="w-4 h-4" /> {tab.label}
           </button>
-          <Link to="/invoices" className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">
-            Invoices
-          </Link>
+        ))}
+      </div>
+
+      {/* Dashboard Tab */}
+      {activeTab === 'dashboard' && stats && (
+        <div className="space-y-6">
+          {/* Main Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <StatCard label="Today's Payments" value={`$${fmt(stats.todayPayments)}`} icon={DollarSign} color="bg-emerald-50 text-emerald-600" />
+            <StatCard label="Transactions" value={stats.todayTransactions} icon={Clock} color="bg-blue-50 text-blue-600" />
+            <StatCard label="Unpaid Invoices" value={stats.unpaidInvoices} icon={FileText} color="bg-red-50 text-red-600" />
+            <StatCard label="Paid Invoices" value={stats.paidInvoices} icon={CheckCircle2} color="bg-green-50 text-green-600" />
+            <StatCard label="Outstanding" value={`$${fmt(stats.outstandingAmount)}`} icon={AlertTriangle} color="bg-amber-50 text-amber-600" />
+          </div>
+
+          {/* Payment Method Breakdown */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Payment Method Breakdown</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <StatCard label="Cash" value={`$${fmt(stats.cashPayments)}`} icon={DollarSign} color="bg-green-50 text-green-600" />
+              <StatCard label="Card" value={`$${fmt(stats.cardPayments)}`} icon={CreditCard} color="bg-blue-50 text-blue-600" />
+              <StatCard label="Telebirr" value={`$${fmt(stats.telebirrPayments)}`} icon={Smartphone} color="bg-purple-50 text-purple-600" />
+              <StatCard label="Bank" value={`$${fmt(stats.bankPayments)}`} icon={Building2} color="bg-amber-50 text-amber-600" />
+              <StatCard label="Insurance" value={`$${fmt(stats.insurancePayments)}`} icon={Shield} color="bg-cyan-50 text-cyan-600" />
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard label="Today's Revenue" value={formatCurrency(totalRevenue)} accent="bg-emerald-500" />
-        <StatCard label="Total Transactions" value={String(paidBills)} accent="bg-blue-500" />
-        <StatCard label="Outstanding Balance" value={formatCurrency(outstandingBalance)} accent="bg-amber-500" />
-      </div>
+      {/* Unpaid Invoices Tab */}
+      {activeTab === 'unpaid' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by patient name, invoice number, or patient ID..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="">All Status</option>
+              <option value="UNPAID">Unpaid</option>
+              <option value="PARTIAL">Partial</option>
+              <option value="PAID">Paid</option>
+            </select>
+          </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.4fr_0.9fr] gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Payment Activity</h2>
+          <InvoiceTable
+            invoices={filteredInvoices}
+            onView={handleViewInvoice}
+            onPay={handlePayInvoice}
+            loading={loading}
+          />
+        </div>
+      )}
+
+      {/* Payments Tab */}
+      {activeTab === 'payments' && (
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search patient, ID, or method"
-              className="w-full md:w-72 px-3 py-2 border border-gray-200 rounded-md text-sm"
+              type="text"
+              placeholder="Search payments by patient name, receipt number, or invoice..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500"
             />
           </div>
 
-          <div className="space-y-3">
-            {filtered.map((payment) => (
-              <div key={payment.id} className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 p-3">
-                <div>
-                  <div className="font-medium text-gray-900">{payment.patient}</div>
-                  <div className="text-xs text-gray-500">{payment.id} • {payment.reference}</div>
-                </div>
-
-                <div className="text-right">
-                  <div className="font-semibold text-gray-900">{formatCurrency(payment.amount)}</div>
-                  <span className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-medium ${PaymentMethodStyles[payment.method]}`}>
-                    {payment.method}
-                  </span>
-                  <div className="text-[11px] text-gray-400 mt-1">{payment.time}</div>
-                </div>
-              </div>
-            ))}
-
-            {filtered.length === 0 && (
-              <div className="text-sm text-gray-500 py-6 text-center">No payments match your search.</div>
-            )}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                  <tr>
+                    <th className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Receipt #</th>
+                    <th className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Invoice #</th>
+                    <th className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Patient</th>
+                    <th className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
+                    <th className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Method</th>
+                    <th className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                    <th className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {loading ? (
+                    <tr><td colSpan={7} className="px-5 py-12 text-center text-gray-400">Loading payments...</td></tr>
+                  ) : filteredPayments.length === 0 ? (
+                    <tr><td colSpan={7} className="px-5 py-12 text-center text-gray-400">No payments found</td></tr>
+                  ) : filteredPayments.map((payment) => (
+                    <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                      <td className="px-5 py-4 font-bold text-sm text-blue-600 dark:text-blue-400">{payment.receipt_number}</td>
+                      <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-400">{payment.invoice_number}</td>
+                      <td className="px-5 py-4">
+                        <div className="font-medium text-sm text-gray-900 dark:text-white">{payment.patient_name}</div>
+                        <div className="text-xs text-gray-500">{payment.patient_id}</div>
+                      </td>
+                      <td className="px-5 py-4 font-extrabold text-sm text-gray-900 dark:text-white">${fmt(payment.amount)}</td>
+                      <td className="px-5 py-4">
+                        <span className="text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full capitalize">
+                          {payment.payment_method.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-xs text-gray-500 dark:text-gray-400">{new Date(payment.payment_date).toLocaleString()}</td>
+                      <td className="px-5 py-4">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                          {payment.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
+      )}
 
+      {/* Receipts Tab */}
+      {activeTab === 'receipts' && (
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Summary</h2>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Pending Bills</span>
-                <span className="font-semibold">{pendingBills}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Paid Bills</span>
-                <span className="font-semibold">{paidBills}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Insurance Claims</span>
-                <span className="font-semibold">3</span>
-              </div>
-            </div>
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search receipts by receipt number, patient, or invoice..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500"
+            />
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Method Mix</h2>
-            <div className="space-y-3 text-sm">
-              {Object.entries(PaymentMethodStyles).map(([method, style]) => {
-                const total = payments
-                  .filter(payment => payment.method === method)
-                  .reduce((sum, payment) => sum + payment.amount, 0);
-
-                return (
-                  <div key={method} className="flex items-center justify-between">
-                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-medium ${style}`}>
-                      {method}
-                    </span>
-                    <span className="font-semibold">{formatCurrency(total)}</span>
-                  </div>
-                );
-              })}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                  <tr>
+                    <th className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Receipt #</th>
+                    <th className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Patient</th>
+                    <th className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
+                    <th className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                    <th className="px-5 py-3.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {loading ? (
+                    <tr><td colSpan={5} className="px-5 py-12 text-center text-gray-400">Loading receipts...</td></tr>
+                  ) : filteredPayments.length === 0 ? (
+                    <tr><td colSpan={5} className="px-5 py-12 text-center text-gray-400">No receipts found</td></tr>
+                  ) : filteredPayments.map((payment) => (
+                    <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                      <td className="px-5 py-4 font-bold text-sm text-blue-600 dark:text-blue-400">{payment.receipt_number}</td>
+                      <td className="px-5 py-4">
+                        <div className="font-medium text-sm text-gray-900 dark:text-white">{payment.patient_name}</div>
+                        <div className="text-xs text-gray-500">{payment.patient_id}</div>
+                      </td>
+                      <td className="px-5 py-4 font-extrabold text-sm text-gray-900 dark:text-white">${fmt(payment.amount)}</td>
+                      <td className="px-5 py-4 text-xs text-gray-500 dark:text-gray-400">{new Date(payment.payment_date).toLocaleString()}</td>
+                      <td className="px-5 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleViewReceipt(payment)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDownloadReceipt()}
+                            className="text-gray-600 hover:text-gray-800 dark:text-gray-400"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Example Payment Cases</h2>
-          <span className="text-xs text-gray-500">Sample records for common cashier actions</span>
+      {/* Patient Billing Tab */}
+      {activeTab === 'billing' && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-12 text-center">
+          <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Patient Billing Search</h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">Search for a patient to view their complete billing history and outstanding balances.</p>
+          <div className="relative max-w-md mx-auto">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Enter patient ID or name..."
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
         </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-          <ExampleBox title="Cash payment" text="Patient pays consultation fee immediately at the desk." method="Cash" amount="2,500 ETB" />
-          <ExampleBox title="Card payment" text="Card swipe from an insured patient for a laboratory bill." method="Card" amount="4,200 ETB" />
-          <ExampleBox title="Insurance claim" text="Insurance covers a surgical invoice after approval." method="Insurance" amount="6,800 ETB" />
-          <ExampleBox title="Mobile money" text="Patient settles a pharmacy purchase by mobile wallet." method="Mobile Money" amount="1,800 ETB" />
-        </div>
-      </div>
-
-      {isOpen && (
-        <ReceivePaymentModal
-          invoices={invoices}
-          onClose={() => setIsOpen(false)}
-          onSubmit={handleSavePayment}
+      {/* Payment Modal */}
+      {showPaymentModal && selectedInvoice && (
+        <PaymentModal
+          invoice={selectedInvoice}
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onSubmit={handlePaymentSubmit}
           loading={loading}
         />
       )}
-    </div>
-  );
-};
 
-const StatCard: React.FC<{ label: string; value: string; accent: string }> = ({ label, value, accent }) => (
-  <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
-      </div>
-      <div className={`h-11 w-11 rounded-lg ${accent}`} />
-    </div>
-  </div>
-);
-
-const ExampleBox: React.FC<{ title: string; text: string; method: string; amount: string }> = ({ title, text, method, amount }) => (
-  <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3">
-    <div className="text-sm font-semibold text-gray-800">{title}</div>
-    <p className="mt-1 text-xs text-gray-600">{text}</p>
-    <div className="mt-3 flex items-center justify-between text-xs">
-      <span className="rounded-full bg-blue-100 text-blue-700 px-2 py-1">{method}</span>
-      <span className="font-semibold text-gray-800">{amount}</span>
-    </div>
-  </div>
-);
-
-const ReceivePaymentModal: React.FC<{
-  invoices: InvoiceSummary[];
-  onClose: () => void;
-  onSubmit: (payload: { patient: string; method: PaymentRecord['method']; amount: number; reference?: string; invoiceId?: number }) => Promise<void> | void;
-  loading: boolean;
-}> = ({ invoices, onClose, onSubmit, loading }) => {
-  const [patient, setPatient] = useState('Selam Bekele');
-  const [invoiceId, setInvoiceId] = useState<number | ''>(invoices[0]?.id ?? '');
-  const [method, setMethod] = useState<PaymentRecord['method']>('Cash');
-  const [amount, setAmount] = useState('2500');
-  const [reference, setReference] = useState('EXAMPLE-001');
-
-  const methods: PaymentRecord['method'][] = ['Cash', 'Card', 'Insurance', 'Mobile Money', 'Bank Transfer', 'Online'];
-
-  const referenceLabel = method === 'Card' ? 'Card authorization / receipt number'
-    : method === 'Insurance' ? 'Insurance claim number'
-      : method === 'Mobile Money' ? 'Mobile money transaction ID'
-        : method === 'Bank Transfer' ? 'Bank transfer reference'
-          : method === 'Online' ? 'Online payment reference' : 'Reference (optional)';
-
-  const referenceRequired = method !== 'Cash';
-
-  useEffect(() => {
-    if (!invoiceId && invoices[0]) {
-      setInvoiceId(invoices[0].id);
-    }
-  }, [invoiceId, invoices]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const value = Number(amount);
-
-    if (!patient.trim()) {
-      alert('Please enter the patient name.');
-      return;
-    }
-
-    if (!Number.isFinite(value) || value <= 0) {
-      alert('Please enter a valid payment amount.');
-      return;
-    }
-
-    if (referenceRequired && !reference.trim()) {
-      alert(`Please enter the ${referenceLabel.toLowerCase()}.`);
-      return;
-    }
-
-    await onSubmit({ patient, method, amount: value, reference: reference.trim() || undefined, invoiceId: Number(invoiceId) || undefined });
-  };
-
-  const loadExample = () => {
-    setPatient('Martha Addisu');
-    setMethod('Card');
-    setAmount('4200');
-    setReference('CARD-EXAMPLE-01');
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Receive Payment</h3>
-          <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl">×</button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Invoice</label>
-            <select
-              value={invoiceId}
-              onChange={(e) => setInvoiceId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
-            >
-              <option value="">Select an outstanding invoice</option>
-              {invoices.length > 0 ? invoices.map((item) => (
-                <option key={item.id} value={item.id}>#{item.id} • {item.patient_name}</option>
-              )) : <option value="">No outstanding invoices</option>}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Patient</label>
-            <input
-              value={patient}
-              onChange={(e) => setPatient(e.target.value)}
-              className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-            <select
-              value={method}
-              onChange={(e) => setMethod(e.target.value as PaymentRecord['method'])}
-              className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
-            >
-              {methods.map(item => (
-                <option key={item} value={item}>{item}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Amount (ETB)</label>
-            <input
-              type="number"
-              min="1"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{referenceLabel}{referenceRequired ? ' *' : ''}</label>
-            <input
-              required={referenceRequired}
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              className="w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
-            />
-          </div>
-
-          <div className="flex items-center justify-between gap-3 pt-2">
-            <button type="button" onClick={loadExample} className="text-sm text-blue-600 hover:underline">
-              Load Example
-            </button>
-
-            <div className="flex gap-2">
-              <button type="button" onClick={onClose} className="px-3 py-2 border border-gray-200 rounded-md text-sm">Cancel</button>
-              <button type="submit" disabled={loading || !invoiceId} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold disabled:opacity-60">
-                {loading ? 'Saving...' : 'Save Payment'}
+      {/* Receipt Modal */}
+      {showReceiptModal && selectedReceipt && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Receipt Preview</h2>
+              <button onClick={() => setShowReceiptModal(false)} className="text-gray-400 hover:text-gray-600">
+                <Filter className="w-6 h-6" />
               </button>
             </div>
+            <div className="p-6">
+              <ReceiptPreview
+                receipt={{
+                  receipt_number: selectedReceipt.receipt_number,
+                  invoice_number: selectedReceipt.invoice_number,
+                  patient_name: selectedReceipt.patient_name,
+                  patient_id: selectedReceipt.patient_id,
+                  amount: selectedReceipt.amount,
+                  payment_method: selectedReceipt.payment_method,
+                  payment_date: selectedReceipt.payment_date,
+                  cashier_name: selectedReceipt.cashier_name,
+                }}
+                onPrint={handlePrintReceipt}
+                onDownload={handleDownloadReceipt}
+              />
+            </div>
           </div>
-        </form>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

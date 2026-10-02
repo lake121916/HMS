@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Public pages
 import HomePage from './pages/public/HomePage';
@@ -74,7 +75,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   nurse:            ['dashboard', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage'],
   lab_technician:   ['dashboard', 'lab-tests', 'lab-dashboard', 'patients'],
   pharmacist:       ['dashboard', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
-  cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'finance-reports', 'cashier-workflow'],
+  cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow'],
   patient:          ['patient-portal', 'appointments'],
 };
 
@@ -108,9 +109,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; page?: string }> = (
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <Routes>
           {/* Root → home page */}
           <Route index element={<Navigate to="/home" replace />} />
 
@@ -181,6 +183,9 @@ function App() {
             <Route path="cashier" element={
               <ProtectedRoute page="cashier"><CashierDashboard /></ProtectedRoute>
             } />
+            <Route path="cashier-dashboard" element={
+              <ProtectedRoute page="cashier-dashboard"><CashierDashboard /></ProtectedRoute>
+            } />
             <Route path="insurance" element={
               <ProtectedRoute page="insurance"><InsurancePage /></ProtectedRoute>
             } />
@@ -244,6 +249,7 @@ function App() {
         </Routes>
       </Router>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

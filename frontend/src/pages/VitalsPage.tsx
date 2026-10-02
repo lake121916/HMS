@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState } from 'react';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import { Plus, Search, Edit, Trash2, X, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useVitals, useCreateVital, useUpdateVital, useDeleteVital } from '../hooks/useApi';
 
 interface Vital {
   id: number; patient_id: number; patient_name: string; nurse_name: string;
@@ -17,8 +17,6 @@ const lbl = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 const VitalsPage: React.FC = () => {
   const { can } = useRoleAccess();
   const { user } = useAuth();
-  const [vitals, setVitals] = useState<Vital[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Vital | null>(null);
@@ -26,15 +24,13 @@ const VitalsPage: React.FC = () => {
     blood_pressure_diastolic:'', heart_rate:'', respiratory_rate:'',
     oxygen_saturation:'', weight:'', height:'', blood_glucose:'', notes:'' });
 
-  useEffect(() => { fetchVitals(); }, []);
+  // ── TanStack Query ──────────────────────────────────────────────────────
+  const { data: vitalsData, isLoading } = useVitals();
+  const vitals = (vitalsData ?? []) as Vital[];
 
-  const fetchVitals = async () => {
-    try {
-      const r = await api.get('/vitals');
-      setVitals(r.data.data.vitals || []);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
+  const createVital = useCreateVital();
+  const updateVital = useUpdateVital(editing?.id ?? 0);
+  const deleteVital = useDeleteVital();
 
   const openAdd = () => {
     setEditing(null);
@@ -58,26 +54,27 @@ const VitalsPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: any = { ...form };
+    const payload: Record<string, unknown> = { ...form };
     ['temperature','blood_pressure_systolic','blood_pressure_diastolic','heart_rate',
      'respiratory_rate','oxygen_saturation','weight','height','blood_glucose','patient_id']
-      .forEach(k => { if (payload[k] !== '') payload[k] = parseFloat(payload[k]); else delete payload[k]; });
+      .forEach(k => { if (payload[k] !== '') payload[k] = parseFloat(payload[k] as string); else delete payload[k]; });
     try {
-      if (editing) { await api.put(`/vitals/${editing.id}`, payload); }
-      else { await api.post('/vitals', payload); }
-      setShowModal(false); fetchVitals();
+      if (editing) { await updateVital.mutateAsync(payload); }
+      else { await createVital.mutateAsync(payload); }
+      setShowModal(false);
     } catch (e: any) { alert(e.response?.data?.message || 'Failed'); }
   };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Delete this vital record?')) return;
-    try { await api.delete(`/vitals/${id}`); fetchVitals(); }
+    try { await deleteVital.mutateAsync(id); }
     catch (e: any) { alert(e.response?.data?.message || 'Failed'); }
   };
 
   const filtered = vitals.filter(v =>
     v.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
     v.nurse_name?.toLowerCase().includes(search.toLowerCase())
+
   );
 
   const isPatient = user?.role === 'patient';
@@ -132,7 +129,7 @@ const VitalsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {loading ? (
+              {isLoading ? (
                 <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No vitals recorded</td></tr>

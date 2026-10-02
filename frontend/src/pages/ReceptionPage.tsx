@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { fmt } from '../utils/format';
 
 interface Patient {
   id: number;
@@ -143,7 +144,7 @@ const ReceptionPage: React.FC = () => {
                 <div key={inv.id} className="flex items-center justify-between gap-3 rounded-md border border-gray-100 p-2">
                   <div>
                     <div className="font-medium text-gray-800">{inv.patient_name}</div>
-                    <div className="text-xs text-gray-500">#{inv.id} • ${inv.total_amount.toFixed(2)}</div>
+                    <div className="text-xs text-gray-500">#{inv.id} • ${fmt(inv.total_amount)}</div>
                   </div>
                   <Link to="/invoices" className="text-sm text-blue-600 hover:underline">Open</Link>
                 </div>

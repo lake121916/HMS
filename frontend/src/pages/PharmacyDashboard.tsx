@@ -22,6 +22,7 @@ interface Prescription {
   workflow_status: string;
   prescribed_date: string;
   encounter_id?: number;
+  payment_status?: string;
 }
 
 const PharmacyDashboard: React.FC = () => {
@@ -146,6 +147,11 @@ const PharmacyDashboard: React.FC = () => {
                 <span className={`text-xs px-2 py-0.5 rounded-full ${rx.is_dispensed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                   {rx.is_dispensed ? '✓ Dispensed' : '⏳ Pending'}
                 </span>
+                {rx.payment_status === 'UNPAID' && (
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700">
+                    Payment Required
+                  </span>
+                )}
               </div>
               <div className="text-xs text-slate-500 mt-0.5">
                 Patient: <span className="font-medium text-slate-700 dark:text-slate-300">{rx.patient_name}</span>
@@ -159,7 +165,7 @@ const PharmacyDashboard: React.FC = () => {
                 Prescribed: {new Date(rx.prescribed_date).toLocaleString()}
               </div>
             </div>
-            {!rx.is_dispensed && (
+            {!rx.is_dispensed && rx.payment_status !== 'UNPAID' && (
               <button
                 onClick={() => dispense(rx.id, rx.patient_name)}
                 disabled={submitting === rx.id}
@@ -167,6 +173,16 @@ const PharmacyDashboard: React.FC = () => {
               >
                 <CheckCircle2 className="h-4 w-4" />
                 {submitting === rx.id ? 'Dispensing...' : 'Dispense'}
+              </button>
+            )}
+            {!rx.is_dispensed && rx.payment_status === 'UNPAID' && (
+              <button
+                disabled
+                className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-400 text-sm font-semibold rounded-xl cursor-not-allowed whitespace-nowrap"
+                title="Payment required to dispense medication"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Dispense
               </button>
             )}
           </div>
