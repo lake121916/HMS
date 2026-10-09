@@ -5,7 +5,7 @@ import {
   Building2, Shield, RefreshCw, Search, Filter, Printer, Download,
   TrendingUp, CheckCircle2, AlertTriangle
 } from 'lucide-react';
-import { fmt } from '../utils/format';
+import { fmt, toNum } from '../utils/format';
 import StatCard from '../components/cashier/StatCard';
 import InvoiceTable from '../components/cashier/InvoiceTable';
 import PaymentModal from '../components/cashier/PaymentModal';
@@ -132,13 +132,72 @@ const CashierDashboard: React.FC = () => {
     window.print();
   };
 
-  const handleDownloadReceipt = () => {
-    if (selectedReceipt) {
-      const link = document.createElement('a');
-      link.href = `/api/cashier/receipt/${selectedReceipt.receipt_number}`;
-      link.download = `receipt_${selectedReceipt.receipt_number}.pdf`;
-      link.click();
-    }
+  const handleDownloadReceipt = (paymentToDownload?: Payment | null) => {
+    const r = paymentToDownload || selectedReceipt;
+    if (!r) return;
+
+    const formattedAmount = fmt(toNum(r.amount));
+    const receiptHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Receipt ${r.receipt_number || 'RCP'}</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1e293b; max-width: 600px; margin: 0 auto; border: 2px solid #0d9488; border-radius: 20px; background: #ffffff; }
+    .header { text-align: center; border-bottom: 2px solid #0d9488; padding-bottom: 20px; margin-bottom: 24px; }
+    .header h1 { margin: 0; color: #0f766e; font-size: 24px; font-weight: 800; }
+    .header p { margin: 4px 0 0 0; color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase; tracking: 1px; }
+    .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e2e8f0; font-size: 14px; }
+    .row .label { color: #64748b; }
+    .row .val { font-weight: 700; color: #0f172a; }
+    .box { bg-color: #f8fafc; background: #f8fafc; padding: 16px; border-radius: 14px; margin: 20px 0; border: 1px solid #e2e8f0; }
+    .total-container { background: #ccfbf1; padding: 16px; border-radius: 14px; text-align: right; margin-top: 20px; border: 1px solid #99f6e4; }
+    .total-label { font-size: 12px; color: #0f766e; text-transform: uppercase; font-weight: 800; }
+    .total-amount { font-size: 26px; font-weight: 900; color: #0d9488; margin-top: 4px; }
+    .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #94a3b8; border-t: 1px solid #e2e8f0; pt: 16px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Alem Ketema Enat Hospital</h1>
+    <p>Official Payment Receipt</p>
+  </div>
+
+  <div class="row"><span class="label">Receipt Number:</span><span class="val" style="color: #0284c7;">${r.receipt_number || 'N/A'}</span></div>
+  <div class="row"><span class="label">Invoice Reference:</span><span class="val">${r.invoice_number || 'N/A'}</span></div>
+  <div class="row"><span class="label">Date & Time:</span><span class="val">${r.payment_date ? new Date(r.payment_date).toLocaleString() : new Date().toLocaleString()}</span></div>
+  <div class="row"><span class="label">Cashier:</span><span class="val">${r.cashier_name || 'Hospital Cashier'}</span></div>
+
+  <div class="box">
+    <div class="row" style="border: none; padding-top: 0;"><span class="label">Patient Name:</span><span class="val">${r.patient_name || 'Walk-in Patient'}</span></div>
+    <div class="row" style="border: none; padding-bottom: 0;"><span class="label">Patient ID / MRN:</span><span class="val">${r.patient_id || 'N/A'}</span></div>
+  </div>
+
+  <div class="row"><span class="label">Payment Method:</span><span class="val" style="text-transform: capitalize;">${(r.payment_method || 'cash').replace('_', ' ')}</span></div>
+  <div class="row"><span class="label">Payment Status:</span><span class="val" style="color: #059669;">PAID & CONFIRMED</span></div>
+
+  <div class="total-container">
+    <div class="total-label">Amount Received</div>
+    <div class="total-amount">${formattedAmount} ETB / USD</div>
+  </div>
+
+  <div class="footer">
+    <p style="margin: 0; font-weight: 600;">Thank you for choosing Alem Ketema Enat Hospital.</p>
+    <p style="margin: 4px 0 0 0;">This document is an official computer-generated receipt.</p>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([receiptHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `receipt_${r.receipt_number || 'download'}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('success', `Receipt ${r.receipt_number} downloaded successfully!`);
   };
 
   const filteredInvoices = invoices.filter(inv =>
@@ -388,8 +447,9 @@ const CashierDashboard: React.FC = () => {
                             <Printer className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDownloadReceipt()}
-                            className="text-gray-600 hover:text-gray-800 dark:text-gray-400"
+                            onClick={() => handleDownloadReceipt(payment)}
+                            title="Download Receipt"
+                            className="p-1.5 rounded-lg text-gray-600 hover:text-gray-800 dark:text-gray-400 hover:bg-gray-100 transition-colors"
                           >
                             <Download className="w-4 h-4" />
                           </button>

@@ -16,6 +16,8 @@ export const DEMO_USERS: Record<string, User> = {
   'nurse@gmail.com': { id: 4, email: 'nurse@gmail.com', role: 'nurse', firstName: 'Demo', lastName: 'Nurse' },
   'reception@hospital.com': { id: 5, email: 'reception@hospital.com', role: 'receptionist', firstName: 'Demo', lastName: 'Receptionist' },
   'cashier@hospital.com': { id: 6, email: 'cashier@hospital.com', role: 'cashier', firstName: 'Demo', lastName: 'Cashier' },
+  'labtech@hospital.com': { id: 7, email: 'labtech@hospital.com', role: 'lab_technician', firstName: 'Demo', lastName: 'Lab Tech' },
+  'pharmacist@hospital.com': { id: 8, email: 'pharmacist@hospital.com', role: 'pharmacist', firstName: 'Demo', lastName: 'Pharmacist' },
 };
 
 export const getDemoAuthUser = (email: string, password: string): User | null => {

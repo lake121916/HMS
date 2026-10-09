@@ -54,6 +54,7 @@ import LabTechDashboard from './pages/LabTechDashboard';
 import PharmacyDashboard from './pages/PharmacyDashboard';
 import CashierWorkflow from './pages/CashierWorkflow';
 import ServicesAdminPage from './pages/ServicesAdminPage';
+import ActorWorkbenchesPage from './pages/ActorWorkbenchesPage';
 
 // ── Role permission map ──────────────────────────────────────────────────────
 const ALL_PAGES = [
@@ -63,20 +64,20 @@ const ALL_PAGES = [
   'user-management', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
   'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
   'assignment', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-  'services-admin'
+  'services-admin', 'actors'
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   super_admin:      ALL_PAGES,
   admin:            ALL_PAGES,
   hospital_manager: ALL_PAGES,
-  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'invoices', 'reception', 'reception-workflow', 'vitals'],
-  doctor:           ['dashboard', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
-  nurse:            ['dashboard', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse'],
-  lab_technician:   ['dashboard', 'lab-tests', 'lab-dashboard', 'patients'],
-  pharmacist:       ['dashboard', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
-  cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow'],
-  patient:          ['patient-portal', 'appointments'],
+  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'invoices', 'reception', 'reception-workflow', 'vitals', 'actors'],
+  doctor:           ['dashboard', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines', 'actors'],
+  nurse:            ['dashboard', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse', 'actors'],
+  lab_technician:   ['dashboard', 'lab-tests', 'lab-dashboard', 'patients', 'actors'],
+  pharmacist:       ['dashboard', 'prescriptions', 'medicines', 'inventory', 'pharmacy', 'actors'],
+  cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow', 'actors'],
+  patient:          ['patient-portal', 'appointments', 'actors'],
 };
 
 const DEFAULT_ROUTE_BY_ROLE: Record<string, string> = {
@@ -270,6 +271,9 @@ function App() {
             } />
             <Route path="services-admin" element={
               <ProtectedRoute page="services-admin"><ServicesAdminPage /></ProtectedRoute>
+            } />
+            <Route path="actors" element={
+              <ProtectedRoute page="actors"><ActorWorkbenchesPage /></ProtectedRoute>
             } />
           </Route>
         </Routes>
