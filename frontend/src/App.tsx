@@ -72,11 +72,24 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   hospital_manager: ALL_PAGES,
   receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'invoices', 'reception', 'reception-workflow', 'vitals'],
   doctor:           ['dashboard', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
-  nurse:            ['dashboard', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage'],
+  nurse:            ['dashboard', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse'],
   lab_technician:   ['dashboard', 'lab-tests', 'lab-dashboard', 'patients'],
   pharmacist:       ['dashboard', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
   cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow'],
   patient:          ['patient-portal', 'appointments'],
+};
+
+const DEFAULT_ROUTE_BY_ROLE: Record<string, string> = {
+  super_admin: '/dashboard',
+  admin: '/dashboard',
+  hospital_manager: '/dashboard',
+  receptionist: '/reception',
+  doctor: '/doctor',
+  nurse: '/nurse',
+  lab_technician: '/lab-dashboard',
+  pharmacist: '/pharmacy',
+  cashier: '/cashier-workflow',
+  patient: '/patient-portal',
 };
 
 // ── Auth guard ───────────────────────────────────────────────────────────────
@@ -100,11 +113,23 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; page?: string }> = (
   if (page && user) {
     const allowed = ROLE_PERMISSIONS[user.role] || [];
     if (!allowed.includes(page)) {
-      return <Navigate to="/dashboard" replace />;
+      const fallback =
+        user.role === 'patient' ? '/patient-portal' :
+        user.role === 'nurse' ? '/nurse' :
+        user.role === 'doctor' ? '/doctor' :
+        user.role === 'receptionist' ? '/reception' :
+        '/dashboard';
+      return <Navigate to={fallback} replace />;
     }
   }
 
   return <>{children}</>;
+};
+
+const DefaultLandingRoute: React.FC = () => {
+  const { user } = useAuth();
+  const target = DEFAULT_ROUTE_BY_ROLE[user?.role || ''] || '/dashboard';
+  return <Navigate to={target} replace />;
 };
 
 function App() {
@@ -113,9 +138,6 @@ function App() {
       <AuthProvider>
         <Router>
           <Routes>
-          {/* Root → home page */}
-          <Route index element={<Navigate to="/home" replace />} />
-
           {/* ── Public website ── */}
           <Route path="/home" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
@@ -132,6 +154,7 @@ function App() {
 
           {/* ── Protected HMS portal (role-guarded) ── */}
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route index element={<DefaultLandingRoute />} />
             <Route path="dashboard" element={
               <ProtectedRoute page="dashboard"><DashboardPage /></ProtectedRoute>
             } />
@@ -223,6 +246,9 @@ function App() {
             {/* ── New Workflow Routes ──────────────────────────────── */}
             <Route path="reception-workflow" element={
               <ProtectedRoute page="reception-workflow"><ReceptionistWorkflow /></ProtectedRoute>
+            } />
+            <Route path="nurse" element={
+              <ProtectedRoute page="nurse"><TriageDashboard /></ProtectedRoute>
             } />
             <Route path="triage" element={
               <ProtectedRoute page="triage"><TriageDashboard /></ProtectedRoute>

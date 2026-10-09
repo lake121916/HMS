@@ -27,7 +27,7 @@ const LoginPage: React.FC = () => {
         hospital_manager: '/dashboard',
         receptionist: '/reception',
         doctor: '/doctor',
-        nurse: '/vitals',
+        nurse: '/nurse',
         lab_technician: '/lab-tests',
         pharmacist: '/medicines',
         cashier: '/cashier',
@@ -70,7 +70,7 @@ const LoginPage: React.FC = () => {
             <div className="w-full h-48 rounded-lg overflow-hidden">
               {!imgError ? (
                 <img
-                  src="/images/hospital.webp"
+                  src="/images/hospital.jpg.webp"
                   alt="Alem Ketema Enat Hospital"
                   onError={() => setImgError(true)}
                   className="w-full h-full object-cover block"
@@ -143,21 +143,40 @@ const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400 font-medium">OR</span>
-            <div className="flex-1 h-px bg-gray-200" />
+          {/* Quick Demo Login Accounts */}
+          <div className="mt-5 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+            <p className="text-xs font-semibold text-slate-600 mb-2">Quick Demo Accounts (Password: <code className="bg-slate-200 px-1 py-0.5 rounded text-teal-700 font-mono">Hospital@2024</code>):</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'Admin', email: 'admin@hospital.et' },
+                { label: 'Super Admin', email: 'superadmin@hospital.com' },
+                { label: 'Doctor', email: 'doctor@hospital.com' },
+                { label: 'Nurse', email: 'nurse@gmail.com' },
+                { label: 'Receptionist', email: 'reception@hospital.com' },
+                { label: 'Cashier', email: 'cashier@hospital.com' },
+              ].map(acc => (
+                <button
+                  key={acc.email}
+                  type="button"
+                  onClick={() => {
+                    setEmail(acc.email);
+                    setPassword('Hospital@2024');
+                    setError('');
+                  }}
+                  className="px-2.5 py-1.5 bg-white hover:bg-teal-50 border border-slate-200 hover:border-teal-300 rounded-lg text-xs font-medium text-slate-700 hover:text-teal-700 transition-all text-left flex items-center justify-between"
+                >
+                  <span>{acc.label}</span>
+                  <span className="text-[10px] text-slate-400 font-mono">fill</span>
+                </button>
+              ))}
+            </div>
           </div>
-
-          {/* Patient registration CTA */}
-          {/* Patient accounts are managed by reception; no public registration here */}
         </div>
 
         {/* Footer note */}
-        <div className="mt-6 text-center text-xs text-gray-500">
-          <p>Staff accounts are created by the hospital administrator only.</p>
-          <Link to="/home" className="block text-teal-600 hover:underline mt-2">← Back to Hospital Website</Link>
+        <div className="mt-4 text-center text-xs text-gray-500 pb-6">
+          <p>Staff accounts are created by the hospital administrator.</p>
+          <Link to="/home" className="block text-teal-600 hover:underline mt-2 font-medium">← Back to Hospital Website</Link>
         </div>
       </div>
     </div>
