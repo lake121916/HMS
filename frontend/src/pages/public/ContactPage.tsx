@@ -26,9 +26,9 @@ function Reveal({ children, className='', delay=0, dir='up' }:
 
 const contactInfo = [
   { icon: Phone, title: 'Main Reception', value: '+251 11 123 4567', sub: 'Mon – Sat, 8am – 8pm', color: 'bg-blue-50 text-blue-600 border-blue-100' },
-  { icon: Truck, title: 'Emergency', value: '+251 11 999 0000', sub: '24/7 — Always available', color: 'bg-red-50 text-red-600 border-red-100' },
-  { icon: Mail, title: 'Email', value: 'info@alemketemaenat.et', sub: 'Reply within 24 hours', color: 'bg-green-50 text-green-600 border-green-100' },
-  { icon: MapPin, title: 'Location', value: 'Alem Ketema Enat Hospital', sub: 'Addis Ababa, Ethiopia', color: 'bg-purple-50 text-purple-600 border-purple-100' },
+  { icon: Truck, title: '24/7 Emergency', value: '+251 11 999 0000', sub: '24/7 Triage & Ambulance', color: 'bg-red-50 text-red-600 border-red-100' },
+  { icon: Mail, title: 'Email Contact', value: 'info@alemketemaenat.et', sub: 'Reply within 24 hours', color: 'bg-green-50 text-green-600 border-green-100' },
+  { icon: MapPin, title: 'Hospital Location', value: 'Alem Ketema, Merhabete Woreda', sub: 'North Shewa, Amhara Region', color: 'bg-purple-50 text-purple-600 border-purple-100' },
 ];
 
 const hours = [
@@ -195,14 +195,14 @@ const ContactPage: React.FC = () => {
               </div>
             </Reveal>
 
-            {/* Map */}
+            {/* Map & Regional Location Details */}
             <Reveal dir="right" delay={150}>
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="relative h-44 bg-blue-50">
-                  {/* Embedded Google Maps iframe */}
+                <div className="relative h-52 bg-blue-50">
+                  {/* Embedded Google Maps iframe for Alem Ketema, Merhabete Woreda */}
                   <iframe
-                    title="Hospital Location"
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3940.5504!2d38.7468!3d9.0222!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zOcKwMDEnMjAuMCJOIDM4wrA0NCc0OC44IkU!5e0!3m2!1sen!2set!4v1600000000000"
+                    title="Alem Ketema Enat Hospital Location Map"
+                    src="https://maps.google.com/maps?q=10.0167,39.0333&z=13&output=embed"
                     width="100%" height="100%"
                     style={{ border: 0, display: 'block' }}
                     allowFullScreen
@@ -210,12 +210,30 @@ const ContactPage: React.FC = () => {
                     referrerPolicy="no-referrer-when-downgrade"
                   />
                 </div>
-                <div className="p-4">
-                  <p className="text-sm font-semibold text-gray-900 mb-1">How to Find Us</p>
-                  <p className="text-xs text-gray-500 leading-relaxed">Central Addis Ababa, easily accessible by public transport. On-site parking available.</p>
-                  <a href="https://maps.google.com/?q=9.0222,38.7468" target="_blank" rel="noopener noreferrer"
-                    className="mt-3 block text-center py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors">
-                    Get Directions
+                <div className="p-5 space-y-3">
+                  <div>
+                    <p className="text-sm font-extrabold text-gray-900 flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-purple-600" /> Administrative Location
+                    </p>
+                    <p className="text-xs text-gray-600 font-medium mt-1 leading-relaxed">
+                      <strong>Alem Ketema Enat General Hospital</strong> (አለም ከተማ እናት ጠቅላላ ሆስፒታል)
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1 text-slate-700">
+                    <p><span className="font-bold text-slate-900">Town:</span> Alem Ketema (አለም ከተማ)</p>
+                    <p><span className="font-bold text-slate-900">Woreda:</span> Merhabete Woreda (መርሃቤቴ ወረዳ)</p>
+                    <p><span className="font-bold text-slate-900">Zone:</span> North Shewa Zone (ስሜን ሽዋ ዞን)</p>
+                    <p><span className="font-bold text-slate-900">Region:</span> Amhara Region (አማራ ክልል), Ethiopia</p>
+                  </div>
+
+                  <a
+                    href="https://maps.google.com/?q=10.0167,39.0333"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-center py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-extrabold rounded-xl hover:opacity-95 transition-all shadow-md"
+                  >
+                    Open Live Navigation on Google Maps →
                   </a>
                 </div>
               </div>

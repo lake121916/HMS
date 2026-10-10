@@ -28,6 +28,8 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     { label: 'Services', href: '/services' },
     { label: 'Departments', href: '/departments' },
     { label: 'Doctors', href: '/our-doctors' },
+    { label: 'News', href: '/news' },
+    { label: 'Gallery', href: '/gallery' },
     { label: 'Contact', href: '/contact' },
   ];
 
@@ -114,8 +116,8 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <span className="flex items-center gap-1.5"><Phone className="w-3 h-3" /> +251 11 123 4567</span>
-            <span className="flex items-center gap-1.5"><Mail className="w-3 h-3" /> info@enketemanaenat.et</span>
-            <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3" /> Addis Ababa, Ethiopia</span>
+            <span className="flex items-center gap-1.5"><Mail className="w-3 h-3" /> info@alemketemaenat.et</span>
+            <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3" /> Alem Ketema, Merhabete Woreda, North Shewa, Amhara Region</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-blue-200">Mon – Sat: 8:00 AM – 8:00 PM &nbsp;|&nbsp; Emergency: 24/7</span>
@@ -137,14 +139,12 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
             <div className="hidden lg:flex items-center gap-6">
               {navLinks.map((link) => (
-                <Link key={link.href} to={link.href} className={`text-sm font-semibold uppercase tracking-wide px-2 py-2 transition ${isActive(link.href) ? 'text-white' : 'text-gray-300 hover:text-primary'}`}>
+                <Link key={link.href} to={link.href} className={`text-sm font-semibold uppercase tracking-wide px-2 py-2 transition ${isActive(link.href) ? 'text-white font-extrabold border-b-2 border-emerald-400' : 'text-gray-300 hover:text-white'}`}>
                   {link.label}
                 </Link>
               ))}
-              <Link to="/news" className="text-sm font-semibold uppercase tracking-wide text-gray-300 hover:text-white">News</Link>
-              <Link to="/gallery" className="text-sm font-semibold uppercase tracking-wide text-gray-300 hover:text-white">Photo Gallery</Link>
-              <Link to="/login" className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:opacity-90">
-                Login
+              <Link to="/login" className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2 text-sm font-extrabold text-white shadow-md transition hover:bg-emerald-700">
+                Staff Login
               </Link>
             </div>
 

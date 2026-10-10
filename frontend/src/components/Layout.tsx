@@ -142,20 +142,19 @@ const Layout: React.FC = () => {
       { name: 'Users', href: '/user-management', icon: Shield },
       { name: 'Services', href: '/services-admin', icon: Package },
       { name: 'Management', href: '/admin', icon: Settings },
-      { name: 'All Actor Desks', href: '/actors', icon: Users },
     ];
 
     const roleMap: Record<string, string[]> = {
-      super_admin:      ['Dashboard','Patients','Doctors','Appointments','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','Management','Services','All Actor Desks'],
-      admin:            ['Dashboard','Patients','Doctors','Assign Queue','Vitals','Prescriptions','Lab Tests','Admissions','Beds','Invoices','Payments','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users','Cashier Dashboard','Services','All Actor Desks'],
-      hospital_manager: ['Dashboard','Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Reports','Finance Reports','Radiology','Insurance','Blood Bank','Cashier Dashboard','All Actor Desks'],
-      receptionist:     ['Reception Workflow','Patients','Appointments','Reception','All Actor Desks'],
-      doctor:           ['Dashboard','My Consultations','Patients','Appointments','Vitals','Prescriptions','Lab Tests','Radiology','All Actor Desks'],
-      nurse:            ['Triage Worklist','Patients','Appointments','Vitals','Admissions','Beds','All Actor Desks'],
-      lab_technician:   ['Lab Dashboard','Lab Tests','All Actor Desks'],
-      pharmacist:       ['Pharmacy','Prescriptions','All Actor Desks'],
-      cashier:          ['Cashier','Invoices','Payments','Finance Reports','All Actor Desks'],
-      patient:          ['Patient Portal','Appointments','All Actor Desks'],
+      super_admin:      ['Dashboard','Patients','Doctors','Appointments','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','Management','Services'],
+      admin:            ['Dashboard','Patients','Doctors','Assign Queue','Vitals','Prescriptions','Lab Tests','Admissions','Beds','Invoices','Payments','Radiology','Insurance','Blood Bank','Reports','Finance Reports','Audit Logs','System Admin','Users','Cashier Dashboard','Services'],
+      hospital_manager: ['Dashboard','Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Reports','Finance Reports','Radiology','Insurance','Blood Bank','Cashier Dashboard'],
+      receptionist:     ['Reception Workflow','Patients','Appointments','Reception'],
+      doctor:           ['Dashboard','My Consultations','Patients','Appointments','Vitals','Prescriptions','Lab Tests','Radiology'],
+      nurse:            ['Triage Worklist','Patients','Appointments','Vitals','Admissions','Beds'],
+      lab_technician:   ['Lab Dashboard','Lab Tests'],
+      pharmacist:       ['Pharmacy','Prescriptions'],
+      cashier:          ['Cashier','Invoices','Payments','Finance Reports'],
+      patient:          ['Patient Portal','Appointments'],
     };
 
     const allowedItems = roleMap[role] || [];

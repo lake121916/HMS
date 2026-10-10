@@ -6,7 +6,7 @@ import {
   FlaskConical, Baby, Brain,
   ChevronRight, Star, Phone, Calendar,
   CheckCircle2, ArrowRight, Sparkles, Pill,
-  HelpCircle, ChevronDown, PhoneCall
+  HelpCircle, ChevronDown, PhoneCall, Camera, Newspaper
 } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 
@@ -499,6 +499,89 @@ const HomePage: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── FEATURED NEWS & PHOTO GALLERY SHOWCASE ────────────────────────────────── */}
+      <section className="py-20 bg-slate-100 dark:bg-slate-950 transition-colors border-t border-slate-200 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 space-y-12">
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 mb-3">
+                <Sparkles className="w-3.5 h-3.5" /> Media & Community Showcase
+              </span>
+              <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                Hospital News & Photo Gallery
+              </h2>
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-1 font-medium max-w-xl">
+                Real-time press releases, clinical upgrades, and visual tours of Alem Ketema Enat General Hospital facilities in North Shewa Zone.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Link
+                to="/news"
+                className="px-5 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 text-xs font-extrabold text-slate-900 dark:text-white transition flex items-center gap-1.5 shadow-sm"
+              >
+                <Newspaper className="w-4 h-4 text-emerald-500" /> Read Newsroom <ChevronRight className="w-4 h-4" />
+              </Link>
+              <Link
+                to="/gallery"
+                className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-xs font-extrabold text-white transition flex items-center gap-1.5 shadow-lg"
+              >
+                <Camera className="w-4 h-4" /> View Full Gallery <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Gallery Card 1 */}
+            <Link to="/gallery" className="group relative rounded-3xl overflow-hidden shadow-xl bg-slate-950 h-72 border border-slate-700">
+              <img src="/images/hospital.jpg.webp" alt="Main Hospital Campus" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-emerald-300 border border-emerald-400/40">
+                Main Campus Tour
+              </div>
+              <div className="absolute bottom-4 left-4 right-4 text-white">
+                <h3 className="text-base font-extrabold leading-tight">24/7 Emergency Triage & Entrance</h3>
+                <p className="text-xs text-slate-300 mt-1 font-medium">Alem Ketema, Merhabete Woreda</p>
+              </div>
+            </Link>
+
+            {/* Gallery Card 2 */}
+            <Link to="/gallery" className="group relative rounded-3xl overflow-hidden shadow-xl bg-slate-950 h-72 border border-slate-700">
+              <img src="https://images.unsplash.com/photo-1559757175-5700dde675bc?w=900&q=80&auto=format&fit=crop" alt="Maternal Ward" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-pink-300 border border-pink-400/40">
+                Maternal Care
+              </div>
+              <div className="absolute bottom-4 left-4 right-4 text-white">
+                <h3 className="text-base font-extrabold leading-tight">Maternal Delivery Suite & NICU</h3>
+                <p className="text-xs text-slate-300 mt-1 font-medium">15 Neonatal Incubators & Obstetric Care</p>
+              </div>
+            </Link>
+
+            {/* Gallery Card 3 - News Teaser */}
+            <Link to="/news" className="group relative rounded-3xl overflow-hidden shadow-xl bg-gradient-to-br from-slate-900 to-emerald-950 h-72 p-6 flex flex-col justify-between border border-emerald-500/30">
+              <div className="space-y-3">
+                <span className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                  Latest Announcement
+                </span>
+                <h3 className="text-lg font-black text-white group-hover:text-emerald-400 transition-colors leading-snug">
+                  24/7 EHR System & Dynamic Telebirr Payment Integration Live
+                </h3>
+                <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed font-medium">
+                  Alem Ketema Enat Hospital cashier POS counters now support dynamic QR Telebirr and CBE Birr instant transfers.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-xs font-black text-emerald-400 group-hover:translate-x-1 transition-transform">
+                Read Press Release <ArrowRight className="w-4 h-4" />
+              </div>
+            </Link>
           </div>
 
         </div>
