@@ -1,0 +1,49 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "backend": {
+      "root": "backend",
+      "framework": "express",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "ml-service",
+          "format": "url",
+          "env": "ML_SERVICE_URL"
+        },
+        {
+          "type": "service",
+          "service": "image-analysis-service",
+          "format": "url",
+          "env": "IMAGE_ANALYSIS_URL"
+        }
+      ]
+    },
+    "frontend": {
+      "root": "frontend",
+      "framework": "vite"
+    },
+    "image-analysis-service": {
+      "root": "image-analysis-service",
+      "framework": "fastapi"
+    },
+    "ml-service": {
+      "root": "ml-service",
+      "framework": "fastapi"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    }
+  ]
+}
