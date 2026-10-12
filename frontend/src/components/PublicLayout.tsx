@@ -5,6 +5,8 @@ import {
   Facebook, Twitter, Instagram, Linkedin, ChevronRight, Search
 } from 'lucide-react';
 import AIChatbot from './AIChatbot';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -22,15 +24,17 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  const { t } = useLanguage();
+
   const navLinks = [
-    { label: 'Home', href: '/home' },
-    { label: 'About Us', href: '/about' },
-    { label: 'Services', href: '/services' },
-    { label: 'Departments', href: '/departments' },
-    { label: 'Doctors', href: '/our-doctors' },
-    { label: 'News', href: '/news' },
-    { label: 'Gallery', href: '/gallery' },
-    { label: 'Contact', href: '/contact' },
+    { label: t('nav.home'), href: '/home' },
+    { label: t('nav.about'), href: '/about' },
+    { label: t('nav.services'), href: '/services' },
+    { label: t('nav.departments'), href: '/departments' },
+    { label: t('nav.doctors'), href: '/our-doctors' },
+    { label: t('nav.news'), href: '/news' },
+    { label: t('nav.gallery'), href: '/gallery' },
+    { label: t('nav.contact'), href: '/contact' },
   ];
 
   const isActive = (href: string) => location.pathname === href;
@@ -44,10 +48,10 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
     const searchable = [
       ...navLinks,
-      { label: 'News', href: '/news' },
-      { label: 'Photo Gallery', href: '/gallery' },
-      { label: 'Contact', href: '/contact' },
-      { label: 'Staff Login', href: '/login' },
+      { label: t('nav.news'), href: '/news' },
+      { label: t('nav.gallery'), href: '/gallery' },
+      { label: t('nav.contact'), href: '/contact' },
+      { label: t('nav.login'), href: '/login' },
     ];
 
     useEffect(() => {
@@ -119,8 +123,9 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             <span className="flex items-center gap-1.5"><Mail className="w-3 h-3" /> info@alemketemaenat.et</span>
             <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3" /> Alem Ketema, Merhabete Woreda, North Shewa, Amhara Region</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <span className="text-blue-200">Mon – Sat: 8:00 AM – 8:00 PM &nbsp;|&nbsp; Emergency: 24/7</span>
+            <LanguageSwitcher variant="compact" />
           </div>
         </div>
       </div>
@@ -133,24 +138,26 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
               <img src="/images/hospital.jpg.webp" alt="Alem Ketema Enat Hospital" className="w-10 h-10 rounded-full object-cover shadow" />
               <div className="hidden sm:block">
                 <p className="text-sm font-bold leading-tight">Alem Ketema Enat</p>
-                <p className="text-xs text-gray-300 font-medium leading-tight">Hospital</p>
+                <p className="text-xs text-gray-300 font-medium leading-tight">Hospital (አለም ከተማ)</p>
               </div>
             </Link>
 
-            <div className="hidden lg:flex items-center gap-6">
+            <div className="hidden lg:flex items-center gap-5">
               {navLinks.map((link) => (
-                <Link key={link.href} to={link.href} className={`text-sm font-semibold uppercase tracking-wide px-2 py-2 transition ${isActive(link.href) ? 'text-white font-extrabold border-b-2 border-emerald-400' : 'text-gray-300 hover:text-white'}`}>
+                <Link key={link.href} to={link.href} className={`text-xs font-semibold uppercase tracking-wide px-1.5 py-2 transition ${isActive(link.href) ? 'text-white font-extrabold border-b-2 border-emerald-400' : 'text-gray-300 hover:text-white'}`}>
                   {link.label}
                 </Link>
               ))}
-              <Link to="/login" className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2 text-sm font-extrabold text-white shadow-md transition hover:bg-emerald-700">
-                Staff Login
+              <LanguageSwitcher variant="pill" />
+              <Link to="/login" className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-4 py-2 text-xs font-extrabold text-white shadow-md transition hover:bg-emerald-700 whitespace-nowrap">
+                {t('nav.login')}
               </Link>
             </div>
 
-            <div className="flex items-center gap-3 relative">
+            <div className="flex items-center gap-3 relative lg:hidden">
+              <LanguageSwitcher variant="compact" />
               <SearchBox />
-              <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden p-2 rounded-lg text-gray-200 hover:bg-gray-800">
+              <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 rounded-lg text-gray-200 hover:bg-gray-800">
                 {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
             </div>
@@ -159,17 +166,20 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="lg:hidden bg-secondary text-gray-200 px-6 py-4">
-            <div className="space-y-2">
+          <div className="lg:hidden bg-secondary text-gray-200 px-6 py-4 space-y-3">
+            <div className="flex justify-center pb-2 border-b border-gray-700">
+              <LanguageSwitcher variant="pill" />
+            </div>
+            <div className="space-y-1">
               {navLinks.map(link => (
-                <Link key={link.href} to={link.href} className={`block px-4 py-3 rounded-md text-sm font-medium ${isActive(link.href) ? 'bg-secondary/90 text-white' : 'hover:bg-secondary/80 hover:text-primary'}`}>
+                <Link key={link.href} to={link.href} className={`block px-4 py-2.5 rounded-xl text-sm font-medium ${isActive(link.href) ? 'bg-secondary/90 text-white font-bold' : 'hover:bg-secondary/80 hover:text-white'}`}>
                   {link.label}
                 </Link>
               ))}
-              <Link to="/news" className="block px-4 py-3 rounded-md text-sm font-medium hover:bg-gray-800">News</Link>
-              <Link to="/gallery" className="block px-4 py-3 rounded-md text-sm font-medium hover:bg-gray-800">Photo Gallery</Link>
-              <div className="pt-3 border-t border-gray-800 mt-3">
-                <Link to="/contact" className="block px-4 py-3 rounded-md text-sm font-medium hover:bg-gray-800">Contact Us</Link>
+              <div className="pt-2 border-t border-gray-700">
+                <Link to="/login" className="block text-center py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm">
+                  {t('nav.login')}
+                </Link>
               </div>
             </div>
           </div>

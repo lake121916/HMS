@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+body.font-amharic {
+  font-family: 'Noto Sans Ethiopic', 'Nyala', 'Abyssinica SIL', system-ui, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.font-amharic {
+  font-family: 'Noto Sans Ethiopic', 'Nyala', 'Abyssinica SIL', system-ui, sans-serif;
+}
+
 @layer base {
   :root {
     --theme-hue: 221.2;

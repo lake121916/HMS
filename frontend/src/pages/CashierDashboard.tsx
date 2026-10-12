@@ -138,52 +138,109 @@ const CashierDashboard: React.FC = () => {
 
     const formattedAmount = fmt(toNum(r.amount));
     const receiptHtml = `<!DOCTYPE html>
-<html>
+<html lang="am">
 <head>
   <meta charset="utf-8" />
   <title>Receipt ${r.receipt_number || 'RCP'}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+Ethiopic:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1e293b; max-width: 600px; margin: 0 auto; border: 2px solid #0d9488; border-radius: 20px; background: #ffffff; }
-    .header { text-align: center; border-bottom: 2px solid #0d9488; padding-bottom: 20px; margin-bottom: 24px; }
-    .header h1 { margin: 0; color: #0f766e; font-size: 24px; font-weight: 800; }
-    .header p { margin: 4px 0 0 0; color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase; tracking: 1px; }
-    .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e2e8f0; font-size: 14px; }
-    .row .label { color: #64748b; }
-    .row .val { font-weight: 700; color: #0f172a; }
-    .box { bg-color: #f8fafc; background: #f8fafc; padding: 16px; border-radius: 14px; margin: 20px 0; border: 1px solid #e2e8f0; }
-    .total-container { background: #ccfbf1; padding: 16px; border-radius: 14px; text-align: right; margin-top: 20px; border: 1px solid #99f6e4; }
-    .total-label { font-size: 12px; color: #0f766e; text-transform: uppercase; font-weight: 800; }
-    .total-amount { font-size: 26px; font-weight: 900; color: #0d9488; margin-top: 4px; }
-    .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #94a3b8; border-t: 1px solid #e2e8f0; pt: 16px; }
+    @page { margin: 10mm; size: auto; }
+    body {
+      font-family: 'Noto Sans Ethiopic', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      padding: 30px;
+      color: #0f172a;
+      max-width: 580px;
+      margin: 0 auto;
+      border: 2px solid #0d9488;
+      border-radius: 18px;
+      background: #ffffff;
+    }
+    .header { text-align: center; border-bottom: 2px solid #0d9488; padding-bottom: 16px; margin-bottom: 20px; }
+    .header h1 { margin: 0; color: #0f766e; font-size: 22px; font-weight: 800; line-height: 1.2; }
+    .header h2 { margin: 4px 0 0 0; color: #115e59; font-size: 16px; font-weight: 700; }
+    .header p { margin: 6px 0 0 0; color: #0f766e; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; }
+    .row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #cbd5e1; font-size: 13px; }
+    .row .label { color: #64748b; font-size: 12px; }
+    .row .val { font-weight: 700; color: #0f172a; text-align: right; }
+    .box { background: #f8fafc; padding: 14px 16px; border-radius: 12px; margin: 16px 0; border: 1px solid #e2e8f0; }
+    .total-container {
+      background: #ecfdf5;
+      padding: 16px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 18px;
+      border: 1.5px solid #a7f3d0;
+    }
+    .total-label { font-size: 12px; color: #065f46; font-weight: 800; text-transform: uppercase; }
+    .total-sub { font-size: 11px; color: #047857; font-weight: 700; }
+    .total-amount { font-size: 24px; font-weight: 900; color: #047857; }
+    .footer { text-align: center; margin-top: 24px; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 14px; line-height: 1.5; }
+    @media print {
+      body { border: none; padding: 10px; max-width: 100%; }
+      .no-print { display: none; }
+    }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>Alem Ketema Enat Hospital</h1>
-    <p>Official Payment Receipt</p>
+    <h2>አለም ከተማ እናት ጠቅላላ ሆስፒታል</h2>
+    <p>OFFICIAL PAYMENT RECEIPT — ይፋዊ የክፍያ ደረሰኝ</p>
   </div>
 
-  <div class="row"><span class="label">Receipt Number:</span><span class="val" style="color: #0284c7;">${r.receipt_number || 'N/A'}</span></div>
-  <div class="row"><span class="label">Invoice Reference:</span><span class="val">${r.invoice_number || 'N/A'}</span></div>
-  <div class="row"><span class="label">Date & Time:</span><span class="val">${r.payment_date ? new Date(r.payment_date).toLocaleString() : new Date().toLocaleString()}</span></div>
-  <div class="row"><span class="label">Cashier:</span><span class="val">${r.cashier_name || 'Hospital Cashier'}</span></div>
+  <div class="row">
+    <span class="label">Receipt Number / የደረሰኝ ቁጥር:</span>
+    <span class="val" style="color: #0284c7; font-family: monospace; font-size: 14px;">${r.receipt_number || 'N/A'}</span>
+  </div>
+  <div class="row">
+    <span class="label">Invoice Ref. / የክፍያ መጠየቂያ:</span>
+    <span class="val" style="font-family: monospace;">${r.invoice_number || 'N/A'}</span>
+  </div>
+  <div class="row">
+    <span class="label">Date & Time / ቀን እና ሰዓት:</span>
+    <span class="val">${r.payment_date ? new Date(r.payment_date).toLocaleString() : new Date().toLocaleString()}</span>
+  </div>
+  <div class="row">
+    <span class="label">Cashier / ገንዘብ ተቀባይ:</span>
+    <span class="val">${r.cashier_name || 'Hospital Cashier'}</span>
+  </div>
 
   <div class="box">
-    <div class="row" style="border: none; padding-top: 0;"><span class="label">Patient Name:</span><span class="val">${r.patient_name || 'Walk-in Patient'}</span></div>
-    <div class="row" style="border: none; padding-bottom: 0;"><span class="label">Patient ID / MRN:</span><span class="val">${r.patient_id || 'N/A'}</span></div>
+    <div class="row" style="border: none; padding: 2px 0;">
+      <span class="label">Patient Name / የታካሚው ስም:</span>
+      <span class="val">${r.patient_name || 'Walk-in Patient'}</span>
+    </div>
+    <div class="row" style="border: none; padding: 2px 0;">
+      <span class="label">Patient ID (MRN) / መለያ:</span>
+      <span class="val" style="font-family: monospace;">${r.patient_id || 'N/A'}</span>
+    </div>
   </div>
 
-  <div class="row"><span class="label">Payment Method:</span><span class="val" style="text-transform: capitalize;">${(r.payment_method || 'cash').replace('_', ' ')}</span></div>
-  <div class="row"><span class="label">Payment Status:</span><span class="val" style="color: #059669;">PAID & CONFIRMED</span></div>
+  <div class="row">
+    <span class="label">Payment Method / የክፍያ ዘዴ:</span>
+    <span class="val" style="text-transform: capitalize;">${(r.payment_method || 'cash').replace('_', ' ')}</span>
+  </div>
+  <div class="row">
+    <span class="label">Payment Status / ሁኔታ:</span>
+    <span class="val" style="color: #059669;">PAID & CONFIRMED / ተከፍሎ ተረጋግጧል ✓</span>
+  </div>
 
   <div class="total-container">
-    <div class="total-label">Amount Received</div>
-    <div class="total-amount">${formattedAmount} ETB / USD</div>
+    <div>
+      <div class="total-label">Amount Received</div>
+      <div class="total-sub">የተከፈለ ጠቅላላ መጠን</div>
+    </div>
+    <div class="total-amount">${formattedAmount} ETB (ብር)</div>
   </div>
 
   <div class="footer">
-    <p style="margin: 0; font-weight: 600;">Thank you for choosing Alem Ketema Enat Hospital.</p>
-    <p style="margin: 4px 0 0 0;">This document is an official computer-generated receipt.</p>
+    <p style="margin: 0; font-weight: 700; color: #334155;">Thank you for choosing Alem Ketema Enat Hospital.</p>
+    <p style="margin: 3px 0 0 0; font-weight: 600; color: #475569;">አለም ከተማ እናት ጠቅላላ ሆስፒታልን ስለመረጡ እናመሰግናለን።</p>
+    <p style="margin: 6px 0 0 0; font-size: 10px; color: #94a3b8;">This document is an official computer-generated receipt. / ይህ ሰነድ በኮምፒውተር የተዘጋጀ ይፋዊ የክፍያ ደረሰኝ ነው።</p>
   </div>
 </body>
 </html>`;

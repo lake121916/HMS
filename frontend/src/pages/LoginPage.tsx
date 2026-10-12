@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import {
   Stethoscope, Eye, EyeOff, AlertCircle, Shield, UserCheck,
   HeartPulse, Receipt, DollarSign, FlaskConical, Pill, Zap, ArrowRight
@@ -9,6 +11,7 @@ import {
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { t, language } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -61,14 +64,14 @@ const LoginPage: React.FC = () => {
   };
 
   const demoAccounts = [
-    { label: 'Super Admin', email: 'superadmin@hospital.com', icon: Shield, color: 'hover:bg-purple-50 hover:border-purple-300 text-purple-700' },
-    { label: 'Admin', email: 'admin@hospital.et', icon: UserCheck, color: 'hover:bg-blue-50 hover:border-blue-300 text-blue-700' },
-    { label: 'Doctor', email: 'doctor@hospital.com', icon: Stethoscope, color: 'hover:bg-emerald-50 hover:border-emerald-300 text-emerald-700' },
-    { label: 'Nurse / Triage', email: 'nurse@gmail.com', icon: HeartPulse, color: 'hover:bg-rose-50 hover:border-rose-300 text-rose-700' },
-    { label: 'Receptionist', email: 'reception@hospital.com', icon: Receipt, color: 'hover:bg-indigo-50 hover:border-indigo-300 text-indigo-700' },
-    { label: 'Cashier POS', email: 'cashier@hospital.com', icon: DollarSign, color: 'hover:bg-amber-50 hover:border-amber-300 text-amber-700' },
-    { label: 'Lab Tech', email: 'labtech@hospital.com', icon: FlaskConical, color: 'hover:bg-cyan-50 hover:border-cyan-300 text-cyan-700' },
-    { label: 'Pharmacist', email: 'pharmacist@hospital.com', icon: Pill, color: 'hover:bg-teal-50 hover:border-teal-300 text-teal-700' },
+    { label: 'Super Admin', translationKey: 'role.super_admin', email: 'superadmin@hospital.com', icon: Shield, color: 'hover:bg-purple-50 hover:border-purple-300 text-purple-700' },
+    { label: 'Admin', translationKey: 'role.admin', email: 'admin@hospital.et', icon: UserCheck, color: 'hover:bg-blue-50 hover:border-blue-300 text-blue-700' },
+    { label: 'Doctor', translationKey: 'role.doctor', email: 'doctor@hospital.com', icon: Stethoscope, color: 'hover:bg-emerald-50 hover:border-emerald-300 text-emerald-700' },
+    { label: 'Nurse / Triage', translationKey: 'role.nurse', email: 'nurse@gmail.com', icon: HeartPulse, color: 'hover:bg-rose-50 hover:border-rose-300 text-rose-700' },
+    { label: 'Receptionist', translationKey: 'role.receptionist', email: 'reception@hospital.com', icon: Receipt, color: 'hover:bg-indigo-50 hover:border-indigo-300 text-indigo-700' },
+    { label: 'Cashier POS', translationKey: 'role.cashier', email: 'cashier@hospital.com', icon: DollarSign, color: 'hover:bg-amber-50 hover:border-amber-300 text-amber-700' },
+    { label: 'Lab Tech', translationKey: 'role.lab_tech', email: 'labtech@hospital.com', icon: FlaskConical, color: 'hover:bg-cyan-50 hover:border-cyan-300 text-cyan-700' },
+    { label: 'Pharmacist', translationKey: 'role.pharmacist', email: 'pharmacist@hospital.com', icon: Pill, color: 'hover:bg-teal-50 hover:border-teal-300 text-teal-700' },
   ];
 
   return (
@@ -83,18 +86,24 @@ const LoginPage: React.FC = () => {
                 <Stethoscope className="w-7 h-7 text-emerald-400" />
               </div>
               <div>
-                <h2 className="text-xl font-extrabold tracking-tight">Alem Ketema Enat</h2>
-                <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider">Hospital Management System</p>
+                <h2 className="text-xl font-extrabold tracking-tight">
+                  {language === 'am' ? 'አለም ከተማ እናት' : 'Alem Ketema Enat'}
+                </h2>
+                <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider">
+                  {language === 'am' ? 'የሆስፒታል አስተዳደር ሲስተም' : 'Hospital Management System'}
+                </p>
               </div>
             </div>
 
             <div className="mt-4 max-w-sm">
               <span className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mb-3">
-                Role-Guarded Workbench Access
+                {t('auth.role_guarded', 'Role-Guarded Workbench Access')}
               </span>
-              <h3 className="text-3xl font-black leading-tight text-white">Clinical Portal Sign In</h3>
+              <h3 className="text-3xl font-black leading-tight text-white">
+                {t('auth.portal_sign_in', 'Clinical Portal Sign In')}
+              </h3>
               <p className="mt-2 text-xs text-slate-300 leading-relaxed">
-                Seamless role switching between Doctor Consultation, Triage Nurse Desk, Reception Invoicing, Pathology Lab, Pharmacy Dispensing, and Cashier POS.
+                {t('auth.portal_desc', 'Seamless role switching between Doctor Consultation, Triage Nurse Desk, Reception Invoicing, Pathology Lab, Pharmacy Dispensing, and Cashier POS.')}
               </p>
             </div>
           </div>
@@ -129,11 +138,16 @@ const LoginPage: React.FC = () => {
         {/* Form & 1-Click Actor Switcher Panel */}
         <div className="p-8 lg:p-10 flex flex-col justify-between">
           <div>
-            <div className="mb-6">
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white">Account Login</h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Enter your credentials or click any <span className="font-extrabold text-emerald-600 dark:text-emerald-400">1-Click Actor Account</span> below.
-              </p>
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div>
+                <h1 className="text-2xl font-black text-slate-900 dark:text-white">
+                  {t('auth.login_title', 'Account Login')}
+                </h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {t('auth.login_subtitle', 'Enter your credentials or click any 1-Click Actor Account below.')}
+                </p>
+              </div>
+              <LanguageSwitcher variant="pill" />
             </div>
 
             {error && (
@@ -146,7 +160,7 @@ const LoginPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Email Address
+                  {t('auth.email', 'Email Address')}
                 </label>
                 <input
                   id="email" type="email" required
@@ -158,7 +172,7 @@ const LoginPage: React.FC = () => {
 
               <div>
                 <label htmlFor="password" className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Password
+                  {t('auth.password', 'Password')}
                 </label>
                 <div className="relative">
                   <input
@@ -177,8 +191,8 @@ const LoginPage: React.FC = () => {
               <button type="submit" disabled={loading}
                 className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold rounded-2xl text-sm shadow-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2">
                 {loading && !loadingRole ? (
-                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Signing in...</>
-                ) : 'Sign In to Dashboard'}
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> {t('auth.signing_in', 'Signing in...')}</>
+                ) : t('auth.sign_in', 'Sign In to Dashboard')}
               </button>
             </form>
 
@@ -187,7 +201,7 @@ const LoginPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <p className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
                   <Zap className="w-4 h-4 text-amber-500 fill-current" />
-                  Instant 1-Click Actor Logins
+                  {t('auth.instant_actors', 'Instant 1-Click Actor Logins')}
                 </p>
                 <span className="text-[10px] font-mono bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">
                   Password: Hospital@2024
@@ -198,6 +212,7 @@ const LoginPage: React.FC = () => {
                 {demoAccounts.map(acc => {
                   const Icon = acc.icon;
                   const isLoadingThis = loadingRole === acc.label;
+                  const translatedLabel = t(acc.translationKey, acc.label);
                   return (
                     <button
                       key={acc.email}
@@ -206,14 +221,14 @@ const LoginPage: React.FC = () => {
                       onClick={() => handleQuickRoleLogin(acc.email, acc.label)}
                       className={`px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 transition-all text-left flex items-center justify-between group shadow-sm ${acc.color} disabled:opacity-50`}
                     >
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-4 h-4 text-slate-400 group-hover:text-current transition-colors" />
-                        <span>{acc.label}</span>
+                      <div className="flex items-center gap-2 truncate">
+                        <Icon className="w-4 h-4 text-slate-400 group-hover:text-current transition-colors flex-shrink-0" />
+                        <span className="truncate">{translatedLabel}</span>
                       </div>
                       {isLoadingThis ? (
-                        <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
                       ) : (
-                        <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-current group-hover:translate-x-0.5 transition-all" />
+                        <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-current group-hover:translate-x-0.5 transition-all flex-shrink-0" />
                       )}
                     </button>
                   );
@@ -225,7 +240,7 @@ const LoginPage: React.FC = () => {
           {/* Footer note */}
           <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
             <Link to="/home" className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline font-bold">
-              ← Back to Hospital Main Website
+              ← {t('auth.back_to_site', 'Back to Hospital Main Website')}
             </Link>
           </div>
         </div>

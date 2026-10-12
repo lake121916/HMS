@@ -3,6 +3,8 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 import {
   LayoutDashboard, Users, Stethoscope, Calendar, LogOut, Menu, X,
   Activity, Pill, FlaskConical, Bed, FileText, Shield,
@@ -29,6 +31,7 @@ interface Notification {
 
 const Layout: React.FC = () => {
   const { user, logout } = useAuth();
+  const { t, language } = useLanguage();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
@@ -193,6 +196,40 @@ const Layout: React.FC = () => {
       return can(perm);
     });
 
+  const navTranslationMap: Record<string, string> = {
+    'Dashboard': 'nav.dashboard',
+    'Patient Portal': 'nav.patient_portal',
+    'Patients': 'nav.patients',
+    'Doctors': 'nav.doctors',
+    'Appointments': 'nav.appointments',
+    'Reception Workflow': 'nav.reception',
+    'Triage Worklist': 'nav.triage',
+    'Assign Queue': 'nav.assign_queue',
+    'My Consultations': 'nav.consultations',
+    'Lab Dashboard': 'nav.lab',
+    'Pharmacy': 'nav.pharmacy',
+    'Cashier': 'nav.cashier',
+    'Reception': 'nav.reception',
+    'Cashier Dashboard': 'nav.cashier',
+    'Vitals': 'nav.vitals',
+    'Prescriptions': 'nav.prescriptions',
+    'Lab Tests': 'nav.lab_tests',
+    'Radiology': 'nav.radiology',
+    'Admissions': 'nav.admissions',
+    'Beds': 'nav.beds',
+    'Invoices': 'nav.invoices',
+    'Payments': 'nav.payments',
+    'Insurance': 'cashier.insurance',
+    'Blood Bank': 'nav.blood_bank',
+    'Finance Reports': 'nav.finance_reports',
+    'Reports': 'nav.reports',
+    'Audit Logs': 'nav.audit',
+    'System Admin': 'nav.admin',
+    'Users': 'nav.users',
+    'Services': 'nav.services',
+    'Management': 'nav.admin',
+  };
+
   const getRoleColor = (role: string) => {
     const colors: Record<string, string> = {
       super_admin: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
@@ -226,7 +263,9 @@ const Layout: React.FC = () => {
           <div className="flex items-center justify-between h-16 px-5 border-b border-secondary/20 bg-secondary">
             <div className="flex items-center gap-2">
                 <img src="/images/hospital.jpg.webp" alt="Alem Ketema Enat Hospital" className="w-10 h-10 rounded-lg object-cover" />
-                <span className="text-base font-bold text-white leading-tight">Alem Ketema Enat Hospital</span>
+                <span className="text-base font-bold text-white leading-tight">
+                  {language === 'am' ? 'አለም ከተማ እናት ሆስፒታል' : 'Alem Ketema Enat Hospital'}
+                </span>
             </div>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white/80 hover:text-white">
               <X className="w-5 h-5" />
@@ -237,6 +276,7 @@ const Layout: React.FC = () => {
           <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
+              const translatedLabel = t(navTranslationMap[item.name] || item.name, item.name);
               return (
                 <Link
                   key={item.name}
@@ -245,7 +285,7 @@ const Layout: React.FC = () => {
                   onClick={() => setSidebarOpen(false)}
                 >
                   <item.icon className={`w-4 h-4 mr-3 flex-shrink-0 ${isActive ? 'text-primary' : 'text-white'}`} />
-                  {item.name}
+                  <span className="truncate">{translatedLabel}</span>
                 </Link>
               );
             })}
@@ -271,7 +311,7 @@ const Layout: React.FC = () => {
               className="flex items-center w-full px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition-colors"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
+              {t('nav.logout', 'Sign Out')}
             </button>
           </div>
         </div>
@@ -289,10 +329,13 @@ const Layout: React.FC = () => {
           </button>
           <div className="flex-1 lg:flex items-center hidden">
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              {new Date().toLocaleDateString(language === 'am' ? 'am-ET' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </span>
           </div>
           <div className="flex items-center gap-3">
+            {/* Language Switcher */}
+            <LanguageSwitcher variant="pill" />
+
             {/* Theme Customizer Popover */}
             <div className="relative" data-theme-panel>
               <button

@@ -46,10 +46,11 @@ interface TriageEncounter {
 interface Department { id: number; name: string; }
 interface Doctor { id: number; first_name: string; last_name: string; specialization: string; is_available: boolean; department_id?: number; }
 
-const priorityConfig: Record<string, { label: string; color: string; badge: string; icon: string }> = {
-  emergency: { label: 'Emergency', color: 'bg-red-500 text-white', badge: 'bg-red-100 text-red-700 border-red-200', icon: '🚨' },
-  urgent:    { label: 'Urgent',    color: 'bg-amber-500 text-white', badge: 'bg-amber-100 text-amber-700 border-amber-200', icon: '⚠️' },
-  normal:    { label: 'Normal',    color: 'bg-emerald-500 text-white', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: '✓' },
+const priorityConfig: Record<string, { label: string; amharic: string; full: string; color: string; badge: string; icon: string }> = {
+  emergency: { label: 'Emergency', amharic: 'ድንገተኛ', full: 'Emergency — ድንገተኛ', color: 'bg-red-500 text-white', badge: 'bg-red-100 text-red-700 border-red-200', icon: '🚨' },
+  urgent:    { label: 'Urgent',    amharic: 'አስቸኳይ', full: 'Urgent — አስቸኳይ',    color: 'bg-amber-500 text-white', badge: 'bg-amber-100 text-amber-700 border-amber-200', icon: '⚠️' },
+  normal:    { label: 'Routine',   amharic: 'መደበኛ',   full: 'Routine — መደበኛ',   color: 'bg-emerald-500 text-white', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: '✓' },
+  routine:   { label: 'Routine',   amharic: 'መደበኛ',   full: 'Routine — መደበኛ',   color: 'bg-emerald-500 text-white', badge: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: '✓' },
 };
 
 const fallbackEncounters: TriageEncounter[] = [
@@ -551,21 +552,28 @@ const TriageDashboard: React.FC = () => {
 
                 {/* Priority Selection */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">Triage Priority Level *</label>
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    Triage Priority Level / የቅድሚያ ደረጃ *
+                  </label>
                   <div className="grid grid-cols-3 gap-3">
                     {(['emergency', 'urgent', 'normal'] as const).map(p => (
                       <button
                         type="button"
                         key={p}
                         onClick={() => setVitals({ ...vitals, priority: p })}
-                        className={`py-3 px-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${
+                        className={`py-2.5 px-3 rounded-xl border text-xs font-extrabold flex flex-col items-center justify-center gap-1 transition-all ${
                           vitals.priority === p
                             ? priorityConfig[p].color + ' shadow-md ring-2 ring-offset-1'
                             : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100'
                         }`}
                       >
-                        <span>{priorityConfig[p].icon}</span>
-                        <span>{priorityConfig[p].label}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span>{priorityConfig[p].icon}</span>
+                          <span className="font-black">{priorityConfig[p].label}</span>
+                        </div>
+                        <span className="text-[11px] font-amharic font-semibold opacity-90">
+                          {priorityConfig[p].amharic}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -800,8 +808,10 @@ const TriageDashboard: React.FC = () => {
                             <div className="text-gray-400 font-mono text-[11px]">{enc.encounter_number}</div>
                           </td>
                           <td className="px-5 py-4">
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${pConf.badge}`}>
-                              {pConf.icon} {pConf.label}
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border inline-flex items-center gap-1.5 ${pConf.badge}`}>
+                              <span>{pConf.icon}</span>
+                              <span>{pConf.label}</span>
+                              <span className="font-amharic opacity-90 text-[11px]">({pConf.amharic})</span>
                             </span>
                           </td>
                           <td className="px-5 py-4">

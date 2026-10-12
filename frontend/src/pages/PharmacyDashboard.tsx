@@ -7,6 +7,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import { Pill, RefreshCw, CheckCircle2, Search } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface Prescription {
   id: number;
@@ -25,7 +26,18 @@ interface Prescription {
   payment_status?: string;
 }
 
+const formatAmharicInstruction = (inst: string): string => {
+  if (!inst) return '';
+  const lower = inst.toLowerCase();
+  if (lower.includes('with food')) return '— ከምግብ ጋር ይወሰድ';
+  if (lower.includes('before meal') || lower.includes('before food')) return '— ከምግብ በፊት ይወሰድ';
+  if (lower.includes('after meal') || lower.includes('after food')) return '— ከምግብ በኋላ ይወሰድ';
+  if (lower.includes('morning') && lower.includes('night')) return '— ጥዋትና ማታ';
+  return '';
+};
+
 const PharmacyDashboard: React.FC = () => {
+  const { language } = useLanguage();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState<number | null>(null);
@@ -144,25 +156,29 @@ const PharmacyDashboard: React.FC = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-sm text-slate-900 dark:text-white">{rx.medication_name}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${rx.is_dispensed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {rx.is_dispensed ? '✓ Dispensed' : '⏳ Pending'}
+                <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${rx.is_dispensed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {rx.is_dispensed ? (language === 'am' ? '✓ ተሰጥቷል (Dispensed)' : '✓ Dispensed') : (language === 'am' ? '⏳ በመጠባበቅ ላይ (Pending)' : '⏳ Pending')}
                 </span>
                 {rx.payment_status === 'UNPAID' && (
                   <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700">
-                    Payment Required
+                    {language === 'am' ? 'ክፍያ ይጠበቃል' : 'Payment Required'}
                   </span>
                 )}
               </div>
               <div className="text-xs text-slate-500 mt-0.5">
-                Patient: <span className="font-medium text-slate-700 dark:text-slate-300">{rx.patient_name}</span>
+                {language === 'am' ? 'ታካሚ: ' : 'Patient: '}<span className="font-medium text-slate-700 dark:text-slate-300">{rx.patient_name}</span>
                 {' · '}Dr. {rx.doctor_name}
               </div>
-              <div className="text-xs text-slate-400 mt-0.5">
-                {rx.dosage} · {rx.frequency} · {rx.duration}
-                {rx.instructions && ` · ${rx.instructions}`}
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <span className="font-medium text-slate-700 dark:text-slate-300">{rx.dosage}</span> · {rx.frequency} · {rx.duration}
+                {rx.instructions && (
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    {' · '}{rx.instructions} <span className="text-emerald-700 dark:text-emerald-400 font-amharic">{formatAmharicInstruction(rx.instructions)}</span>
+                  </span>
+                )}
               </div>
-              <div className="text-xs text-slate-300 mt-0.5">
-                Prescribed: {new Date(rx.prescribed_date).toLocaleString()}
+              <div className="text-xs text-slate-400 mt-0.5">
+                {language === 'am' ? 'የታዘዘበት: ' : 'Prescribed: '}{new Date(rx.prescribed_date).toLocaleString(language === 'am' ? 'am-ET' : 'en-US')}
               </div>
             </div>
             {!rx.is_dispensed && rx.payment_status !== 'UNPAID' && (
@@ -172,17 +188,17 @@ const PharmacyDashboard: React.FC = () => {
                 className="flex items-center gap-1.5 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 transition whitespace-nowrap"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                {submitting === rx.id ? 'Dispensing...' : 'Dispense'}
+                {submitting === rx.id ? (language === 'am' ? 'በመስጠት ላይ...' : 'Dispensing...') : (language === 'am' ? 'መድኃኒት ስጥ (Dispense)' : 'Dispense')}
               </button>
             )}
             {!rx.is_dispensed && rx.payment_status === 'UNPAID' && (
               <button
                 disabled
                 className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-400 text-sm font-semibold rounded-xl cursor-not-allowed whitespace-nowrap"
-                title="Payment required to dispense medication"
+                title={language === 'am' ? 'መድኃኒቱን ለመስጠት ክፍያ መፈጸም አለበት' : 'Payment required to dispense medication'}
               >
                 <CheckCircle2 className="h-4 w-4" />
-                Dispense
+                {language === 'am' ? 'ክፍያ ይጠበቃል' : 'Dispense'}
               </button>
             )}
           </div>
