@@ -78,6 +78,9 @@ app.use('/api/encounters', auditLog);
 app.use('/api/radiology-orders', auditLog);
 app.use('/api/procedures', auditLog);
 app.use('/api/services', auditLog);
+app.use('/api/pharmacy', auditLog);
+app.use('/api/consultations', auditLog);
+app.use('/api/opd', auditLog);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -116,6 +119,9 @@ app.use('/api/encounters', require('./routes/encounters'));
 app.use('/api/radiology-orders', require('./routes/radiologyOrders'));
 app.use('/api/procedures', require('./routes/procedures'));
 app.use('/api/services', require('./routes/services'));
+app.use('/api/pharmacy', require('./routes/pharmacy'));
+app.use('/api/consultations', require('./routes/consultations'));
+app.use('/api/opd', require('./routes/opdQueue'));
 
 // Error handling
 app.use(notFound);

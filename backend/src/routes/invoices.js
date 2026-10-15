@@ -50,13 +50,32 @@ router.get('/:id', authenticate, async (req, res) => {
     );
     if (invoiceRes.rows.length === 0) return res.status(404).json({ success: false, message: 'Invoice not found' });
 
-    const paymentsRes = await pool.query(
-      `SELECT py.*, u.email AS received_by_email FROM payments py
-       LEFT JOIN users u ON py.received_by = u.id WHERE py.invoice_id = $1 ORDER BY py.payment_date DESC`,
-      [req.params.id]
-    );
+    const [paymentsRes, itemsRes] = await Promise.all([
+      pool.query(
+        `SELECT py.*, u.email AS received_by_email FROM payments py
+         LEFT JOIN users u ON py.received_by = u.id WHERE py.invoice_id = $1 ORDER BY py.payment_date DESC`,
+        [req.params.id]
+      ),
+      pool.query(
+        `SELECT id, 
+                COALESCE(description, 'Medical Service') AS service,
+                COALESCE(quantity, 1) AS quantity,
+                COALESCE(unit_price, 0) AS unit_price,
+                COALESCE(subtotal, 0) AS total
+         FROM invoice_items 
+         WHERE invoice_id = $1 ORDER BY id ASC`,
+        [req.params.id]
+      )
+    ]);
 
-    res.json({ success: true, data: { invoice: invoiceRes.rows[0], payments: paymentsRes.rows } });
+    res.json({ 
+      success: true, 
+      data: { 
+        invoice: invoiceRes.rows[0], 
+        payments: paymentsRes.rows,
+        items: itemsRes.rows
+      } 
+    });
   } catch (error) {
     console.error('Error fetching invoice:', error);
     res.status(500).json({ success: false, message: 'Server error' });

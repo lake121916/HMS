@@ -1,0 +1,269 @@
+/* ============================================================================
+   Alem Ketema Enat Hospital Management System (HMS)
+   Thermal Receipt Print Stylesheet (80mm & 58mm Thermal Printers)
+   ============================================================================ */
+
+/* Screen Preview Formatting */
+.thermal-receipt-container {
+  font-family: 'Noto Sans Ethiopic', 'Courier New', Courier, monospace, system-ui;
+  background-color: #ffffff;
+  color: #000000;
+  margin: 0 auto;
+  line-height: 1.25;
+  box-sizing: border-box;
+}
+
+/* 80mm Screen Width Simulation (~72mm printable printable width at 203 DPI = ~576 dots) */
+.thermal-receipt-container.paper-80mm {
+  width: 79mm;
+  max-width: 100%;
+  padding: 3mm 4mm;
+  font-size: 11px;
+}
+
+/* 58mm Screen Width Simulation (~48mm printable width at 203 DPI = ~384 dots) */
+.thermal-receipt-container.paper-58mm {
+  width: 57mm;
+  max-width: 100%;
+  padding: 2mm 3mm;
+  font-size: 9.5px;
+}
+
+/* Standard A4/Letter Screen Width */
+.thermal-receipt-container.paper-standard {
+  width: 100%;
+  max-width: 480px;
+  padding: 16px;
+  font-size: 12px;
+}
+
+/* Receipt Header */
+.receipt-header {
+  text-align: center;
+  border-bottom: 1px dashed #000000;
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.receipt-header .hospital-title-am {
+  font-weight: 800;
+  font-size: 1.15em;
+  line-height: 1.2;
+}
+
+.receipt-header .hospital-title-en {
+  font-weight: 800;
+  font-size: 0.95em;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.receipt-header .hospital-contact {
+  font-size: 0.85em;
+  margin-top: 2px;
+  color: #222222;
+}
+
+.receipt-header .receipt-type-badge {
+  font-weight: 800;
+  font-size: 0.9em;
+  border-top: 1px solid #000000;
+  border-bottom: 1px solid #000000;
+  padding: 2px 0;
+  margin: 4px 0 2px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Reprint Alert */
+.receipt-reprint-banner {
+  text-align: center;
+  border: 1.5px solid #000000;
+  padding: 3px;
+  margin: 4px 0;
+  font-weight: 900;
+  font-size: 0.9em;
+  background-color: #f3f4f6;
+}
+
+/* Meta Data Grid */
+.receipt-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1px 0;
+  font-size: 0.9em;
+}
+
+.receipt-meta-row .label {
+  font-weight: 600;
+}
+
+.receipt-meta-row .val {
+  font-weight: 800;
+  text-align: right;
+  word-break: break-all;
+}
+
+.receipt-divider {
+  border: none;
+  border-top: 1px dashed #000000;
+  margin: 4px 0;
+}
+
+.receipt-divider-double {
+  border: none;
+  border-top: 2px solid #000000;
+  margin: 4px 0;
+}
+
+/* Itemized Table */
+.receipt-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  margin: 4px 0;
+}
+
+.receipt-items-table th {
+  border-bottom: 1px solid #000000;
+  border-top: 1px solid #000000;
+  padding: 2px 1px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.receipt-items-table th.text-right,
+.receipt-items-table td.text-right {
+  text-align: right;
+}
+
+.receipt-items-table th.text-center,
+.receipt-items-table td.text-center {
+  text-align: center;
+}
+
+.receipt-items-table td {
+  padding: 2px 1px;
+  vertical-align: top;
+  border-bottom: 0.5px dotted #cccccc;
+}
+
+/* Summary / Totals */
+.receipt-totals {
+  margin-top: 4px;
+}
+
+.receipt-totals .total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 1.5px 0;
+  font-size: 0.95em;
+}
+
+.receipt-totals .grand-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1.5px solid #000000;
+  border-bottom: 1.5px solid #000000;
+  padding: 4px 0;
+  margin: 3px 0;
+  font-weight: 900;
+  font-size: 1.15em;
+}
+
+/* Signatures & Footer */
+.receipt-signatures {
+  margin-top: 12px;
+  font-size: 0.85em;
+}
+
+.receipt-signatures .sign-line {
+  margin-top: 16px;
+  border-top: 1px dashed #444444;
+  padding-top: 2px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.receipt-footer-notes {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 0.8em;
+  line-height: 1.3;
+}
+
+/* ============================================================================
+   PRINT MEDIA RULES: Physical 80mm & 58mm Thermal Printers
+   ============================================================================ */
+@media print {
+  /* Hide all app chrome, sidebars, headers, modals backgrounds */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Reset body margins and background */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+  }
+
+  /* Make only the print isolation target visible */
+  .receipt-print-wrapper,
+  .receipt-print-wrapper * {
+    visibility: visible;
+  }
+
+  .receipt-print-wrapper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  /* Hide print preview controls */
+  .no-print,
+  .thermal-control-bar {
+    display: none !important;
+  }
+
+  /* 80mm Paper Print Rule */
+  .paper-80mm {
+    width: 76mm !important;
+    max-width: 76mm !important;
+    padding: 2mm 3mm !important;
+    font-size: 10.5pt !important;
+    line-height: 1.2 !important;
+  }
+
+  /* 58mm Paper Print Rule */
+  .paper-58mm {
+    width: 54mm !important;
+    max-width: 54mm !important;
+    padding: 1mm 2mm !important;
+    font-size: 8.5pt !important;
+    line-height: 1.15 !important;
+  }
+
+  /* Prevent page breaks inside receipt rows */
+  .thermal-receipt-container,
+  .receipt-items-table tr,
+  .receipt-header,
+  .receipt-totals {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  @page {
+    margin: 0;
+    size: auto;
+  }
+}

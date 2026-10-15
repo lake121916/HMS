@@ -24,9 +24,10 @@ interface PaymentModalProps {
   onClose: () => void;
   onSubmit: (paymentData: any) => Promise<void>;
   loading?: boolean;
+  activeShiftId?: number;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ invoice, isOpen, onClose, onSubmit, loading }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ invoice, isOpen, onClose, onSubmit, loading, activeShiftId }) => {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [amount, setAmount] = useState(fmt(toNum(invoice.total_amount) - toNum(invoice.amount_paid)));
   const [transactionRef, setTransactionRef] = useState('');
@@ -59,12 +60,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ invoice, isOpen, onClose, o
       setError('Please enter a valid amount before verifying reference');
       return;
     }
+    if (!transactionRef || !transactionRef.trim()) {
+      setError(`Please enter the transaction reference from the patient's payment SMS/screen.`);
+      return;
+    }
     setError('');
     setVerifying(true);
     try {
       const res = await api.post('/cashier/payments/verify-reference', {
         method: paymentMethod,
-        reference: transactionRef,
+        reference: transactionRef.trim(),
         amount: paymentAmount
       });
 
@@ -78,7 +83,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ invoice, isOpen, onClose, o
         });
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Verification failed. Please check transaction code.');
+      const msg = err.response?.data?.message || 'Verification failed. Please check transaction code.';
+      setError(msg);
+      setVerificationResult(null);
     } finally {
       setVerifying(false);
     }
@@ -114,7 +121,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ invoice, isOpen, onClose, o
         invoice_id: invoice.id,
         amount: paymentAmount,
         payment_method: paymentMethod,
-        transaction_id: transactionRef || undefined,
+        transaction_id: transactionRef ? transactionRef.trim() : undefined,
+        shift_id: activeShiftId || undefined,
         notes: notes || undefined,
       });
       onClose();

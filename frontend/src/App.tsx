@@ -56,6 +56,8 @@ import LabTechDashboard from './pages/LabTechDashboard';
 import PharmacyDashboard from './pages/PharmacyDashboard';
 import CashierWorkflow from './pages/CashierWorkflow';
 import ServicesAdminPage from './pages/ServicesAdminPage';
+import OPDQueueDisplay from './pages/OPDQueueDisplay';
+import InactivityLock from './components/security/InactivityLock';
 
 // ── Role permission map ──────────────────────────────────────────────────────
 const ALL_PAGES = [
@@ -151,13 +153,23 @@ function App() {
           <Route path="/gallery" element={<GalleryPage />} />
           <Route path="/news" element={<NewsPage />} />
 
+          {/* ── Public OPD Waiting Room TV Display ── */}
+          <Route path="/queue-display" element={<OPDQueueDisplay />} />
+          <Route path="/opd-display" element={<OPDQueueDisplay />} />
+
           {/* ── Auth ── */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-          {/* ── Protected HMS portal (role-guarded) ── */}
-          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          {/* ── Protected HMS portal (role-guarded with Inactivity Lock) ── */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <InactivityLock timeoutMinutes={5} warningSeconds={60}>
+                <Layout />
+              </InactivityLock>
+            </ProtectedRoute>
+          }>
             <Route index element={<DefaultLandingRoute />} />
             <Route path="dashboard" element={
               <ProtectedRoute page="dashboard"><DashboardPage /></ProtectedRoute>

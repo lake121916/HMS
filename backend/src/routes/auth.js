@@ -99,4 +99,49 @@ router.put(
   authController.toggleActive
 );
 
+// Inactivity lock & session verification
+router.post('/unlock', authenticate, async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ success: false, message: 'Password is required to unlock session' });
+    }
+    const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    if (!userRes.rows.length || !userRes.rows[0].is_active) {
+      return res.status(401).json({ success: false, message: 'User not found or account deactivated' });
+    }
+    const user = userRes.rows[0];
+    const bcrypt = require('bcryptjs');
+    const isValid = await bcrypt.compare(password, user.password_hash);
+    if (!isValid) {
+      return res.status(401).json({ success: false, message: 'Invalid password. Cannot unlock session.' });
+    }
+    res.json({
+      success: true,
+      message: 'Session unlocked successfully',
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role
+        }
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error: ' + err.message });
+  }
+});
+
+router.get('/verify-session', authenticate, async (req, res) => {
+  try {
+    const userRes = await pool.query('SELECT id, email, role, is_active FROM users WHERE id = $1', [req.user.id]);
+    if (!userRes.rows.length || !userRes.rows[0].is_active) {
+      return res.status(401).json({ success: false, message: 'Session invalid or account deactivated' });
+    }
+    res.json({ success: true, data: { user: userRes.rows[0] } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;

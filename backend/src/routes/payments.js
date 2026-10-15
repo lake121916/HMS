@@ -66,10 +66,15 @@ router.post('/', authenticate, authorize('receptionist', 'cashier', 'admin', 'su
       return res.status(400).json({ success: false, message: `Payment exceeds the remaining invoice balance of ${balance.toFixed(2)}` });
     }
 
+    const seqRes = await client.query(
+      `SELECT ('RCP-' || TO_CHAR(NOW(), 'YYYY') || '-' || LPAD(nextval('receipt_number_seq')::text, 6, '0')) AS receipt_number`
+    );
+    const receiptNumber = seqRes.rows[0].receipt_number;
+
     const payRes = await client.query(
-      `INSERT INTO payments (invoice_id, amount, payment_method, transaction_id, received_by, notes)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [invoice_id, numericAmount, payment_method, transaction_id || null, req.user.id, notes || null]
+      `INSERT INTO payments (invoice_id, amount, payment_method, payment_provider, transaction_id, provider_reference, receipt_number, received_by, notes)
+       VALUES ($1, $2, $3, $3, $4, $4, $5, $6, $7) RETURNING *`,
+      [invoice_id, numericAmount, payment_method, transaction_id || null, receiptNumber, req.user.id, notes || null]
     );
 
     // Update invoice status based on total paid

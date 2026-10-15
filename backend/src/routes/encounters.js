@@ -516,6 +516,19 @@ router.post('/:id/complete-consultation', authenticate, authorize('doctor', 'adm
       doctorId = doc.rows[0]?.id;
     }
 
+    // Check if consultation was already finalized to enforce medical record immutability
+    const existingConsult = await client.query(
+      'SELECT id, status FROM doctor_consultations WHERE encounter_id = $1',
+      [req.params.id]
+    );
+    if (existingConsult.rows.length && existingConsult.rows[0].status === 'completed') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        message: 'This consultation is already finalized and legally locked. To add corrections or subsequent notes, please submit a clinical addendum.'
+      });
+    }
+
     // Update consultation
     const consult = await client.query(
       `UPDATE doctor_consultations SET
@@ -525,6 +538,21 @@ router.post('/:id/complete-consultation', authenticate, authorize('doctor', 'adm
        WHERE encounter_id = $6 RETURNING *`,
       [consultation_notes, diagnosis, icd_code, treatment_plan, follow_up_instructions, req.params.id]
     );
+
+    // Record immutable audit event for consultation finalization
+    if (consult.rows.length) {
+      await client.query(`
+        INSERT INTO clinical_audit_events
+          (patient_id, consultation_id, record_type, record_id, action_type, performed_by, reason, metadata)
+        VALUES ($1, $2, 'consultation', $3, 'FINALIZED', $4, 'Doctor finalized medical consultation', $5)
+      `, [
+        enc.rows[0].patient_id,
+        consult.rows[0].id,
+        consult.rows[0].id,
+        req.user.id,
+        JSON.stringify({ diagnosis, icd_code, encounter_id: enc.rows[0].id })
+      ]);
+    }
 
     // Auto-bill consultation
     if (consult.rows.length) {

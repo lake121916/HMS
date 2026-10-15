@@ -63,16 +63,103 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// POST create — doctor only (auto-billing enabled)
+const allergySafetyService = require('../services/allergySafetyService');
+
+// POST validate medication against patient allergies (Pre-check)
+router.post('/validate', authenticate, async (req, res) => {
+  try {
+    const { patient_id, medication_name } = req.body;
+    if (!patient_id || !medication_name) {
+      return res.status(400).json({ success: false, message: 'patient_id and medication_name are required' });
+    }
+    const checkResult = await allergySafetyService.checkMedicationAllergy(patient_id, medication_name);
+    res.json({ success: true, data: checkResult });
+  } catch (err) {
+    console.error('Allergy validation error:', err);
+    res.status(500).json({ success: false, message: 'Server error: ' + err.message });
+  }
+});
+
+// GET patient structured allergies
+router.get('/patient/:patientId/allergies', authenticate, async (req, res) => {
+  try {
+    const allergies = await pool.query(
+      'SELECT * FROM patient_allergies WHERE patient_id = $1 ORDER BY recorded_date DESC',
+      [req.params.patientId]
+    );
+    res.json({ success: true, data: { allergies: allergies.rows } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// POST add patient allergy
+router.post('/patient/:patientId/allergies', authenticate, authorize('doctor', 'nurse', 'super_admin', 'admin'), async (req, res) => {
+  try {
+    const { allergen_name, allergen_category, reaction_description, severity, verification_status, clinical_notes } = req.body;
+    if (!allergen_name) {
+      return res.status(400).json({ success: false, message: 'allergen_name is required' });
+    }
+
+    const result = await pool.query(`
+      INSERT INTO patient_allergies
+        (patient_id, allergen_name, allergen_category, reaction_description, severity, verification_status, recorded_by, clinical_notes)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `, [
+      req.params.patientId,
+      allergen_name.trim(),
+      allergen_category || 'drug',
+      reaction_description || null,
+      severity || 'moderate',
+      verification_status || 'verified',
+      req.user.id,
+      clinical_notes || null
+    ]);
+
+    // Also update legacy text field on patients for backward compatibility
+    await pool.query(`
+      UPDATE patients
+      SET allergies = CASE 
+        WHEN allergies IS NULL OR LENGTH(TRIM(allergies)) = 0 THEN $1
+        ELSE allergies || ', ' || $1
+      END
+      WHERE id = $2
+    `, [allergen_name.trim(), req.params.patientId]);
+
+    res.status(201).json({ success: true, data: { allergy: result.rows[0] } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// POST create — doctor only (auto-billing & allergy safety enabled)
 router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), prescriptionCreateRules, validate, async (req, res) => {
   try {
     const { patient_id, diagnosis_id, medication_name, dosage, frequency, duration, instructions,
-            encounter_id, quantity = 1 } = req.body;
+            encounter_id, quantity = 1, override_reason } = req.body;
+
+    // ── 1. Clinical Allergy Safety Check ────────────────────
+    const allergyCheck = await allergySafetyService.checkMedicationAllergy(patient_id, medication_name);
+    if (allergyCheck.hasConflict) {
+      if (!override_reason || override_reason.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          requiresOverride: true,
+          hardBlocked: allergyCheck.hardBlocked,
+          allergyAlerts: allergyCheck.alerts,
+          message: `Clinical Allergy Warning: Conflict detected with patient allergy record. Prescriber must review and provide an authorized clinical override reason.`
+        });
+      }
+    }
+
     let doctorId = req.body.doctor_id;
     if (req.user.role === 'doctor') {
       const doc = await pool.query('SELECT id FROM doctors WHERE user_id=$1', [req.user.id]);
       if (doc.rows.length) doctorId = doc.rows[0].id;
     }
+
+    // ── 2. Create Prescription Record ────────────────────────
     const result = await pool.query(
       `INSERT INTO prescriptions
          (patient_id, doctor_id, diagnosis_id, medication_name, dosage, frequency, duration, instructions, encounter_id)
@@ -80,6 +167,36 @@ router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), pres
       [patient_id, doctorId, diagnosis_id||null, medication_name, dosage, frequency, duration, instructions||null, encounter_id||null]
     );
     const prescription = result.rows[0];
+
+    // ── 3. Record Allergy Override Audit if Conflict Existed ─
+    if (allergyCheck.hasConflict && override_reason) {
+      const primaryAlert = allergyCheck.alerts[0];
+      await pool.query(`
+        INSERT INTO prescription_allergy_overrides
+          (prescription_id, patient_id, medication_name, allergen_name, allergy_severity, prescriber_id, override_reason)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `, [
+        prescription.id,
+        patient_id,
+        medication_name,
+        primaryAlert.recordedAllergen,
+        primaryAlert.severity,
+        req.user.id,
+        override_reason.trim()
+      ]);
+
+      await pool.query(`
+        INSERT INTO clinical_audit_events
+          (patient_id, record_type, record_id, action_type, performed_by, reason, metadata)
+        VALUES ($1, 'prescription', $2, 'OVERRIDE_RECORDED', $3, $4, $5)
+      `, [
+        patient_id,
+        prescription.id,
+        req.user.id,
+        `Allergy warning overridden by prescriber: ${override_reason}`,
+        JSON.stringify({ medication_name, allergen: primaryAlert.recordedAllergen, severity: primaryAlert.severity })
+      ]);
+    }
 
     // ── Auto-billing ─────────────────────────────────────────
     const billing = require('../services/billingService');
@@ -104,7 +221,7 @@ router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), pres
 
     res.status(201).json({
       success: true,
-      data: { prescription, invoiceBilled: !alreadyExisted, invoice }
+      data: { prescription, invoiceBilled: !alreadyExisted, invoice, allergyOverridden: allergyCheck.hasConflict }
     });
   } catch (err) {
     console.error(err);
