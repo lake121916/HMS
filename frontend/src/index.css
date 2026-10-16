@@ -1,8 +1,8 @@
+@import './styles/thermal-receipt.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import './styles/thermal-receipt.css';
-
 body.font-amharic {
   font-family: 'Noto Sans Ethiopic', 'Nyala', 'Abyssinica SIL', system-ui, sans-serif;
   letter-spacing: 0.01em;
