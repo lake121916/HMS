@@ -66,20 +66,20 @@ const DashboardPage: React.FC = () => {
 
   useEffect(() => { fetchDashboardData(); }, [revenuePeriod]);
 
-  // If the user's role has a different landing than /dashboard, redirect them there.
+  // Redirect non-dashboard roles to their correct landing page
   useEffect(() => {
     if (!user) return;
     const roleRouteMap: Record<string, string> = {
-      super_admin: '/dashboard',
-      admin: '/dashboard',
+      super_admin:      '/dashboard',
+      admin:            '/dashboard',
       hospital_manager: '/dashboard',
-      receptionist: '/reception',
-      doctor: '/doctor',
-      nurse: '/vitals',
-      lab_technician: '/lab-tests',
-      pharmacist: '/medicines',
-      cashier: '/cashier',
-      patient: '/patient-portal',
+      receptionist:     '/reception-workflow',
+      doctor:           '/consultation',
+      nurse:            '/nurse',
+      lab_technician:   '/lab-dashboard',
+      pharmacist:       '/pharmacy',
+      cashier:          '/cashier-workflow',
+      patient:          '/patient-portal',
     };
     const target = roleRouteMap[user.role] || '/dashboard';
     if (target !== '/dashboard') {
@@ -88,33 +88,41 @@ const DashboardPage: React.FC = () => {
   }, [user, navigate]);
 
   const statCards = [
-    { name: 'Total Patients', value: stats?.totalPatients ?? '—', icon: Users, color: 'bg-blue-500', trend: '+12%' },
-    { name: 'Active Doctors', value: stats?.activeDoctors ?? '—', icon: Stethoscope, color: 'bg-green-500', trend: '' },
-    { name: "Today's Appointments", value: stats?.todayAppointments ?? '—', icon: Calendar, color: 'bg-purple-500', trend: '' },
-    { name: 'Available Beds', value: stats?.availableBeds ?? '—', icon: Bed, color: 'bg-orange-500', trend: '' },
-    { name: 'Current Admissions', value: stats?.currentAdmissions ?? '—', icon: Activity, color: 'bg-cyan-500', trend: '' },
-    { name: 'Pending Invoices', value: stats?.pendingInvoices ?? '—', icon: FileText, color: 'bg-red-500', trend: '' },
-    { name: "Today's Revenue", value: stats?.todayRevenue != null ? `$${stats.todayRevenue.toLocaleString()}` : '—', icon: DollarSign, color: 'bg-emerald-500', trend: '' },
+    { name: 'Total Patients',        value: stats?.totalPatients ?? '—',         icon: Users,       color: 'bg-blue-500',    trend: '+12%', trendUp: true },
+    { name: 'Active Doctors',        value: stats?.activeDoctors ?? '—',         icon: Stethoscope, color: 'bg-emerald-500', trend: '',     trendUp: true },
+    { name: "Today's Appointments",  value: stats?.todayAppointments ?? '—',     icon: Calendar,    color: 'bg-violet-500',  trend: '',     trendUp: true },
+    { name: 'Available Beds',        value: stats?.availableBeds ?? '—',         icon: Bed,         color: 'bg-orange-500',  trend: '',     trendUp: true },
+    { name: 'Current Admissions',    value: stats?.currentAdmissions ?? '—',     icon: Activity,    color: 'bg-cyan-500',    trend: '',     trendUp: true },
+    { name: 'Pending Invoices',      value: stats?.pendingInvoices ?? '—',       icon: FileText,    color: 'bg-red-500',     trend: '',     trendUp: false },
+    { name: "Today's Revenue (ETB)", value: stats?.todayRevenue != null ? `ETB ${Number(stats.todayRevenue).toLocaleString()}` : '—', icon: DollarSign, color: 'bg-teal-500', trend: '', trendUp: true },
   ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 px-6 py-5 shadow-sm">
         <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-1">
+            Hospital Management System
+          </p>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Welcome back, {user?.firstName}!
+            Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">{user?.firstName}!</span>
           </h1>
-          <p className="mt-1 text-gray-600 dark:text-gray-400">
-            Hospital overview for {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {' · '}
+            <span className="inline-flex items-center gap-1 font-medium text-gray-600 dark:text-gray-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+              {user?.role?.replace(/_/g, ' ')}
+            </span>
           </p>
         </div>
         <button
           onClick={fetchDashboardData}
           disabled={loading}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm font-semibold shadow-sm"
         >
-          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
       </div>
@@ -127,27 +135,26 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
         {statCards.map((stat) => (
-          <div key={stat.name} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {stat.name}
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                  {loading ? <span className="animate-pulse bg-gray-200 dark:bg-gray-600 rounded h-7 w-16 inline-block" /> : stat.value}
-                </p>
-                {stat.trend && (
-                  <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center">
-                    <TrendingUp className="w-3 h-3 mr-1" />{stat.trend} this month
-                  </p>
-                )}
+          <div key={stat.name} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-3">
+              <div className={`p-2.5 rounded-xl ${stat.color} shadow-sm`}>
+                <stat.icon className="w-4 h-4 text-white" />
               </div>
-              <div className={`p-3 rounded-xl ${stat.color}`}>
-                <stat.icon className="w-6 h-6 text-white" />
-              </div>
+              {stat.trend && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                  stat.trendUp ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                               : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                }`}>
+                  {stat.trend}
+                </span>
+              )}
             </div>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">
+              {loading ? <span className="animate-pulse bg-gray-200 dark:bg-gray-600 rounded h-6 w-12 inline-block" /> : stat.value}
+            </p>
+            <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{stat.name}</p>
           </div>
         ))}
       </div>
