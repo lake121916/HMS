@@ -19,12 +19,20 @@ interface Doctor {
   consultation_fee?: number;
 }
 
+interface Department {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+}
+
 const inp = 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white';
 const lbl = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
 const DoctorsPage: React.FC = () => {
   const { can } = useRoleAccess();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -36,7 +44,19 @@ const DoctorsPage: React.FC = () => {
     experience_years: '', consultation_fee: ''
   });
 
-  useEffect(() => { fetchDoctors(); }, []);
+  useEffect(() => {
+    fetchDoctors();
+    fetchDepartments();
+  }, []);
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await api.get('/departments');
+      setDepartments(res.data.data?.departments || res.data.data || []);
+    } catch (e) {
+      console.error('Failed to load departments', e);
+    }
+  };
 
   const fetchDoctors = async () => {
     try {
@@ -261,8 +281,21 @@ const DoctorsPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div><label className={lbl}>License Number</label>
                   <input value={formData.license_number} onChange={e => setFormData({...formData, license_number:e.target.value})} className={inp} /></div>
-                <div><label className={lbl}>Department ID</label>
-                  <input type="number" value={formData.department_id} onChange={e => setFormData({...formData, department_id:e.target.value})} className={inp} placeholder="Optional" /></div>
+                <div>
+                  <label className={lbl}>Department</label>
+                  <select
+                    value={formData.department_id}
+                    onChange={e => setFormData({ ...formData, department_id: e.target.value })}
+                    className={inp}
+                  >
+                    <option value="">-- Select Department --</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><label className={lbl}>Qualification</label>

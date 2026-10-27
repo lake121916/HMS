@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import {
-  Stethoscope, Eye, EyeOff, AlertCircle, Shield, UserCheck,
+  Stethoscope, Eye, EyeOff, AlertCircle, Shield,
   HeartPulse, Receipt, DollarSign, FlaskConical, Pill, Zap, ArrowRight
 } from 'lucide-react';
 
@@ -65,7 +65,6 @@ const LoginPage: React.FC = () => {
 
   const demoAccounts = [
     { label: 'Super Admin', translationKey: 'role.super_admin', email: 'superadmin@hospital.com', icon: Shield, color: 'hover:bg-purple-50 hover:border-purple-300 text-purple-700' },
-    { label: 'Admin', translationKey: 'role.admin', email: 'admin@hospital.et', icon: UserCheck, color: 'hover:bg-blue-50 hover:border-blue-300 text-blue-700' },
     { label: 'Doctor', translationKey: 'role.doctor', email: 'doctor@hospital.com', icon: Stethoscope, color: 'hover:bg-emerald-50 hover:border-emerald-300 text-emerald-700' },
     { label: 'Nurse / Triage', translationKey: 'role.nurse', email: 'nurse@gmail.com', icon: HeartPulse, color: 'hover:bg-rose-50 hover:border-rose-300 text-rose-700' },
     { label: 'Receptionist', translationKey: 'role.receptionist', email: 'reception@hospital.com', icon: Receipt, color: 'hover:bg-indigo-50 hover:border-indigo-300 text-indigo-700' },
@@ -75,8 +74,8 @@ const LoginPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center px-4 py-10 transition-colors">
-      <div className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-2 border border-slate-200 dark:border-slate-800">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center px-3 sm:px-6 py-6 sm:py-10 transition-colors">
+      <div className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-2 border border-slate-200 dark:border-slate-800">
 
         {/* Brand / Illustration panel */}
         <div className="hidden lg:flex flex-col items-start justify-between p-10 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white relative overflow-hidden">
@@ -136,18 +135,38 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Form & 1-Click Actor Switcher Panel */}
-        <div className="p-8 lg:p-10 flex flex-col justify-between">
+        <div className="p-5 sm:p-8 lg:p-10 flex flex-col justify-between">
           <div>
-            <div className="flex items-start justify-between gap-4 mb-6">
+            {/* Mobile Header Branding (Visible on mobile/tablet when left visual panel is hidden) */}
+            <div className="lg:hidden flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-emerald-500/20 border border-emerald-400/30 rounded-xl flex items-center justify-center text-emerald-500">
+                  <Stethoscope className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-extrabold text-slate-900 dark:text-white leading-tight">
+                    {language === 'am' ? 'አለም ከተማ እናት' : 'Alem Ketema Enat'}
+                  </p>
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">
+                    {language === 'am' ? 'የሆስፒታል አስተዳደር' : 'Hospital HMS'}
+                  </p>
+                </div>
+              </div>
+              <LanguageSwitcher variant="compact" />
+            </div>
+
+            <div className="flex items-start justify-between gap-4 mb-5 sm:mb-6">
               <div>
-                <h1 className="text-2xl font-black text-slate-900 dark:text-white">
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                   {t('auth.login_title', 'Account Login')}
                 </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   {t('auth.login_subtitle', 'Enter your credentials or click any 1-Click Actor Account below.')}
                 </p>
               </div>
-              <LanguageSwitcher variant="pill" />
+              <div className="hidden lg:block">
+                <LanguageSwitcher variant="pill" />
+              </div>
             </div>
 
             {error && (
@@ -166,7 +185,7 @@ const LoginPage: React.FC = () => {
                   id="email" type="email" required
                   value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="user@hospital.com"
-                  className="w-full px-4 py-3 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium dark:bg-slate-800 dark:text-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                  className="w-full px-4 py-2.5 sm:py-3 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium dark:bg-slate-800 dark:text-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 />
               </div>
 
@@ -179,17 +198,21 @@ const LoginPage: React.FC = () => {
                     id="password" type={showPassword ? 'text' : 'password'} required
                     value={password} onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-4 py-3 pr-11 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium dark:bg-slate-800 dark:text-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                    className="w-full px-4 py-2.5 sm:py-3 pr-11 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium dark:bg-slate-800 dark:text-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
               <button type="submit" disabled={loading}
-                className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold rounded-2xl text-sm shadow-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2">
+                className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold rounded-2xl text-sm shadow-xl transition-all disabled:opacity-60 flex items-center justify-center gap-2">
                 {loading && !loadingRole ? (
                   <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> {t('auth.signing_in', 'Signing in...')}</>
                 ) : t('auth.sign_in', 'Sign In to Dashboard')}
@@ -197,33 +220,44 @@ const LoginPage: React.FC = () => {
             </form>
 
             {/* Quick Demo Actor Accounts */}
-            <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl space-y-2.5">
-              <div className="flex items-center justify-between">
+            <div className="mt-5 sm:mt-6 p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                 <p className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
                   <Zap className="w-4 h-4 text-amber-500 fill-current" />
                   {t('auth.instant_actors', 'Instant 1-Click Actor Logins')}
                 </p>
-                <span className="text-[10px] font-mono bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">
+                <span className="text-[10px] font-mono bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300 self-start sm:self-auto">
                   Password: Hospital@2024
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {demoAccounts.map(acc => {
                   const Icon = acc.icon;
                   const isLoadingThis = loadingRole === acc.label;
                   const translatedLabel = t(acc.translationKey, acc.label);
+                  const isSuperAdmin = acc.email === 'superadmin@hospital.com';
+
                   return (
                     <button
                       key={acc.email}
                       type="button"
                       disabled={loading}
                       onClick={() => handleQuickRoleLogin(acc.email, acc.label)}
-                      className={`px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 transition-all text-left flex items-center justify-between group shadow-sm ${acc.color} disabled:opacity-50`}
+                      className={`px-3.5 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold transition-all text-left flex items-center justify-between group shadow-xs hover:shadow-sm disabled:opacity-50 ${
+                        isSuperAdmin
+                          ? 'sm:col-span-2 border-purple-300 dark:border-purple-800/80 bg-purple-50/40 dark:bg-purple-950/20 text-purple-800 dark:text-purple-300 hover:bg-purple-100/60 dark:hover:bg-purple-900/30'
+                          : `border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 ${acc.color}`
+                      }`}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <Icon className="w-4 h-4 text-slate-400 group-hover:text-current transition-colors flex-shrink-0" />
+                        <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${isSuperAdmin ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 group-hover:text-current'}`} />
                         <span className="truncate">{translatedLabel}</span>
+                        {isSuperAdmin && (
+                          <span className="hidden sm:inline-block ml-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-purple-200/80 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200">
+                            Executive
+                          </span>
+                        )}
                       </div>
                       {isLoadingThis ? (
                         <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
@@ -238,7 +272,7 @@ const LoginPage: React.FC = () => {
           </div>
 
           {/* Footer note */}
-          <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
+          <div className="mt-5 sm:mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
             <Link to="/home" className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline font-bold">
               ← {t('auth.back_to_site', 'Back to Hospital Main Website')}
             </Link>

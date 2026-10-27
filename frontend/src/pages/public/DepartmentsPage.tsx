@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PublicLayout from '../../components/PublicLayout';
+import api from '../../services/api';
 import {
   Baby, Heart, Brain, Bone, Eye, FlaskConical,
   Stethoscope, Activity, Pill, Zap,
-  Truck, ChevronRight, ArrowRight, Users, Clock
+  Truck, ChevronRight, ArrowRight, Users, Clock, Building2
 } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 
@@ -21,6 +22,21 @@ const IMGS = {
   emergency: 'https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=600&q=80&auto=format',
 };
 
+const getDeptIconAndColor = (name: string) => {
+  const n = (name || '').toLowerCase();
+  if (n.includes('matern') || n.includes('gyneco') || n.includes('women')) return { icon: Baby, color: 'bg-pink-600' };
+  if (n.includes('pediatr') || n.includes('child')) return { icon: Heart, color: 'bg-red-600' };
+  if (n.includes('cardio') || n.includes('heart')) return { icon: Heart, color: 'bg-rose-600' };
+  if (n.includes('neuro') || n.includes('brain')) return { icon: Brain, color: 'bg-purple-600' };
+  if (n.includes('ortho') || n.includes('bone')) return { icon: Bone, color: 'bg-orange-600' };
+  if (n.includes('eye') || n.includes('ophthal')) return { icon: Eye, color: 'bg-cyan-600' };
+  if (n.includes('radio') || n.includes('imag') || n.includes('x-ray')) return { icon: Zap, color: 'bg-indigo-600' };
+  if (n.includes('lab') || n.includes('patho')) return { icon: FlaskConical, color: 'bg-green-600' };
+  if (n.includes('pharm')) return { icon: Pill, color: 'bg-teal-600' };
+  if (n.includes('emerg')) return { icon: Truck, color: 'bg-red-700' };
+  return { icon: Building2, color: 'bg-blue-600' };
+};
+
 function Reveal({ children, className='', delay=0 }:
   { children: React.ReactNode; className?: string; delay?: number }) {
   const { ref, inView } = useInView();
@@ -33,7 +49,7 @@ function Reveal({ children, className='', delay=0 }:
   );
 }
 
-const departments = [
+const staticDepartments = [
   { id:1, icon:Baby,  color:'bg-pink-600', img:IMGS.maternity, name:'Maternity & Obstetrics', tagline:'Caring for Mothers', head:'Dr. Alem Tesfaye', beds:40, staff:18, hours:'24/7', desc:'Our flagship department offering comprehensive care from preconception through postnatal recovery. Over 3,000 babies delivered annually in modern delivery suites.', services:['Antenatal care','Labor & delivery','C-section surgery','High-risk pregnancy','Postnatal care','Family planning'] },
   { id:2, icon:Heart, color:'bg-red-600',  img:IMGS.pediatrics, name:'Pediatrics & Neonatology', tagline:'Child-Centered Care', head:'Dr. Selamawit Bekele', beds:35, staff:15, hours:'24/7', desc:'From newborns to adolescents, our pediatric team provides compassionate, evidence-based care. Our NICU handles premature and critically ill newborns.', services:['Newborn care','NICU','Growth monitoring','Vaccination','Child nutrition','Developmental screening'] },
   { id:3, icon:Stethoscope, color:'bg-blue-600', img:IMGS.maternity, name:'General Medicine', tagline:'Holistic Adult Care', head:'Dr. Mekdes Worku', beds:30, staff:12, hours:'Mon–Sat 8am–8pm', desc:'Comprehensive diagnosis and management of adult conditions including diabetes, hypertension, infectious diseases by our internist team.', services:['Diabetes management','Hypertension','Infectious diseases','Chronic care','Health screenings','Outpatient consults'] },
@@ -48,6 +64,36 @@ const departments = [
 
 const DepartmentsPage: React.FC = () => {
   const [selected, setSelected] = useState<number | null>(null);
+  const [dbDepts, setDbDepts] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get('/departments')
+      .then(res => {
+        setDbDepts(res.data.data?.departments || res.data.data || []);
+      })
+      .catch(err => console.error('Failed to load DB departments:', err));
+  }, []);
+
+  const departments = dbDepts.length > 0 ? dbDepts.map((d) => {
+    const staticMatch = staticDepartments.find(sd =>
+      sd.name.toLowerCase().includes(d.name.toLowerCase()) || d.name.toLowerCase().includes(sd.name.toLowerCase())
+    );
+    const meta = getDeptIconAndColor(d.name);
+    return {
+      id: d.id,
+      name: d.name,
+      tagline: staticMatch?.tagline || 'Specialized Medical Wing',
+      head: d.head_doctor_name || staticMatch?.head || 'Chief Medical Specialist',
+      beds: staticMatch?.beds || 25,
+      staff: d.doctor_count !== undefined ? parseInt(d.doctor_count) : (staticMatch?.staff || 8),
+      hours: staticMatch?.hours || '24/7 Emergency & Inpatient',
+      desc: d.description || staticMatch?.desc || 'Modern hospital wing providing dedicated inpatient and outpatient clinical services.',
+      services: staticMatch?.services || ['Specialist Consultations', 'Diagnostic Evaluation', 'Inpatient Treatment', 'Follow-up Clinic'],
+      img: staticMatch?.img || IMGS.maternity,
+      icon: staticMatch?.icon || meta.icon,
+      color: staticMatch?.color || meta.color,
+    };
+  }) : staticDepartments;
 
   return (
     <PublicLayout>

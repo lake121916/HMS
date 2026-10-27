@@ -241,27 +241,39 @@ router.get('/finance', authenticate, authorize('super_admin', 'admin', 'hospital
       // Outstanding receivables
       pool.query(`
         SELECT
-          COALESCE(SUM(CASE WHEN LOWER(status) IN ('unpaid','pending') THEN total_amount END), 0)::numeric AS unpaid,
-          COALESCE(SUM(CASE WHEN LOWER(status) = 'partial' THEN total_amount - amount_paid END), 0)::numeric AS partial,
-          COUNT(CASE WHEN LOWER(status) IN ('unpaid','pending') THEN 1 END) AS unpaid_count,
-          COUNT(CASE WHEN LOWER(status) = 'partial' THEN 1 END) AS partial_count
-        FROM invoices`
+          COALESCE(SUM(CASE WHEN LOWER(i.status) IN ('unpaid','pending') THEN i.total_amount END), 0)::numeric AS unpaid,
+          COALESCE(SUM(CASE WHEN LOWER(i.status) = 'partial' THEN i.total_amount - COALESCE(p.paid_amount, 0) END), 0)::numeric AS partial,
+          COUNT(CASE WHEN LOWER(i.status) IN ('unpaid','pending') THEN 1 END) AS unpaid_count,
+          COUNT(CASE WHEN LOWER(i.status) = 'partial' THEN 1 END) AS partial_count
+        FROM invoices i
+        LEFT JOIN (
+          SELECT invoice_id, SUM(amount) AS paid_amount
+          FROM payments
+          WHERE COALESCE(verification_status, 'VERIFIED') != 'REJECTED'
+          GROUP BY invoice_id
+        ) p ON p.invoice_id = i.id`
       ),
 
       // Ageing buckets (days since invoice created)
       pool.query(`
         SELECT
           CASE
-            WHEN NOW() - created_at < INTERVAL '7 days'  THEN '0–7 days'
-            WHEN NOW() - created_at < INTERVAL '30 days' THEN '8–30 days'
-            WHEN NOW() - created_at < INTERVAL '60 days' THEN '31–60 days'
+            WHEN NOW() - i.created_at < INTERVAL '7 days'  THEN '0–7 days'
+            WHEN NOW() - i.created_at < INTERVAL '30 days' THEN '8–30 days'
+            WHEN NOW() - i.created_at < INTERVAL '60 days' THEN '31–60 days'
             ELSE '60+ days'
           END AS bucket,
           COUNT(*) AS count,
-          COALESCE(SUM(total_amount - COALESCE(amount_paid,0)), 0)::numeric AS amount
-        FROM invoices
-        WHERE LOWER(status) IN ('unpaid','pending','partial')
-        GROUP BY 1 ORDER BY MIN(created_at)`
+          COALESCE(SUM(i.total_amount - COALESCE(p.paid_amount, 0)), 0)::numeric AS amount
+        FROM invoices i
+        LEFT JOIN (
+          SELECT invoice_id, SUM(amount) AS paid_amount
+          FROM payments
+          WHERE COALESCE(verification_status, 'VERIFIED') != 'REJECTED'
+          GROUP BY invoice_id
+        ) p ON p.invoice_id = i.id
+        WHERE LOWER(i.status) IN ('unpaid','pending','partial')
+        GROUP BY 1 ORDER BY MIN(i.created_at)`
       ),
 
       // Insurance collections

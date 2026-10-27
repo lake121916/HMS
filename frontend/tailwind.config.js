@@ -27,6 +27,9 @@ export default {
           800: "hsl(var(--blue-800) / <alpha-value>)",
           900: "hsl(var(--blue-900) / <alpha-value>)",
         },
+        gray: {
+          750: "#262f40",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

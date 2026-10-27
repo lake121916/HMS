@@ -201,7 +201,6 @@ export const en = {
   'nav.blood_bank': 'Blood Bank',
   'nav.medicines': 'Medicines',
   'nav.inventory': 'Inventory',
-  'nav.services': 'Services Admin',
 
   // Receipt Additional
   'receipt.invoice_reference': 'Invoice Reference',

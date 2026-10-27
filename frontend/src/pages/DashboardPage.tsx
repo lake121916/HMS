@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import {
   Users, Stethoscope, Calendar, Activity, TrendingUp,
-  DollarSign, FileText, Bed, AlertCircle, RefreshCw
+  DollarSign, Bed, AlertCircle, RefreshCw, Building2, Shield
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -21,12 +21,21 @@ interface DashboardStats {
   todayRevenue: number;
 }
 
+interface AdminStats {
+  totalUsers: number;
+  activeUsers: number;
+  totalPatients: number;
+  totalDoctors: number;
+  totalDepartments: number;
+}
+
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
   const [revenueData, setRevenueData] = useState<any[]>([]);
   const [appointmentData, setAppointmentData] = useState<any[]>([]);
   const [diseaseData, setDiseaseData] = useState<any[]>([]);
@@ -39,8 +48,9 @@ const DashboardPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [statsRes, revenueRes, apptRes, diseaseRes, patientRes] = await Promise.allSettled([
+      const [statsRes, adminRes, revenueRes, apptRes, diseaseRes, patientRes] = await Promise.allSettled([
         api.get('/reports/dashboard-stats'),
+        api.get('/admin/stats'),
         api.get(`/reports/revenue?period=${revenuePeriod}`),
         api.get('/reports/appointments'),
         api.get('/reports/diseases'),
@@ -48,6 +58,7 @@ const DashboardPage: React.FC = () => {
       ]);
 
       if (statsRes.status === 'fulfilled') setStats(statsRes.value.data.data);
+      if (adminRes.status === 'fulfilled') setAdminStats(adminRes.value.data.data);
       if (revenueRes.status === 'fulfilled') setRevenueData(revenueRes.value.data.data.chart || []);
       if (apptRes.status === 'fulfilled') setAppointmentData(
         (apptRes.value.data.data.byStatus || []).map((d: any) => ({
@@ -88,12 +99,12 @@ const DashboardPage: React.FC = () => {
   }, [user, navigate]);
 
   const statCards = [
-    { name: 'Total Patients',        value: stats?.totalPatients ?? '—',         icon: Users,       color: 'bg-blue-500',    trend: '+12%', trendUp: true },
-    { name: 'Active Doctors',        value: stats?.activeDoctors ?? '—',         icon: Stethoscope, color: 'bg-emerald-500', trend: '',     trendUp: true },
-    { name: "Today's Appointments",  value: stats?.todayAppointments ?? '—',     icon: Calendar,    color: 'bg-violet-500',  trend: '',     trendUp: true },
-    { name: 'Available Beds',        value: stats?.availableBeds ?? '—',         icon: Bed,         color: 'bg-orange-500',  trend: '',     trendUp: true },
-    { name: 'Current Admissions',    value: stats?.currentAdmissions ?? '—',     icon: Activity,    color: 'bg-cyan-500',    trend: '',     trendUp: true },
-    { name: 'Pending Invoices',      value: stats?.pendingInvoices ?? '—',       icon: FileText,    color: 'bg-red-500',     trend: '',     trendUp: false },
+    { name: 'Total Patients',        value: adminStats?.totalPatients ?? stats?.totalPatients ?? '—',         icon: Users,       color: 'bg-blue-500',    trend: '+12%', trendUp: true },
+    { name: 'Medical Doctors',       value: adminStats?.totalDoctors ?? stats?.activeDoctors ?? '—',          icon: Stethoscope, color: 'bg-emerald-500', trend: '',     trendUp: true },
+    { name: 'Departments',          value: adminStats?.totalDepartments ?? '—',                             icon: Building2,   color: 'bg-purple-500',  trend: '',     trendUp: true },
+    { name: 'Current Admissions',    value: stats?.currentAdmissions ?? '—',                                 icon: Activity,    color: 'bg-cyan-500',    trend: '',     trendUp: true },
+    { name: 'Available Beds',        value: stats?.availableBeds ?? '—',                                     icon: Bed,         color: 'bg-orange-500',  trend: '',     trendUp: true },
+    { name: 'Active Staff Users',    value: adminStats?.activeUsers ?? '—',                                  icon: Shield,      color: 'bg-indigo-500',  trend: '',     trendUp: true },
     { name: "Today's Revenue (ETB)", value: stats?.todayRevenue != null ? `ETB ${Number(stats.todayRevenue).toLocaleString()}` : '—', icon: DollarSign, color: 'bg-teal-500', trend: '', trendUp: true },
   ];
 

@@ -11,7 +11,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -21,23 +23,96 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     setMenuOpen(false);
-    window.scrollTo(0, 0);
+    if (!location.hash) {
+      window.scrollTo(0, 0);
+    }
+  }, [location.pathname]);
+
+  // Smooth scroll to hash on landing
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '');
+      const timer = setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) {
+          const navHeight = 72;
+          const targetY = el.getBoundingClientRect().top + window.scrollY - navHeight;
+          window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+          setActiveSection(id);
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname, location.hash]);
+
+  // Scrollspy to highlight active section on Home page
+  useEffect(() => {
+    const isHomePage = location.pathname === '/' || location.pathname === '/home';
+    if (!isHomePage) return;
+
+    const sectionIds = ['home', 'about', 'services', 'departments', 'doctors', 'news', 'gallery', 'contact'];
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 140;
+      for (let i = sectionIds.length - 1; i >= 0; i--) {
+        const id = sectionIds[i];
+        const el = document.getElementById(id);
+        if (el && el.offsetTop <= scrollPosition) {
+          setActiveSection(id);
+          break;
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [location.pathname]);
 
   const { t } = useLanguage();
 
   const navLinks = [
-    { label: t('nav.home'), href: '/home' },
-    { label: t('nav.about'), href: '/about' },
-    { label: t('nav.services'), href: '/services' },
-    { label: t('nav.departments'), href: '/departments' },
-    { label: t('nav.doctors'), href: '/our-doctors' },
-    { label: t('nav.news'), href: '/news' },
-    { label: t('nav.gallery'), href: '/gallery' },
-    { label: t('nav.contact'), href: '/contact' },
+    { label: t('nav.home'), id: 'home', href: '/home' },
+    { label: t('nav.about'), id: 'about', href: '/about' },
+    { label: t('nav.services'), id: 'services', href: '/services' },
+    { label: t('nav.departments'), id: 'departments', href: '/departments' },
+    { label: t('nav.doctors'), id: 'doctors', href: '/our-doctors' },
+    { label: t('nav.news'), id: 'news', href: '/news' },
+    { label: t('nav.gallery'), id: 'gallery', href: '/gallery' },
+    { label: t('nav.contact'), id: 'contact', href: '/contact' },
   ];
 
-  const isActive = (href: string) => location.pathname === href;
+  const handleNavClick = (e: React.MouseEvent, link: typeof navLinks[0]) => {
+    e.preventDefault();
+    setMenuOpen(false);
+    const isHomePage = location.pathname === '/' || location.pathname === '/home';
+
+    if (isHomePage) {
+      if (link.id === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.history.replaceState(null, '', window.location.pathname);
+        setActiveSection('home');
+        return;
+      }
+      const el = document.getElementById(link.id);
+      if (el) {
+        const navHeight = 72;
+        const targetY = el.getBoundingClientRect().top + window.scrollY - navHeight;
+        window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+        window.history.replaceState(null, '', `#${link.id}`);
+        setActiveSection(link.id);
+      }
+    } else {
+      navigate(`/home#${link.id}`);
+    }
+  };
+
+  const isLinkActive = (link: typeof navLinks[0]) => {
+    const isHomePage = location.pathname === '/' || location.pathname === '/home';
+    if (isHomePage) {
+      return activeSection === link.id;
+    }
+    return location.pathname === link.href;
+  };
 
   // Search box component — lightweight client-side search over public pages
   function SearchBox() {
@@ -130,9 +205,9 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         </div>
       </div>
 
-      {/* Main navbar - dark centered */}
-      <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'shadow-lg' : ''}`}>
-        <div className="bg-secondary text-white">
+      {/* Main navbar - fixed sticky header */}
+      <header className={`sticky top-0 z-50 transition-all duration-300 shadow-md ${scrolled ? 'shadow-xl bg-secondary/95 backdrop-blur-md' : 'bg-secondary'}`}>
+        <div className="text-white">
           <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
             <Link to="/home" className="flex items-center gap-3">
               <img src="/images/hospital.jpg.webp" alt="Alem Ketema Enat Hospital" className="w-10 h-10 rounded-full object-cover shadow" />
@@ -144,9 +219,18 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
             <div className="hidden lg:flex items-center gap-5">
               {navLinks.map((link) => (
-                <Link key={link.href} to={link.href} className={`text-xs font-semibold uppercase tracking-wide px-1.5 py-2 transition ${isActive(link.href) ? 'text-white font-extrabold border-b-2 border-emerald-400' : 'text-gray-300 hover:text-white'}`}>
+                <a
+                  key={link.id}
+                  href={`#${link.id}`}
+                  onClick={(e) => handleNavClick(e, link)}
+                  className={`text-xs font-semibold uppercase tracking-wide px-1.5 py-2 transition cursor-pointer ${
+                    isLinkActive(link)
+                      ? 'text-white font-extrabold border-b-2 border-emerald-400'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                >
                   {link.label}
-                </Link>
+                </a>
               ))}
               <LanguageSwitcher variant="pill" />
               <Link to="/login" className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-4 py-2 text-xs font-extrabold text-white shadow-md transition hover:bg-emerald-700 whitespace-nowrap">
@@ -172,12 +256,25 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             </div>
             <div className="space-y-1">
               {navLinks.map(link => (
-                <Link key={link.href} to={link.href} className={`block px-4 py-2.5 rounded-xl text-sm font-medium ${isActive(link.href) ? 'bg-secondary/90 text-white font-bold' : 'hover:bg-secondary/80 hover:text-white'}`}>
+                <a
+                  key={link.id}
+                  href={`#${link.id}`}
+                  onClick={(e) => handleNavClick(e, link)}
+                  className={`block px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition ${
+                    isLinkActive(link)
+                      ? 'bg-emerald-500/20 text-emerald-300 font-extrabold border-l-4 border-emerald-400 pl-3'
+                      : 'hover:bg-slate-800 text-gray-300 hover:text-white'
+                  }`}
+                >
                   {link.label}
-                </Link>
+                </a>
               ))}
               <div className="pt-2 border-t border-gray-700">
-                <Link to="/login" className="block text-center py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm">
+                <Link
+                  to="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="block text-center py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition"
+                >
                   {t('nav.login')}
                 </Link>
               </div>
@@ -218,14 +315,18 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Quick Links</h3>
             <ul className="space-y-2.5">
               {navLinks.map(link => (
-                <li key={link.href}>
-                  <Link to={link.href} className="text-sm text-gray-400 hover:text-blue-400 transition-colors flex items-center gap-2">
+                <li key={link.id}>
+                  <a
+                    href={`#${link.id}`}
+                    onClick={(e) => handleNavClick(e, link)}
+                    className="text-sm text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2 cursor-pointer"
+                  >
                     <ChevronRight className="w-3 h-3" />{link.label}
-                  </Link>
+                  </a>
                 </li>
               ))}
               <li>
-                <Link to="/login" className="text-sm text-gray-400 hover:text-blue-400 transition-colors flex items-center gap-2">
+                <Link to="/login" className="text-sm text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
                   <ChevronRight className="w-3 h-3" />Staff Login
                 </Link>
               </li>

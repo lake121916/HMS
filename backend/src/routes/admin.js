@@ -12,18 +12,48 @@ router.get('/users', authenticate, authorize('super_admin', 'admin'), handleAsyn
   const { role, search } = req.query;
   let q = `
     SELECT u.id, u.email, u.role, u.is_active, u.last_login, u.created_at,
+      u.phone, u.gender, u.address, u.emergency_contact,
       COALESCE(
+        u.first_name || ' ' || u.last_name,
         (SELECT d.first_name || ' ' || d.last_name FROM doctors d WHERE d.user_id = u.id LIMIT 1),
         (SELECT n.first_name || ' ' || n.last_name FROM nurses n WHERE n.user_id = u.id LIMIT 1),
         (SELECT p.first_name || ' ' || p.last_name FROM patients p WHERE p.user_id = u.id LIMIT 1),
         split_part(u.email, '@', 1)
-      ) AS full_name
+      ) AS full_name,
+      COALESCE(
+        u.first_name,
+        (SELECT d.first_name FROM doctors d WHERE d.user_id = u.id LIMIT 1),
+        (SELECT n.first_name FROM nurses n WHERE n.user_id = u.id LIMIT 1),
+        split_part(u.email, '@', 1)
+      ) AS first_name,
+      COALESCE(
+        u.last_name,
+        (SELECT d.last_name FROM doctors d WHERE d.user_id = u.id LIMIT 1),
+        (SELECT n.last_name FROM nurses n WHERE n.user_id = u.id LIMIT 1),
+        ''
+      ) AS last_name,
+      COALESCE(
+        (SELECT dep.name FROM doctors d JOIN departments dep ON dep.id = d.department_id WHERE d.user_id = u.id LIMIT 1),
+        (SELECT dep.name FROM nurses n JOIN departments dep ON dep.id = n.department_id WHERE n.user_id = u.id LIMIT 1),
+        NULL
+      ) AS department_name,
+      COALESCE(
+        (SELECT d.department_id FROM doctors d WHERE d.user_id = u.id LIMIT 1),
+        (SELECT n.department_id FROM nurses n WHERE n.user_id = u.id LIMIT 1),
+        NULL
+      ) AS department_id,
+      (SELECT d.specialization FROM doctors d WHERE d.user_id = u.id LIMIT 1) AS specialization,
+      (SELECT d.consultation_fee FROM doctors d WHERE d.user_id = u.id LIMIT 1) AS consultation_fee,
+      (SELECT d.qualification FROM doctors d WHERE d.user_id = u.id LIMIT 1) AS qualification,
+      (SELECT d.experience_years FROM doctors d WHERE d.user_id = u.id LIMIT 1) AS experience_years,
+      (SELECT d.license_number FROM doctors d WHERE d.user_id = u.id LIMIT 1) AS license_number,
+      COALESCE(u.phone, (SELECT d.phone FROM doctors d WHERE d.user_id = u.id LIMIT 1), (SELECT n.phone FROM nurses n WHERE n.user_id = u.id LIMIT 1)) AS phone
     FROM users u WHERE 1=1
   `;
   const params = [];
   let idx = 1;
   if (role) { q += ` AND u.role = $${idx++}`; params.push(role); }
-  if (search) { q += ` AND (u.email ILIKE $${idx++})`; params.push(`%${search}%`); }
+  if (search) { q += ` AND (u.email ILIKE $${idx++} OR u.role ILIKE $${idx-1} OR u.first_name ILIKE $${idx-1} OR u.last_name ILIKE $${idx-1} OR u.phone ILIKE $${idx-1})`; params.push(`%${search}%`); }
   q += ' ORDER BY u.created_at DESC';
 
   const result = await pool.query(q, params);
@@ -32,30 +62,85 @@ router.get('/users', authenticate, authorize('super_admin', 'admin'), handleAsyn
 
 // GET single user
 router.get('/users/:id', authenticate, authorize('super_admin', 'admin'), handleAsync(async (req, res) => {
-  const result = await pool.query('SELECT id, email, role, is_active, last_login, created_at FROM users WHERE id = $1', [req.params.id]);
+  const result = await pool.query('SELECT id, email, role, is_active, first_name, last_name, phone, gender, address, emergency_contact, last_login, created_at FROM users WHERE id = $1', [req.params.id]);
   if (!result.rows.length) return sendError(res, 'User not found', 404);
   res.json({ success: true, data: { user: result.rows[0] } });
 }));
 
 // POST create new user
 router.post('/users', authenticate, authorize('super_admin', 'admin'), handleAsync(async (req, res) => {
-  const { email, password, role, is_active } = req.body;
+  const {
+    email, password, role, is_active,
+    firstName, lastName, phone, gender, address, emergencyContact,
+    departmentId, specialization, licenseNumber, qualification, experienceYears, consultationFee
+  } = req.body;
   if (!email || !password || !role) return sendError(res, 'Email, password, and role are required', 400);
 
-  const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+  const cleanEmail = email.toLowerCase().trim();
+  const existing = await pool.query('SELECT id FROM users WHERE email = $1', [cleanEmail]);
   if (existing.rows.length > 0) return sendError(res, 'Email already in use', 409);
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const result = await pool.query(
-    'INSERT INTO users (email, password_hash, role, is_active) VALUES ($1, $2, $3, $4) RETURNING id, email, role, is_active, created_at',
-    [email.toLowerCase().trim(), hashedPassword, role, is_active !== undefined ? is_active : true]
+    `INSERT INTO users (email, password_hash, role, is_active, first_name, last_name, phone, gender, address, emergency_contact)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     RETURNING id, email, role, is_active, first_name, last_name, phone, gender, address, emergency_contact, created_at`,
+    [
+      cleanEmail, hashedPassword, role, is_active !== undefined ? is_active : true,
+      firstName || null, lastName || null, phone || null, gender || 'other', address || null, emergencyContact || null
+    ]
   );
-  res.status(201).json({ success: true, data: { user: result.rows[0] } });
+  const newUser = result.rows[0];
+
+  // If role is doctor, create or link doctor profile
+  if (role === 'doctor') {
+    const fName = firstName || cleanEmail.split('@')[0];
+    const lName = lastName || 'Doctor';
+    const spec = specialization || 'General Physician';
+    const deptId = departmentId ? parseInt(departmentId) : null;
+    const license = licenseNumber || `DOC-${Date.now().toString().slice(-6)}`;
+    const fee = consultationFee ? parseFloat(consultationFee) : 250;
+    const exp = experienceYears ? parseInt(experienceYears) : 1;
+
+    const docCheck = await pool.query('SELECT id FROM doctors WHERE email = $1', [cleanEmail]);
+    if (docCheck.rows.length > 0) {
+      await pool.query(
+        `UPDATE doctors SET
+          user_id = $1, department_id = COALESCE($2, department_id), specialization = COALESCE($3, specialization),
+          phone = COALESCE($4, phone), qualification = COALESCE($5, qualification), consultation_fee = COALESCE($6, consultation_fee)
+         WHERE id = $7`,
+        [newUser.id, deptId, spec, phone || null, qualification || null, fee, docCheck.rows[0].id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO doctors (user_id, first_name, last_name, specialization, phone, email, department_id, license_number, qualification, experience_years, consultation_fee, is_available)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true)`,
+        [newUser.id, fName, lName, spec, phone || '', cleanEmail, deptId, license, qualification || 'MD', exp, fee]
+      );
+    }
+  } else if (role === 'nurse') {
+    const fName = firstName || cleanEmail.split('@')[0];
+    const lName = lastName || 'Nurse';
+    const deptId = departmentId ? parseInt(departmentId) : null;
+    const license = licenseNumber || `NUR-${Date.now().toString().slice(-6)}`;
+    await pool.query(
+      `INSERT INTO nurses (user_id, first_name, last_name, phone, email, department_id, license_number, is_available)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+       ON CONFLICT (license_number) DO NOTHING`,
+      [newUser.id, fName, lName, phone || '', cleanEmail, deptId, license]
+    );
+  }
+
+  res.status(201).json({ success: true, data: { user: newUser } });
 }));
 
 // PUT update user role, status, or password
 router.put('/users/:id', authenticate, authorize('super_admin', 'admin'), handleAsync(async (req, res) => {
-  const { role, is_active, password } = req.body;
+  const {
+    role, is_active, password,
+    firstName, lastName, phone, gender, address, emergencyContact,
+    departmentId, specialization, licenseNumber, qualification, experienceYears, consultationFee
+  } = req.body;
   const validRoles = ['super_admin', 'admin', 'receptionist', 'doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier', 'hospital_manager', 'patient'];
   if (role && !validRoles.includes(role)) return sendError(res, 'Invalid role', 400);
 
@@ -71,12 +156,56 @@ router.put('/users/:id', authenticate, authorize('super_admin', 'admin'), handle
       role = COALESCE($1, role),
       is_active = COALESCE($2, is_active),
       password_hash = COALESCE($3, password_hash),
+      first_name = COALESCE($4, first_name),
+      last_name = COALESCE($5, last_name),
+      phone = COALESCE($6, phone),
+      gender = COALESCE($7, gender),
+      address = COALESCE($8, address),
+      emergency_contact = COALESCE($9, emergency_contact),
       updated_at = NOW()
-    WHERE id = $4 RETURNING id, email, role, is_active`,
-    [role || null, is_active !== undefined ? is_active : null, passwordHash, req.params.id]
+    WHERE id = $10 RETURNING id, email, role, is_active, first_name, last_name, phone, gender, address, emergency_contact`,
+    [
+      role || null, is_active !== undefined ? is_active : null, passwordHash,
+      firstName || null, lastName || null, phone || null, gender || null, address || null, emergencyContact || null,
+      req.params.id
+    ]
   );
   if (!result.rows.length) return sendError(res, 'User not found', 404);
-  res.json({ success: true, data: { user: result.rows[0] } });
+  const updatedUser = result.rows[0];
+
+  // If role is doctor, update doctor record
+  if (role === 'doctor' || updatedUser.role === 'doctor') {
+    const deptId = departmentId ? parseInt(departmentId) : null;
+    const fee = consultationFee ? parseFloat(consultationFee) : null;
+    const docCheck = await pool.query('SELECT id FROM doctors WHERE user_id = $1', [req.params.id]);
+    if (docCheck.rows.length > 0) {
+      await pool.query(
+        `UPDATE doctors SET
+          first_name = COALESCE($1, first_name),
+          last_name = COALESCE($2, last_name),
+          department_id = COALESCE($3, department_id),
+          specialization = COALESCE($4, specialization),
+          phone = COALESCE($5, phone),
+          qualification = COALESCE($6, qualification),
+          license_number = COALESCE($7, license_number),
+          consultation_fee = COALESCE($8, consultation_fee),
+          updated_at = NOW()
+        WHERE id = $9`,
+        [firstName || null, lastName || null, deptId, specialization || null, phone || null, qualification || null, licenseNumber || null, fee, docCheck.rows[0].id]
+      );
+    } else if (role === 'doctor') {
+      const fName = firstName || updatedUser.email.split('@')[0];
+      const lName = lastName || 'Doctor';
+      const license = licenseNumber || `DOC-${Date.now().toString().slice(-6)}`;
+      await pool.query(
+        `INSERT INTO doctors (user_id, first_name, last_name, specialization, phone, email, department_id, license_number, qualification, consultation_fee, is_available)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true)`,
+        [req.params.id, fName, lName, specialization || 'General Physician', phone || '', updatedUser.email, deptId, license, qualification || 'MD', fee || 250]
+      );
+    }
+  }
+
+  res.json({ success: true, data: { user: updatedUser } });
 }));
 
 // DELETE user (super_admin only)

@@ -5,13 +5,15 @@ import { useRoleAccess } from '../hooks/useRoleAccess';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import api from '../services/api';
 import {
   LayoutDashboard, Users, Stethoscope, Calendar, LogOut, Menu, X,
   Activity, Pill, FlaskConical, Bed, FileText, Shield,
   BarChart2, CreditCard, Settings, Bell, MapPin,
   Palette, Sun, Moon, RefreshCw, ClipboardCheck,
   UserCheck, Building2, Receipt, Package, Scan,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, User, Key, Eye, EyeOff,
+  CheckCircle2, AlertCircle
 } from 'lucide-react';
 
 interface NavItem {
@@ -41,6 +43,64 @@ const Layout: React.FC = () => {
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [notifOpen, setNotifOpen] = React.useState(false);
   const [themeOpen, setThemeOpen] = React.useState(false);
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [profileModalOpen, setProfileModalOpen] = React.useState(false);
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = React.useState(false);
+
+  // Change password form state
+  const [oldPassword, setOldPassword] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [showOldPass, setShowOldPass] = React.useState(false);
+  const [showNewPass, setShowNewPass] = React.useState(false);
+  const [showConfirmPass, setShowConfirmPass] = React.useState(false);
+  const [passwordLoading, setPasswordLoading] = React.useState(false);
+  const [passwordError, setPasswordError] = React.useState('');
+  const [passwordSuccess, setPasswordSuccess] = React.useState('');
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+    if (newPassword.length < 6) {
+      setPasswordError(language === 'am' ? 'አዲሱ የይለፍ ቃል ቢያንስ 6 ፊደላት መሆን አለበት' : 'New password must be at least 6 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError(language === 'am' ? 'አዲሶቹ የይለፍ ቃሎች አይዛመዱም' : 'New passwords do not match');
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await api.post('/auth/change-password', { oldPassword, newPassword });
+      setPasswordSuccess(language === 'am' ? 'የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል!' : 'Password changed successfully!');
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => {
+        setChangePasswordModalOpen(false);
+        setPasswordSuccess('');
+      }, 1500);
+    } catch (err: any) {
+      setPasswordError(err.response?.data?.message || (language === 'am' ? 'የይለፍ ቃል መቀየር አልተሳካም' : 'Failed to change password'));
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  // Close settings dropdown on outside click
+  React.useEffect(() => {
+    if (!settingsOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-settings-panel]')) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [settingsOpen]);
+
   const { hue, saturation, isDark, setHue, setSaturation, setIsDark, resetTheme } = useTheme();
 
   // Fetch notifications on mount and poll every 30s
@@ -170,16 +230,17 @@ const Layout: React.FC = () => {
       { name: 'Insurance',          href: '/insurance',          icon: Shield,         group: 'FINANCIALS' },
       { name: 'Finance Reports',    href: '/finance-reports',    icon: BarChart2,      group: 'FINANCIALS' },
       { name: 'Reports',            href: '/reports',            icon: BarChart2,      group: 'FINANCIALS' },
-      // ── SYSTEM group ───────────────────────────────────────────────
-      { name: 'System Admin',       href: '/admin',              icon: Settings,       group: 'SYSTEM'    },
-      { name: 'Users',              href: '/user-management',    icon: Users,          group: 'SYSTEM'    },
-      { name: 'Services',           href: '/services-admin',     icon: Package,        group: 'SYSTEM'    },
-      { name: 'Audit Logs',         href: '/audit',              icon: Shield,         group: 'SYSTEM'    },
+      // ── ADMINISTRATION & GOVERNANCE group ───────────────────────────
+      { name: 'Users',              href: '/user-management',    icon: Users,          group: 'ADMINISTRATION' },
+      { name: 'Departments',        href: '/departments-admin',  icon: Building2,      group: 'ADMINISTRATION' },
+      { name: 'Services',           href: '/services-admin',     icon: Package,        group: 'ADMINISTRATION' },
+      { name: 'Audit Logs',         href: '/audit',              icon: Shield,         group: 'SECURITY'       },
+      { name: 'System Admin',       href: '/admin',              icon: Settings,       group: 'ADMINISTRATION' },
     ];
 
     const roleMap: Record<string, string[]> = {
-      super_admin:      ['Dashboard','Patients','Doctors','Appointments','Admissions','Vitals','Prescriptions','Lab Tests','Radiology','Beds','Blood Bank','Medicines','Inventory','Invoices','Payments','Insurance','Finance Reports','Reports','Audit Logs','System Admin','Users','Services','Assign Queue'],
-      admin:            ['Dashboard','Patients','Doctors','Appointments','Admissions','Vitals','Prescriptions','Lab Tests','Radiology','Beds','Blood Bank','Medicines','Inventory','Invoices','Payments','Insurance','Finance Reports','Reports','Audit Logs','System Admin','Users','Services','Cashier POS','Assign Queue'],
+      super_admin:      ['Dashboard', 'Users', 'Departments', 'Services', 'Finance Reports', 'Reports', 'Audit Logs'],
+      admin:            ['Dashboard', 'Users', 'Departments', 'Services', 'Finance Reports', 'Reports', 'Audit Logs'],
       hospital_manager: ['Dashboard','Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Insurance','Finance Reports','Reports','Radiology','Blood Bank'],
       receptionist:     ['Reception Workflow','Patients','Appointments','Admissions','Invoices'],
       doctor:           ['Dashboard','My Consultations','Patients','Appointments','Vitals','Prescriptions','Lab Tests','Radiology','Admissions'],
@@ -191,7 +252,9 @@ const Layout: React.FC = () => {
     };
 
     const allowedItems = roleMap[role] || [];
-    return allItems.filter(item => allowedItems.includes(item.name));
+    return allowedItems
+      .map(name => allItems.find(item => item.name === name))
+      .filter((item): item is NavItem => Boolean(item));
   };
 
   const { can } = useRoleAccess();
@@ -219,6 +282,8 @@ const Layout: React.FC = () => {
         'Audit Logs':      'audit:view',
         'System Admin':    'admin:departments',
         'Users':           'admin:users',
+        'Departments':     'admin:departments',
+        'Services':        'admin:departments',
       };
       const perm = nameToPermission[item.name] || null;
       if (!perm) return true; // no guard for workflow/role entry items
@@ -255,20 +320,12 @@ const Layout: React.FC = () => {
     'Audit Logs':         'nav.audit',
     'System Admin':       'nav.admin',
     'Users':              'nav.users',
+    'Departments':        'nav.departments',
     'Services':           'nav.services',
   };
 
-  // Pre-compute grouped nav for sidebar rendering
   // isExpanded = full sidebar visible (either not collapsed, OR collapsed but mouse is hovering)
   const isExpanded = !sidebarCollapsed || sidebarHovered;
-  const showGroups = navigation.length >= 7;
-  const groupedNav = navigation.reduce<{ group: string; items: NavItem[] }[]>((acc, item) => {
-    const g = item.group || '';
-    const existing = acc.find(x => x.group === g);
-    if (existing) { existing.items.push(item); return acc; }
-    acc.push({ group: g, items: [item] });
-    return acc;
-  }, []);
 
   const getRoleColor = (role: string) => {
     const colors: Record<string, string> = {
@@ -371,111 +428,58 @@ const Layout: React.FC = () => {
           )}
 
           {/* ── Navigation ────────────────────────────────────────── */}
-          <nav className={`flex-1 py-3 overflow-y-auto overflow-x-hidden ${isExpanded ? 'px-2' : 'px-1.5'}`}>
-            {groupedNav.map(({ group, items }) => (
-              <div key={group || 'main'}>
-                {/* Section group header — only when fully expanded and nav is large */}
-                {showGroups && group && isExpanded && (
-                  <div className="flex items-center gap-2 px-2 pt-4 pb-1.5">
-                    <div className="flex-1 h-px bg-white/10" />
-                    <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/30">{group}</span>
-                    <div className="flex-1 h-px bg-white/10" />
-                  </div>
-                )}
-                {items.map(item => {
-                  const isActive = location.pathname === item.href ||
-                    (item.href !== '/' && location.pathname.startsWith(item.href + '/'));
-                  const translatedLabel = t(navTranslationMap[item.name] || item.name, item.name);
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      title={!isExpanded ? translatedLabel : undefined}
-                      onClick={() => { setSidebarOpen(false); setSidebarHovered(false); }}
-                      className={`relative flex items-center rounded-xl transition-all duration-200 my-0.5 group
-                        ${isExpanded ? 'px-3 py-2.5 gap-3' : 'justify-center p-2.5'}
-                        ${
-                          isActive
-                            ? 'bg-gradient-to-r from-white/[0.18] to-white/[0.08] text-white ring-1 ring-inset ring-white/[0.15] shadow-[0_2px_12px_rgba(0,0,0,0.15)]'
-                            : 'text-white/60 hover:text-white hover:bg-white/[0.07]'
-                        }`}
-                    >
-                      {/* Active left accent bar */}
-                      {isActive && isExpanded && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-white/80 rounded-r-full" />
-                      )}
-                      {/* Active icon glow dot for collapsed */}
-                      {isActive && !isExpanded && (
-                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-white/90" />
-                      )}
+          <nav className={`flex-1 py-3 overflow-y-auto overflow-x-hidden space-y-0.5 ${isExpanded ? 'px-2' : 'px-1.5'}`}>
+            {navigation.map(item => {
+              const isActive = location.pathname === item.href ||
+                (item.href !== '/' && location.pathname.startsWith(item.href + '/'));
+              const translatedLabel = t(navTranslationMap[item.name] || item.name, item.name);
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  title={!isExpanded ? translatedLabel : undefined}
+                  onClick={() => { setSidebarOpen(false); setSidebarHovered(false); }}
+                  className={`relative flex items-center rounded-xl transition-all duration-200 group
+                    ${isExpanded ? 'px-3 py-2.5 gap-3' : 'justify-center p-2.5'}
+                    ${
+                      isActive
+                        ? 'bg-gradient-to-r from-white/[0.18] to-white/[0.08] text-white ring-1 ring-inset ring-white/[0.15] shadow-[0_2px_12px_rgba(0,0,0,0.15)]'
+                        : 'text-white/60 hover:text-white hover:bg-white/[0.07]'
+                    }`}
+                >
+                  {/* Active left accent bar */}
+                  {isActive && isExpanded && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-white/80 rounded-r-full" />
+                  )}
+                  {/* Active icon glow dot for collapsed */}
+                  {isActive && !isExpanded && (
+                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-white/90" />
+                  )}
 
-                      <item.icon
-                        className={`flex-shrink-0 transition-all duration-200
-                          ${isExpanded ? 'w-4 h-4' : 'w-5 h-5'}
-                          ${isActive
-                            ? 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]'
-                            : 'text-white/50 group-hover:text-white/90'
-                          }`}
-                      />
+                  <item.icon
+                    className={`flex-shrink-0 transition-all duration-200
+                      ${isExpanded ? 'w-4 h-4' : 'w-5 h-5'}
+                      ${isActive
+                        ? 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]'
+                        : 'text-white/50 group-hover:text-white/90'
+                      }`}
+                  />
 
-                      {isExpanded && (
-                        <span className={`truncate text-sm flex-1 transition-colors duration-200
-                          ${isActive ? 'font-semibold' : 'font-medium'}`}>
-                          {translatedLabel}
-                        </span>
-                      )}
-
-                      {/* Trailing dot for active item */}
-                      {isExpanded && isActive && (
-                        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0 shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            ))}
-          </nav>
-
-          {/* ── User Card & Logout ────────────────────────────────── */}
-          <div className={`border-t border-white/10 bg-black/20 flex-shrink-0 ${isExpanded ? 'p-4' : 'p-2'}`}>
-            {isExpanded ? (
-              <>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/10">
-                    {user?.firstName?.[0]}{user?.lastName?.[0]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">
-                      {user?.firstName} {user?.lastName}
-                    </p>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold capitalize ${getRoleColor(user?.role || 'patient')}`}>
-                      {user?.role?.replace(/_/g, ' ')}
+                  {isExpanded && (
+                    <span className={`truncate text-sm flex-1 transition-colors duration-200
+                      ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                      {translatedLabel}
                     </span>
-                  </div>
-                </div>
-                <button
-                  onClick={logout}
-                  className="flex items-center w-full px-3 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  {t('nav.logout', 'Sign Out')}
-                </button>
-              </>
-            ) : (
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0 ring-2 ring-white/10">
-                  {user?.firstName?.[0]}{user?.lastName?.[0]}
-                </div>
-                <button
-                  onClick={logout}
-                  title="Sign Out"
-                  className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
+                  )}
+
+                  {/* Trailing dot for active item */}
+                  {isExpanded && isActive && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0 shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
       </div>
 
@@ -494,7 +498,7 @@ const Layout: React.FC = () => {
               {new Date().toLocaleDateString(language === 'am' ? 'am-ET' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             {/* Language Switcher */}
             <LanguageSwitcher variant="pill" />
 
@@ -639,9 +643,78 @@ const Layout: React.FC = () => {
               )}
             </div>
 
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              <span className="text-xs text-gray-600 dark:text-gray-300 capitalize">{user?.role?.replace(/_/g, ' ')}</span>
+            {/* User Account Settings Dropdown (Top Right - Prominent Gear Icon, NO "S" avatar) */}
+            <div className="relative shrink-0" data-settings-panel>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSettingsOpen(prev => !prev);
+                }}
+                className={`w-9 h-9 rounded-xl border transition-colors flex items-center justify-center cursor-pointer select-none shrink-0 ${
+                  settingsOpen
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+                }`}
+                title={language === 'am' ? 'መቼቶች' : 'Settings (Profile, Change Password, Sign Out)'}
+                aria-label="Account Settings"
+              >
+                <Settings className={`w-5 h-5 transition-transform duration-200 ${settingsOpen ? 'rotate-90 text-emerald-500' : ''}`} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {settingsOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2 z-50 text-slate-800 dark:text-white"
+                  style={{ opacity: 1, visibility: 'visible' }}
+                >
+                  <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 mb-1">
+                    <p className="text-xs font-black truncate text-slate-900 dark:text-white">{user?.firstName} {user?.lastName}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{user?.email}</p>
+                    <span className={`mt-1.5 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider inline-block ${getRoleColor(user?.role || 'patient')}`}>
+                      {user?.role?.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsOpen(false);
+                      setProfileModalOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-left"
+                  >
+                    <User className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <span>{t('auth.profile', 'Profile')}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsOpen(false);
+                      setChangePasswordModalOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-left"
+                  >
+                    <Key className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    <span>{t('auth.change_password', 'Change Password')}</span>
+                  </button>
+
+                  <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsOpen(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors text-left"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-500 flex-shrink-0" />
+                    <span>{t('nav.logout', 'Sign Out')}</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -651,6 +724,231 @@ const Layout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* ── User Profile Modal ────────────────────────────────────── */}
+      {profileModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 p-6 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-black text-lg shadow-md">
+                  {user?.firstName?.[0]}{user?.lastName?.[0]}
+                </div>
+                <div>
+                  <h3 className="text-base font-black">{user?.firstName} {user?.lastName}</h3>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider inline-block mt-0.5 ${getRoleColor(user?.role || 'patient')}`}>
+                    {user?.role?.replace(/_/g, ' ')}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProfileModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Profile Body */}
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">First Name</p>
+                  <p className="text-sm font-black text-slate-800 dark:text-white mt-0.5 truncate">{user?.firstName || '—'}</p>
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Last Name</p>
+                  <p className="text-sm font-black text-slate-800 dark:text-white mt-0.5 truncate">{user?.lastName || '—'}</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Email Address</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-white mt-0.5 truncate">{user?.email || '—'}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Account Status</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">Active</span>
+                  </div>
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Facility</p>
+                  <p className="text-xs font-bold text-slate-800 dark:text-white mt-1 truncate">Alem Ketema Enat</p>
+                </div>
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setProfileModalOpen(false); setChangePasswordModalOpen(true); }}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5"
+                >
+                  <Key className="w-3.5 h-3.5 text-amber-500" />
+                  {t('auth.change_password', 'Change Password')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProfileModalOpen(false)}
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition"
+                >
+                  {t('common.close', 'Close')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Change Password Modal ────────────────────────────── */}
+      {changePasswordModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-teal-950 p-6 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 shadow-md">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black">{t('auth.change_password', 'Change Password')}</h3>
+                  <p className="text-xs text-slate-300">Update your account credentials</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setChangePasswordModalOpen(false);
+                  setPasswordError('');
+                  setPasswordSuccess('');
+                }}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleChangePassword} className="p-6 space-y-4">
+              {passwordSuccess && (
+                <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-2xl">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span>{passwordSuccess}</span>
+                </div>
+              )}
+
+              {passwordError && (
+                <div className="flex items-center gap-2 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold rounded-2xl">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{passwordError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  Current Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showOldPass ? 'text' : 'password'}
+                    required
+                    value={oldPassword}
+                    onChange={e => setOldPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-2.5 pr-10 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium dark:bg-slate-800 dark:text-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPass(!showOldPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    {showOldPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  New Password (min 6 chars)
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPass ? 'text' : 'password'}
+                    required
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-2.5 pr-10 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium dark:bg-slate-800 dark:text-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPass(!showNewPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  Confirm New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPass ? 'text' : 'password'}
+                    required
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-2.5 pr-10 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium dark:bg-slate-800 dark:text-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPass(!showConfirmPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  disabled={passwordLoading}
+                  onClick={() => {
+                    setChangePasswordModalOpen(false);
+                    setPasswordError('');
+                    setPasswordSuccess('');
+                  }}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-xl transition"
+                >
+                  {t('common.cancel', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={passwordLoading}
+                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {passwordLoading ? (
+                    <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving...</>
+                  ) : (
+                    t('common.save', 'Save Changes')
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

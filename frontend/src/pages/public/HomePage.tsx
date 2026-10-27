@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PublicLayout from '../../components/PublicLayout';
+import api from '../../services/api';
 import {
   Heart, Shield, Award, Users, Stethoscope,
   FlaskConical, Baby, Brain,
   ChevronRight, Star, Phone, Calendar,
   CheckCircle2, ArrowRight, Sparkles, Pill,
-  HelpCircle, ChevronDown, PhoneCall, Camera, Newspaper
+  HelpCircle, ChevronDown, PhoneCall, Camera, Newspaper, Building2
 } from 'lucide-react';
 import { useInView } from '../../hooks/useInView';
 
@@ -39,6 +40,35 @@ function Reveal({ children, className = '', delay = 0 }: { children: React.React
   );
 }
 
+const getDeptIconAndColor = (name: string) => {
+  const n = (name || '').toLowerCase();
+  if (n.includes('matern') || n.includes('gyneco') || n.includes('women')) {
+    return { icon: Baby, color: 'text-pink-600 bg-pink-50 dark:bg-pink-900/30' };
+  }
+  if (n.includes('pediatr') || n.includes('child')) {
+    return { icon: Heart, color: 'text-rose-600 bg-rose-50 dark:bg-rose-900/30' };
+  }
+  if (n.includes('cardio') || n.includes('heart')) {
+    return { icon: Heart, color: 'text-red-600 bg-red-50 dark:bg-red-900/30' };
+  }
+  if (n.includes('neuro') || n.includes('brain')) {
+    return { icon: Brain, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/30' };
+  }
+  if (n.includes('ortho') || n.includes('surg') || n.includes('bone')) {
+    return { icon: Shield, color: 'text-orange-600 bg-orange-50 dark:bg-orange-900/30' };
+  }
+  if (n.includes('radio') || n.includes('imag') || n.includes('x-ray')) {
+    return { icon: Camera, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' };
+  }
+  if (n.includes('lab') || n.includes('patho')) {
+    return { icon: FlaskConical, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30' };
+  }
+  if (n.includes('pharm')) {
+    return { icon: Pill, color: 'text-teal-600 bg-teal-50 dark:bg-teal-900/30' };
+  }
+  return { icon: Building2, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' };
+};
+
 const services = [
   { icon: Baby, title: 'Maternity & Childbirth', desc: 'Comprehensive prenatal, painless labor, high-risk delivery and postnatal care.', color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400', img: IMGS.maternity, badge: 'Popular' },
   { icon: Heart, title: 'Pediatrics & NICU', desc: 'Specialized newborn ICU and comprehensive child health treatments.', color: 'bg-rose-500/10 text-rose-600 dark:text-rose-400', img: IMGS.pediatrics, badge: 'Specialized' },
@@ -46,6 +76,15 @@ const services = [
   { icon: FlaskConical, title: 'Diagnostic Laboratory', desc: 'Automated blood analysis, pathology, and instant report generation.', color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400', img: IMGS.lab, badge: '24/7 Open' },
   { icon: Brain, title: 'Neurology & Brain Health', desc: 'Specialized consultations for headaches, stroke prevention & nerve disorders.', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400', img: IMGS.icu, badge: 'Expert' },
   { icon: Pill, title: '24/7 Hospital Pharmacy', desc: 'Authentic medications, prescriptions, and emergency medicine supplies.', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400', img: IMGS.pharmacy, badge: 'Full Stock' },
+];
+
+const homeDepartments = [
+  { name: 'Maternity & Obstetrics', head: 'Dr. Alem Tesfaye', beds: '40 Inpatient Beds', icon: Baby, color: 'text-pink-600 bg-pink-50 dark:bg-pink-900/30' },
+  { name: 'Pediatrics & Neonatology (NICU)', head: 'Dr. Selamawit Bekele', beds: '35 Specialized Beds', icon: Heart, color: 'text-rose-600 bg-rose-50 dark:bg-rose-900/30' },
+  { name: 'General Medicine & OPD', head: 'Dr. Mekdes Worku', beds: '30 Recovery Beds', icon: Stethoscope, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' },
+  { name: 'Orthopedics & Surgical Wing', head: 'Dr. Girma Haile', beds: '20 Surgical Beds', icon: Shield, color: 'text-orange-600 bg-orange-50 dark:bg-orange-900/30' },
+  { name: 'Radiology & Medical Imaging', head: 'Dr. Yosef Mekonnen', beds: 'Digital X-Ray / US', icon: Camera, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' },
+  { name: 'Automated Pathology Laboratory', head: 'Mr. Abel Tadesse', beds: '24/7 Diagnostics', icon: FlaskConical, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30' },
 ];
 
 const stats = [
@@ -77,11 +116,26 @@ const faqs = [
 
 const HomePage: React.FC = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [loadingDepts, setLoadingDepts] = useState(true);
+  const [showAllDepts, setShowAllDepts] = useState(false);
+
+  useEffect(() => {
+    api.get('/departments')
+      .then(res => {
+        const list = res.data.data?.departments || res.data.data || [];
+        setDepartments(list);
+      })
+      .catch(err => {
+        console.error('Failed to load departments from DB:', err);
+      })
+      .finally(() => setLoadingDepts(false));
+  }, []);
 
   return (
     <PublicLayout>
       {/* ── HERO SECTION ────────────────────────────────────────────────────────── */}
-      <section className="relative bg-slate-950 text-white overflow-hidden pt-12 pb-24 lg:pt-20 lg:pb-32">
+      <section id="home" className="relative bg-slate-950 text-white overflow-hidden pt-12 pb-24 lg:pt-20 lg:pb-32 scroll-mt-24">
         {/* Glowing Background Orbs */}
         <div className="absolute top-1/4 left-10 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-teal-500/15 rounded-full blur-3xl pointer-events-none" />
@@ -250,13 +304,13 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* ── STATS SECTION ───────────────────────────────────────────────────────── */}
-      <section className="py-20 bg-white dark:bg-slate-900">
+      <section id="about" className="py-20 bg-white dark:bg-slate-900 scroll-mt-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             
             <div className="lg:col-span-5 space-y-6">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-100 dark:bg-teal-950 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300">
-                <Sparkles className="w-3.5 h-3.5" /> Why Choose Alem Ketema Enat
+                <Sparkles className="w-3.5 h-3.5" /> About Us • Why Choose Alem Ketema Enat
               </span>
               <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
                 Modern Healthcare Delivered With Heart & Precision.
@@ -305,7 +359,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* ── SPECIALIZED SERVICES ─────────────────────────────────────────────────── */}
-      <section className="py-20 bg-slate-50 dark:bg-slate-950">
+      <section id="services" className="py-20 bg-slate-50 dark:bg-slate-950 scroll-mt-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
@@ -362,8 +416,120 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* ── CLINICAL DEPARTMENTS ─────────────────────────────────────────────────── */}
+      <section id="departments" className="py-20 bg-slate-100 dark:bg-slate-900/60 border-y border-slate-200 dark:border-slate-800 scroll-mt-24">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-14 space-y-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 dark:bg-purple-950 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">
+              <Building2 className="w-3.5 h-3.5" /> Hospital Infrastructure
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+              Hospital Clinical Departments
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base">
+              Dedicated medical wings staffed by specialized physicians, inpatient beds, and monitored recovery units.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {loadingDepts ? (
+              Array.from({ length: 6 }).map((_, idx) => (
+                <div key={idx} className="p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs animate-pulse flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+                    <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
+                    <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/3 pt-1" />
+                  </div>
+                </div>
+              ))
+            ) : (
+              (() => {
+                const priorityOrder = ['emergency', 'general medicine', 'cardiology', 'gynecology', 'pediatrics', 'orthopedics', 'neurology', 'radiology'];
+                const sortedDepts = [...departments].sort((a, b) => {
+                  const aName = (a.name || '').toLowerCase();
+                  const bName = (b.name || '').toLowerCase();
+                  const aPri = priorityOrder.findIndex(p => aName.includes(p));
+                  const bPri = priorityOrder.findIndex(p => bName.includes(p));
+                  if (aPri !== -1 && bPri !== -1) return aPri - bPri;
+                  if (aPri !== -1) return -1;
+                  if (bPri !== -1) return 1;
+                  return (parseInt(b.doctor_count) || 0) - (parseInt(a.doctor_count) || 0);
+                });
+
+                const allAvailable = sortedDepts.length > 0 ? sortedDepts : homeDepartments;
+                const deptsToDisplay = showAllDepts ? allAvailable : allAvailable.slice(0, 6);
+
+                return deptsToDisplay.map((dept, idx) => {
+                  const meta = getDeptIconAndColor(dept.name);
+                  const IconComponent = dept.icon || meta.icon;
+                  const iconColor = dept.color || meta.color;
+                  const head = dept.head_doctor_name || dept.head || 'Chief Medical Officer';
+                  const docCount = dept.doctor_count !== undefined
+                    ? `${dept.doctor_count} Doctor${parseInt(dept.doctor_count) === 1 ? '' : 's'} on duty`
+                    : (dept.beds || '24/7 Clinical Service');
+
+                  return (
+                    <Reveal key={dept.id || dept.name} delay={idx * 50}>
+                      <div className="p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs hover:shadow-md transition flex flex-col justify-between h-full group">
+                        <div className="flex items-start gap-4">
+                          <div className={`p-3 rounded-xl flex-shrink-0 ${iconColor} group-hover:scale-105 transition-transform`}>
+                            <IconComponent className="w-6 h-6" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-slate-900 dark:text-white text-base leading-snug group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                              {dept.name}
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                              {dept.description || 'Specialized clinical wing equipped with modern medical technology and inpatient care.'}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                              Head: <strong className="text-slate-700 dark:text-slate-300">{head}</strong>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+                            {docCount}
+                          </span>
+                          <Link to="/contact" className="text-[11px] font-semibold text-teal-600 hover:text-teal-700 dark:text-teal-400 hover:underline">
+                            Consult Wing →
+                          </Link>
+                        </div>
+                      </div>
+                    </Reveal>
+                  );
+                });
+              })()
+            )}
+          </div>
+
+          {/* Action links / Show More toggle */}
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            {departments.length > 6 && (
+              <button
+                type="button"
+                onClick={() => setShowAllDepts(!showAllDepts)}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-teal-500 text-xs font-bold text-slate-800 dark:text-slate-200 transition shadow-xs cursor-pointer"
+              >
+                <span>{showAllDepts ? 'Show Fewer Departments' : `View More Departments (${departments.length})`}</span>
+                <ChevronDown className={`w-4 h-4 text-teal-600 transition-transform ${showAllDepts ? 'rotate-180' : ''}`} />
+              </button>
+            )}
+            <Link
+              to="/departments"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-md transition"
+            >
+              <span>Full Department Directory</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── MEET OUR DOCTORS ────────────────────────────────────────────────────── */}
-      <section className="py-20 bg-white dark:bg-slate-900">
+      <section id="doctors" className="py-20 bg-white dark:bg-slate-900 scroll-mt-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-14">
@@ -505,7 +671,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* ── FEATURED NEWS & PHOTO GALLERY SHOWCASE ────────────────────────────────── */}
-      <section className="py-20 bg-slate-100 dark:bg-slate-950 transition-colors border-t border-slate-200 dark:border-slate-800">
+      <section id="news" className="py-20 bg-slate-100 dark:bg-slate-950 transition-colors border-t border-slate-200 dark:border-slate-800 scroll-mt-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 space-y-12">
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -537,7 +703,7 @@ const HomePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div id="gallery" className="grid grid-cols-1 md:grid-cols-3 gap-6 scroll-mt-24">
             {/* Gallery Card 1 */}
             <Link to="/gallery" className="group relative rounded-3xl overflow-hidden shadow-xl bg-slate-950 h-72 border border-slate-700">
               <img src="/images/hospital.jpg.webp" alt="Main Hospital Campus" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -588,7 +754,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* ── EMERGENCY CONTACT BANNER ────────────────────────────────────────────── */}
-      <section className="py-16 bg-gradient-to-r from-teal-600 via-blue-600 to-indigo-700 text-white shadow-2xl">
+      <section id="contact" className="py-16 bg-gradient-to-r from-teal-600 via-blue-600 to-indigo-700 text-white shadow-2xl scroll-mt-24">
         <div className="max-w-5xl mx-auto px-6 text-center space-y-6">
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
             Need Immediate Medical Assistance or Appointment?

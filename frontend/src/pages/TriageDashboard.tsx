@@ -182,7 +182,7 @@ const TriageDashboard: React.FC = () => {
     try {
       const [qRes, deptsRes, docsRes] = await Promise.all([
         api.get(`/encounters/triage-queue?status=all`).catch(() => ({ data: { data: { encounters: fallbackEncounters } } })),
-        api.get('/admin/departments').catch(() => api.get('/services/departments')).catch(() => ({ data: { data: { departments: [] } } })),
+        api.get('/departments').catch(() => api.get('/admin/departments')).catch(() => ({ data: { data: { departments: [] } } })),
         api.get('/doctors').catch(() => ({ data: { data: { doctors: [] } } })),
       ]);
 
@@ -190,22 +190,12 @@ const TriageDashboard: React.FC = () => {
       setEncounters(raw.length > 0 ? raw : fallbackEncounters);
 
       const depts = deptsRes.data?.data?.departments || deptsRes.data?.departments || [];
-      setDepartments(depts.length > 0 ? depts : [{ id: 1, name: 'Emergency' }, { id: 2, name: 'General Medicine' }, { id: 3, name: 'Pediatrics' }]);
+      setDepartments(depts.length > 0 ? depts : [{ id: 1, name: 'General Medicine' }, { id: 2, name: 'Cardiology' }, { id: 9, name: 'Emergency' }, { id: 5, name: 'Pediatrics' }]);
 
       const docs = docsRes.data?.data?.doctors || docsRes.data?.doctors || [];
-      setDoctors(docs.length > 0 ? docs : [
-        { id: 11, first_name: 'Selam', last_name: 'Bekele', specialization: 'General Medicine', is_available: true, department_id: 2 },
-        { id: 12, first_name: 'Tewodros', last_name: 'Hailu', specialization: 'Emergency Medicine', is_available: true, department_id: 1 },
-        { id: 13, first_name: 'Azeb', last_name: 'Mengistu', specialization: 'Pediatrics', is_available: true, department_id: 3 },
-      ]);
+      setDoctors(docs);
     } catch {
       setEncounters(fallbackEncounters);
-      setDepartments([{ id: 1, name: 'Emergency' }, { id: 2, name: 'General Medicine' }, { id: 3, name: 'Pediatrics' }]);
-      setDoctors([
-        { id: 11, first_name: 'Selam', last_name: 'Bekele', specialization: 'General Medicine', is_available: true, department_id: 2 },
-        { id: 12, first_name: 'Tewodros', last_name: 'Hailu', specialization: 'Emergency Medicine', is_available: true, department_id: 1 },
-        { id: 13, first_name: 'Azeb', last_name: 'Mengistu', specialization: 'Pediatrics', is_available: true, department_id: 3 },
-      ]);
       showToast('error', 'Using local triage queue because the live service is unavailable');
     } finally {
       setLoading(false);
@@ -262,10 +252,19 @@ const TriageDashboard: React.FC = () => {
 
   const submitTriage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selected) return;
+    if (!selected) {
+      showToast('error', 'Please select a patient before submitting triage assessment.');
+      return;
+    }
+
+    if (!vitals.chief_complaint || !vitals.chief_complaint.trim()) {
+      showToast('error', 'Please enter a Chief Complaint before completing triage.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await api.post(`/encounters/${selected.id}/triage`, {
+      const res = await api.post(`/encounters/${selected.id}/triage`, {
         temperature: vitals.temperature ? parseFloat(vitals.temperature) : null,
         blood_pressure_systolic: vitals.blood_pressure_systolic ? parseInt(vitals.blood_pressure_systolic) : null,
         blood_pressure_diastolic: vitals.blood_pressure_diastolic ? parseInt(vitals.blood_pressure_diastolic) : null,
@@ -274,41 +273,24 @@ const TriageDashboard: React.FC = () => {
         oxygen_saturation: vitals.oxygen_saturation ? parseFloat(vitals.oxygen_saturation) : null,
         weight: vitals.weight ? parseFloat(vitals.weight) : null,
         height: vitals.height ? parseFloat(vitals.height) : null,
-        chief_complaint: vitals.chief_complaint,
-        preliminary_observations: vitals.preliminary_observations,
+        chief_complaint: vitals.chief_complaint.trim(),
+        preliminary_observations: vitals.preliminary_observations?.trim() || null,
         priority: vitals.priority,
         department_id: vitals.department_id ? parseInt(vitals.department_id) : null,
         doctor_id: vitals.doctor_id ? parseInt(vitals.doctor_id) : null,
       });
 
-      showToast('success', `Triage completed for ${selected.first_name} ${selected.last_name}`);
+      showToast('success', res.data?.message || `Triage completed for ${selected.first_name} ${selected.last_name}`);
+      await fetchAllData();
+      setSelected(null);
+      setStageTab('completed');
     } catch (err: any) {
-      showToast('success', `Triage completed locally for ${selected.first_name} ${selected.last_name}`);
+      console.error('Triage error:', err);
+      const serverMsg = err.response?.data?.message || err.message || 'Failed to complete triage assessment.';
+      showToast('error', serverMsg);
+    } finally {
+      setSubmitting(false);
     }
-
-    const finalized = {
-      ...selected,
-      status: 'triage_completed',
-      priority: vitals.priority,
-      temperature: vitals.temperature ? parseFloat(vitals.temperature) : undefined,
-      blood_pressure_systolic: vitals.blood_pressure_systolic ? parseInt(vitals.blood_pressure_systolic) : undefined,
-      blood_pressure_diastolic: vitals.blood_pressure_diastolic ? parseInt(vitals.blood_pressure_diastolic) : undefined,
-      heart_rate: vitals.heart_rate ? parseInt(vitals.heart_rate) : undefined,
-      respiratory_rate: vitals.respiratory_rate ? parseInt(vitals.respiratory_rate) : undefined,
-      oxygen_saturation: vitals.oxygen_saturation ? parseFloat(vitals.oxygen_saturation) : undefined,
-      weight: vitals.weight ? parseFloat(vitals.weight) : undefined,
-      height: vitals.height ? parseFloat(vitals.height) : undefined,
-      chief_complaint: vitals.chief_complaint,
-      preliminary_observations: vitals.preliminary_observations,
-      department_name: departments.find(d => String(d.id) === vitals.department_id)?.name || selected.department_name,
-      doctor_name: doctors.find(d => String(d.id) === vitals.doctor_id) ? `Dr. ${doctors.find(d => String(d.id) === vitals.doctor_id)?.first_name} ${doctors.find(d => String(d.id) === vitals.doctor_id)?.last_name}` : selected.doctor_name,
-      assessed_at: new Date().toISOString(),
-    } as TriageEncounter;
-
-    setEncounters(current => current.map(item => item.id === selected.id ? finalized : item));
-    setSelected(null);
-    setStageTab('completed');
-    setSubmitting(false);
   };
 
   const calculateAge = (dob?: string) => {
@@ -725,8 +707,16 @@ const TriageDashboard: React.FC = () => {
                     <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Assign Department</label>
                     <select
                       value={vitals.department_id}
-                      onChange={e => setVitals({ ...vitals, department_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-xs dark:bg-gray-700 dark:text-white"
+                      onChange={e => {
+                        const newDeptId = e.target.value;
+                        const docMatches = doctors.find(doc => String(doc.id) === vitals.doctor_id && String(doc.department_id) === newDeptId);
+                        setVitals({
+                          ...vitals,
+                          department_id: newDeptId,
+                          doctor_id: docMatches ? vitals.doctor_id : ''
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-xs dark:bg-gray-700 dark:text-white cursor-pointer"
                     >
                       <option value="">-- Select Department --</option>
                       {departments.map(d => (
@@ -736,15 +726,36 @@ const TriageDashboard: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Assign Doctor</label>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                      Assign Doctor {vitals.department_id ? `(${doctors.filter(d => String(d.department_id) === String(vitals.department_id)).length} in dept)` : ''}
+                    </label>
                     <select
                       value={vitals.doctor_id}
-                      onChange={e => setVitals({ ...vitals, doctor_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-xs dark:bg-gray-700 dark:text-white"
+                      onChange={e => {
+                        const newDocId = e.target.value;
+                        const docObj = doctors.find(d => String(d.id) === newDocId);
+                        setVitals({
+                          ...vitals,
+                          doctor_id: newDocId,
+                          department_id: docObj?.department_id ? String(docObj.department_id) : vitals.department_id
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-xs dark:bg-gray-700 dark:text-white cursor-pointer"
                     >
-                      <option value="">-- Select Doctor --</option>
-                      {doctors.map(d => (
-                        <option key={d.id} value={d.id}>Dr. {d.first_name} {d.last_name} ({d.specialization})</option>
+                      <option value="">
+                        {vitals.department_id
+                          ? (doctors.some(d => String(d.department_id) === String(vitals.department_id))
+                              ? '-- Select Doctor in Department --'
+                              : '-- No Doctors Registered in this Department --')
+                          : '-- Select Department First --'}
+                      </option>
+                      {(vitals.department_id
+                        ? doctors.filter(d => String(d.department_id) === String(vitals.department_id))
+                        : doctors
+                      ).map(d => (
+                        <option key={d.id} value={d.id}>
+                          Dr. {d.first_name} {d.last_name} ({d.specialization})
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -753,9 +764,10 @@ const TriageDashboard: React.FC = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <CheckCircle2 className="w-4 h-4" /> Complete Triage Assessment
+                  <CheckCircle2 className={`w-4 h-4 ${submitting ? 'animate-spin' : ''}`} />
+                  {submitting ? 'Saving Assessment...' : 'Complete Triage Assessment'}
                 </button>
               </form>
             ) : (

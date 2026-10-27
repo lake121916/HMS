@@ -4,27 +4,34 @@ const { sendSuccess, sendError, handleAsync } = require('../utils/response');
 const getAllDoctors = handleAsync(async (req, res) => {
   const { departmentId, specialization, isAvailable } = req.query;
 
-  let query = 'SELECT * FROM doctors WHERE 1=1';
+  let query = `
+    SELECT d.*, dep.name AS department_name
+    FROM doctors d
+    LEFT JOIN departments dep ON dep.id = d.department_id
+    WHERE 1=1
+  `;
   const params = [];
   let paramCount = 0;
 
   if (departmentId) {
     paramCount++;
-    query += ` AND department_id = $${paramCount}`;
+    query += ` AND d.department_id = $${paramCount}`;
     params.push(departmentId);
   }
 
   if (specialization) {
     paramCount++;
-    query += ` AND specialization ILIKE $${paramCount}`;
+    query += ` AND d.specialization ILIKE $${paramCount}`;
     params.push(`%${specialization}%`);
   }
 
   if (isAvailable !== undefined) {
     paramCount++;
-    query += ` AND is_available = $${paramCount}`;
+    query += ` AND d.is_available = $${paramCount}`;
     params.push(isAvailable === 'true');
   }
+
+  query += ' ORDER BY d.id ASC';
 
   const result = await pool.query(query, params);
   sendSuccess(res, { doctors: result.rows });

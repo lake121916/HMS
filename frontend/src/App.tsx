@@ -56,6 +56,7 @@ import LabTechDashboard from './pages/LabTechDashboard';
 import PharmacyDashboard from './pages/PharmacyDashboard';
 import CashierWorkflow from './pages/CashierWorkflow';
 import ServicesAdminPage from './pages/ServicesAdminPage';
+import DepartmentsAdminPage from './pages/DepartmentsAdminPage';
 import OPDQueueDisplay from './pages/OPDQueueDisplay';
 import InactivityLock from './components/security/InactivityLock';
 
@@ -64,7 +65,7 @@ const ALL_PAGES = [
   'dashboard', 'doctor-dashboard', 'patients', 'doctors', 'appointments',
   'vitals', 'prescriptions', 'lab-tests', 'admissions', 'invoices', 'payments',
   'reception', 'medicines', 'inventory', 'beds', 'reports', 'admin',
-  'user-management', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
+  'user-management', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
   'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
   'assignment', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
   'services-admin'
@@ -257,6 +258,9 @@ function App() {
             } />
             <Route path="user-management" element={
               <ProtectedRoute page="user-management"><UserManagementPage /></ProtectedRoute>
+            } />
+            <Route path="departments-admin" element={
+              <ProtectedRoute page="departments-admin"><DepartmentsAdminPage /></ProtectedRoute>
             } />
 
             {/* ── New Workflow Routes ──────────────────────────────── */}

@@ -12,12 +12,11 @@ router.get('/:id/schedule', authenticate, doctorController.getDoctorSchedule);
 router.post(
   '/',
   authenticate,
-  authorize('admin'),
+  authorize('super_admin', 'admin', 'hospital_manager'),
   [
     body('firstName').notEmpty().withMessage('First name is required'),
     body('lastName').notEmpty().withMessage('Last name is required'),
-    body('specialization').notEmpty().withMessage('Specialization is required'),
-    body('licenseNumber').notEmpty().withMessage('License number is required')
+    body('specialization').notEmpty().withMessage('Specialization is required')
   ],
   validate,
   doctorController.createDoctor
@@ -26,14 +25,14 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  authorize('admin'),
+  authorize('super_admin', 'admin', 'hospital_manager'),
   doctorController.updateDoctor
 );
 
 router.delete(
   '/:id',
   authenticate,
-  authorize('admin'),
+  authorize('super_admin', 'admin', 'hospital_manager'),
   doctorController.deleteDoctor
 );
 

@@ -146,14 +146,15 @@ router.get('/triage-queue', authenticate,
 });
 
 // START TRIAGE ASSESSMENT (Nurse starts triaging patient → status becomes in_triage)
-router.post('/:id/start-triage', authenticate, authorize('nurse', 'admin', 'super_admin'), async (req, res) => {
+router.post('/:id/start-triage', authenticate, authorize('nurse', 'admin', 'super_admin', 'doctor', 'hospital_manager'), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const enc = await client.query('SELECT * FROM patient_encounters WHERE id = $1', [req.params.id]);
     if (!enc.rows.length) return res.status(404).json({ success: false, message: 'Encounter not found' });
     
-    if (enc.rows[0].status !== 'waiting_for_triage' && enc.rows[0].status !== 'in_triage') {
+    const validStartStatuses = ['registered', 'waiting_for_triage', 'in_triage'];
+    if (!validStartStatuses.includes(enc.rows[0].status)) {
       return res.status(400).json({ success: false, message: `Cannot start triage from status: ${enc.rows[0].status}` });
     }
 
@@ -170,13 +171,15 @@ router.post('/:id/start-triage', authenticate, authorize('nurse', 'admin', 'supe
 // ══════════════════════════════════════════════════════════════
 // 4. COMPLETE TRIAGE  (Nurse, Admin)
 // ══════════════════════════════════════════════════════════════
-router.post('/:id/triage', authenticate, authorize('nurse', 'admin', 'super_admin', 'receptionist'), async (req, res) => {
+router.post('/:id/triage', authenticate, authorize('nurse', 'admin', 'super_admin', 'receptionist', 'doctor', 'hospital_manager'), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const enc = await client.query('SELECT * FROM patient_encounters WHERE id = $1', [req.params.id]);
     if (!enc.rows.length) return res.status(404).json({ success: false, message: 'Encounter not found' });
-    if (enc.rows[0].status !== 'waiting_for_triage' && enc.rows[0].status !== 'in_triage') {
+    
+    const allowedTriageStatuses = ['registered', 'waiting_for_triage', 'in_triage', 'triage_completed', 'department_assigned'];
+    if (!allowedTriageStatuses.includes(enc.rows[0].status)) {
       return res.status(400).json({ success: false, message: `Cannot triage from status: ${enc.rows[0].status}` });
     }
 

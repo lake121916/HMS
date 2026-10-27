@@ -48,9 +48,9 @@ const PERMISSIONS: Record<string, string[]> = {
 
   // Beds
   'beds:view':   ['super_admin','admin','hospital_manager','nurse','receptionist','doctor'],
-  'beds:create': ['admin'],
-  'beds:edit':   ['admin','nurse'],
-  'beds:delete': ['admin'],
+  'beds:create': ['super_admin','admin'],
+  'beds:edit':   ['super_admin','admin','nurse'],
+  'beds:delete': ['super_admin','admin'],
 
   // Invoices
   'invoices:view':   ['super_admin','admin','hospital_manager','cashier','receptionist'],
@@ -74,14 +74,14 @@ const PERMISSIONS: Record<string, string[]> = {
 
   // Medicines
   'medicines:view':   ['super_admin','admin','pharmacist','doctor','nurse'],
-  'medicines:create': ['admin','pharmacist'],
-  'medicines:edit':   ['admin','pharmacist'],
+  'medicines:create': ['super_admin','admin','pharmacist'],
+  'medicines:edit':   ['super_admin','admin','pharmacist'],
   'medicines:delete': ['super_admin','admin'],
-  'medicines:stock':  ['admin','pharmacist'],
+  'medicines:stock':  ['super_admin','admin','pharmacist'],
 
   // Inventory
   'inventory:view':   ['super_admin','admin','pharmacist','hospital_manager'],
-  'inventory:edit':   ['admin','pharmacist'],
+  'inventory:edit':   ['super_admin','admin','pharmacist'],
 
   // Reports
   'reports:view':     ['super_admin','admin','hospital_manager'],

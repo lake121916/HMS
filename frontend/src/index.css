@@ -105,9 +105,34 @@ body.font-amharic {
   * {
     @apply border-border;
   }
+  html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  html, body {
+    overflow-x: clip;
+  }
   body {
     @apply bg-background text-foreground;
     scroll-behavior: smooth;
+  }
+  select, input, textarea {
+    color: #111827;
+  }
+  .dark select, .dark input, .dark textarea {
+    color: #f9fafb;
+  }
+  select option {
+    background-color: #ffffff;
+    color: #111827;
+  }
+  .dark select option {
+    background-color: #1f2937;
+    color: #f9fafb;
   }
   img {
     @apply max-w-full;
@@ -116,27 +141,27 @@ body.font-amharic {
 
 /* ─── Scroll-reveal animations ─────────────────────────────────────────────── */
 @layer utilities {
-  /* Base states (hidden) */
-  .fade-up {
+  /* Base states (hidden only when explicitly marked with .reveal) */
+  .reveal.fade-up {
     opacity: 0;
     transform: translateY(32px);
     transition: opacity 0.65s ease, transform 0.65s ease;
   }
-  .fade-left {
+  .reveal.fade-left {
     opacity: 0;
     transform: translateX(-32px);
     transition: opacity 0.65s ease, transform 0.65s ease;
   }
-  .fade-right {
+  .reveal.fade-right {
     opacity: 0;
     transform: translateX(32px);
     transition: opacity 0.65s ease, transform 0.65s ease;
   }
-  .fade-in {
+  .reveal.fade-in {
     opacity: 0;
     transition: opacity 0.65s ease;
   }
-  .zoom-in {
+  .reveal.zoom-in {
     opacity: 0;
     transform: scale(0.92);
     transition: opacity 0.65s ease, transform 0.65s ease;
@@ -147,7 +172,8 @@ body.font-amharic {
   .in-view.fade-left,
   .in-view.fade-right,
   .in-view.fade-in,
-  .in-view.zoom-in {
+  .in-view.zoom-in,
+  .reveal.in-view {
     opacity: 1;
     transform: none;
   }
