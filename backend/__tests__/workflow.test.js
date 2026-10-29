@@ -12,6 +12,11 @@ jest.mock('../src/config/database', () => ({
   on: jest.fn()
 }));
 
+jest.mock('../src/services/allergySafetyService', () => ({
+  checkMedicationAllergy: jest.fn().mockResolvedValue({ hasConflict: false, alerts: [] }),
+  recordOverride: jest.fn().mockResolvedValue({})
+}));
+
 const app = require('../src/server');
 const pool = require('../src/config/database');
 

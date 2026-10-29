@@ -224,4 +224,6 @@ export const am = {
   'role.cashier': 'ገንዘብ ተቀባይ (Cashier POS)',
   'role.lab_tech': 'የላቦራቶሪ ባለሙያ (Lab Tech)',
   'role.pharmacist': 'ፋርማሲስት (Pharmacist)',
+  'role.hospital_manager': 'የሆስፒታል ስራ አስኪያጅ (Hospital Manager)',
+  'role.patient': 'ታካሚ (Patient)',
 };

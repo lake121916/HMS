@@ -59,7 +59,7 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // POST create admission
-router.post('/', authenticate, authorize('admin', 'doctor', 'receptionist', 'super_admin', 'nurse'), async (req, res) => {
+router.post('/', authenticate, authorize('admin', 'doctor', 'receptionist', 'super_admin', 'nurse', 'hospital_manager'), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -87,7 +87,7 @@ router.post('/', authenticate, authorize('admin', 'doctor', 'receptionist', 'sup
 });
 
 // PUT discharge patient
-router.put('/:id/discharge', authenticate, authorize('admin', 'doctor', 'super_admin'), async (req, res) => {
+router.put('/:id/discharge', authenticate, authorize('admin', 'doctor', 'super_admin', 'hospital_manager'), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -119,7 +119,7 @@ router.put('/:id/discharge', authenticate, authorize('admin', 'doctor', 'super_a
 });
 
 // PUT update admission
-router.put('/:id', authenticate, authorize('admin', 'doctor', 'nurse', 'super_admin'), async (req, res) => {
+router.put('/:id', authenticate, authorize('admin', 'doctor', 'nurse', 'super_admin', 'hospital_manager'), async (req, res) => {
   try {
     const { diagnosis, treatment_plan, bed_id } = req.body;
     const result = await pool.query(

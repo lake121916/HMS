@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import {
-  Stethoscope, Eye, EyeOff, AlertCircle, Shield,
+  Stethoscope, Eye, EyeOff, AlertCircle, Shield, Building2, User,
   HeartPulse, Receipt, DollarSign, FlaskConical, Pill, Zap, ArrowRight
 } from 'lucide-react';
 
@@ -64,13 +64,15 @@ const LoginPage: React.FC = () => {
   };
 
   const demoAccounts = [
-    { label: 'Super Admin', translationKey: 'role.super_admin', email: 'superadmin@hospital.com', icon: Shield, color: 'hover:bg-purple-50 hover:border-purple-300 text-purple-700' },
+    { label: 'System Admin', translationKey: 'role.super_admin', email: 'admin@hospital.com', icon: Shield, color: 'hover:bg-purple-50 hover:border-purple-300 text-purple-700' },
+    { label: 'Hospital Manager', translationKey: 'role.hospital_manager', email: 'manager@hospital.com', icon: Building2, color: 'hover:bg-sky-50 hover:border-sky-300 text-sky-700' },
     { label: 'Doctor', translationKey: 'role.doctor', email: 'doctor@hospital.com', icon: Stethoscope, color: 'hover:bg-emerald-50 hover:border-emerald-300 text-emerald-700' },
-    { label: 'Nurse / Triage', translationKey: 'role.nurse', email: 'nurse@gmail.com', icon: HeartPulse, color: 'hover:bg-rose-50 hover:border-rose-300 text-rose-700' },
+    { label: 'Nurse / Triage', translationKey: 'role.nurse', email: 'nurse@hospital.com', icon: HeartPulse, color: 'hover:bg-rose-50 hover:border-rose-300 text-rose-700' },
     { label: 'Receptionist', translationKey: 'role.receptionist', email: 'reception@hospital.com', icon: Receipt, color: 'hover:bg-indigo-50 hover:border-indigo-300 text-indigo-700' },
     { label: 'Cashier POS', translationKey: 'role.cashier', email: 'cashier@hospital.com', icon: DollarSign, color: 'hover:bg-amber-50 hover:border-amber-300 text-amber-700' },
     { label: 'Lab Tech', translationKey: 'role.lab_tech', email: 'labtech@hospital.com', icon: FlaskConical, color: 'hover:bg-cyan-50 hover:border-cyan-300 text-cyan-700' },
     { label: 'Pharmacist', translationKey: 'role.pharmacist', email: 'pharmacist@hospital.com', icon: Pill, color: 'hover:bg-teal-50 hover:border-teal-300 text-teal-700' },
+    { label: 'Patient Portal', translationKey: 'role.patient', email: 'patient@hospital.com', icon: User, color: 'hover:bg-violet-50 hover:border-violet-300 text-violet-700' },
   ];
 
   return (
@@ -176,7 +178,7 @@ const LoginPage: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} aria-label="login form" className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
                   {t('auth.email', 'Email Address')}
@@ -236,7 +238,7 @@ const LoginPage: React.FC = () => {
                   const Icon = acc.icon;
                   const isLoadingThis = loadingRole === acc.label;
                   const translatedLabel = t(acc.translationKey, acc.label);
-                  const isSuperAdmin = acc.email === 'superadmin@hospital.com';
+                  const isSuperAdmin = acc.email === 'admin@hospital.com' || acc.email === 'superadmin@hospital.com';
 
                   return (
                     <button
@@ -246,7 +248,7 @@ const LoginPage: React.FC = () => {
                       onClick={() => handleQuickRoleLogin(acc.email, acc.label)}
                       className={`px-3.5 py-2.5 bg-white dark:bg-slate-800 border rounded-xl text-xs font-bold transition-all text-left flex items-center justify-between group shadow-xs hover:shadow-sm disabled:opacity-50 ${
                         isSuperAdmin
-                          ? 'sm:col-span-2 border-purple-300 dark:border-purple-800/80 bg-purple-50/40 dark:bg-purple-950/20 text-purple-800 dark:text-purple-300 hover:bg-purple-100/60 dark:hover:bg-purple-900/30'
+                          ? 'border-purple-300 dark:border-purple-800/80 bg-purple-50/40 dark:bg-purple-950/20 text-purple-800 dark:text-purple-300 hover:bg-purple-100/60 dark:hover:bg-purple-900/30'
                           : `border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 ${acc.color}`
                       }`}
                     >

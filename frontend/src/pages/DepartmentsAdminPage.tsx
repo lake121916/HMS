@@ -145,7 +145,7 @@ const DepartmentsAdminPage: React.FC = () => {
   const withHead = departments.filter(d => d.head_doctor_name || d.head_doctor_id).length;
 
   return (
-    <RoleGuard allowedRoles={['super_admin', 'admin']}>
+    <RoleGuard allowedRoles={['super_admin', 'admin', 'hospital_manager']}>
       <div className="space-y-6">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">

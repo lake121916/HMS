@@ -10,8 +10,8 @@ const PERMISSIONS: Record<string, string[]> = {
 
   // Doctors
   'doctors:view':    ['super_admin','admin','hospital_manager','receptionist','doctor','nurse'],
-  'doctors:create':  ['super_admin','admin'],
-  'doctors:edit':    ['super_admin','admin'],
+  'doctors:create':  ['super_admin','admin','hospital_manager'],
+  'doctors:edit':    ['super_admin','admin','hospital_manager'],
   'doctors:delete':  ['super_admin','admin'],
 
   // Appointments
@@ -42,15 +42,15 @@ const PERMISSIONS: Record<string, string[]> = {
 
   // Admissions
   'admissions:view':     ['super_admin','admin','hospital_manager','doctor','nurse','receptionist'],
-  'admissions:create':   ['admin','receptionist','doctor','nurse'],
-  'admissions:edit':     ['admin','doctor','nurse'],
-  'admissions:discharge':['admin','doctor'],
+  'admissions:create':   ['super_admin','admin','hospital_manager','receptionist','doctor','nurse'],
+  'admissions:edit':     ['super_admin','admin','hospital_manager','doctor','nurse'],
+  'admissions:discharge':['super_admin','admin','hospital_manager','doctor'],
 
   // Beds
   'beds:view':   ['super_admin','admin','hospital_manager','nurse','receptionist','doctor'],
-  'beds:create': ['super_admin','admin'],
-  'beds:edit':   ['super_admin','admin','nurse'],
-  'beds:delete': ['super_admin','admin'],
+  'beds:create': ['super_admin','admin','hospital_manager'],
+  'beds:edit':   ['super_admin','admin','hospital_manager','nurse'],
+  'beds:delete': ['super_admin','admin','hospital_manager'],
 
   // Invoices
   'invoices:view':   ['super_admin','admin','hospital_manager','cashier','receptionist'],
@@ -66,10 +66,10 @@ const PERMISSIONS: Record<string, string[]> = {
   // New portal access
   'reception:view':    ['super_admin','admin','hospital_manager','receptionist'],
   'cashier:view':      ['super_admin','admin','hospital_manager','cashier'],
-  'insurance:view':    ['super_admin','admin','hospital_manager'],
-  'blood_bank:view':   ['super_admin','admin','hospital_manager'],
+  'insurance:view':    ['super_admin','admin'],
+  'blood_bank:view':   ['super_admin','admin'],
   'audit:view':        ['super_admin','admin'],
-  'radiology:view':    ['super_admin','admin','hospital_manager','doctor'],
+  'radiology:view':    ['super_admin','admin','doctor'],
   'finance_reports:view': ['super_admin','admin','hospital_manager','cashier'],
 
   // Medicines
@@ -91,7 +91,7 @@ const PERMISSIONS: Record<string, string[]> = {
   'admin:users':       ['super_admin','admin'],
   'admin:create_staff':['super_admin','admin'],
   'admin:delete_user': ['super_admin'],
-  'admin:departments': ['super_admin','admin'],
+  'admin:departments': ['super_admin','admin','hospital_manager'],
 };
 
 export const useRoleAccess = () => {

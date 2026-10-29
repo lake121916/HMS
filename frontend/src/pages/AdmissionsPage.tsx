@@ -84,7 +84,7 @@ const AdmissionsPage: React.FC = () => {
   );
 
   return (
-    <RoleGuard allowedRoles={['super_admin', 'admin', 'doctor', 'nurse', 'receptionist']}>
+    <RoleGuard allowedRoles={['super_admin', 'admin', 'hospital_manager', 'doctor', 'nurse', 'receptionist']}>
       <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>

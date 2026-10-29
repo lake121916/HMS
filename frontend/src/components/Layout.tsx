@@ -241,7 +241,7 @@ const Layout: React.FC = () => {
     const roleMap: Record<string, string[]> = {
       super_admin:      ['Dashboard', 'Users', 'Departments', 'Services', 'Finance Reports', 'Reports', 'Audit Logs'],
       admin:            ['Dashboard', 'Users', 'Departments', 'Services', 'Finance Reports', 'Reports', 'Audit Logs'],
-      hospital_manager: ['Dashboard','Patients','Doctors','Appointments','Admissions','Beds','Invoices','Payments','Insurance','Finance Reports','Reports','Radiology','Blood Bank'],
+      hospital_manager: ['Dashboard', 'Departments', 'Doctors', 'Admissions', 'Beds', 'Finance Reports', 'Reports'],
       receptionist:     ['Reception Workflow','Patients','Appointments','Admissions','Invoices'],
       doctor:           ['Dashboard','My Consultations','Patients','Appointments','Vitals','Prescriptions','Lab Tests','Radiology','Admissions'],
       nurse:            ['Triage Worklist','Patients','Appointments','Vitals','Admissions','Beds'],

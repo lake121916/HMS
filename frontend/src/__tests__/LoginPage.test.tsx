@@ -23,11 +23,15 @@ vi.mock('react-router-dom', async (importOriginal) => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
+import { LanguageProvider } from '../contexts/LanguageContext';
+
 const renderLogin = () =>
   render(
-    <MemoryRouter>
-      <LoginPage />
-    </MemoryRouter>
+    <LanguageProvider>
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    </LanguageProvider>
   );
 
 describe('LoginPage Component', () => {
@@ -46,7 +50,7 @@ describe('LoginPage Component', () => {
     it('renders the hospital branding text', () => {
       renderLogin();
       // The heading is in the left panel - accessible
-      expect(screen.getByText(/Alem Ketema Enat/)).toBeInTheDocument();
+      expect(screen.getAllByText(/Alem Ketema Enat/)[0]).toBeInTheDocument();
     });
 
     it('renders the login form with accessible label', () => {
@@ -75,7 +79,7 @@ describe('LoginPage Component', () => {
       const passwordInput = screen.getByLabelText(/^password$/i);
       expect(passwordInput).toHaveAttribute('type', 'password');
       // Click toggle button
-      const toggleButton = screen.getByRole('button', { name: '' });
+      const toggleButton = screen.getByRole('button', { name: /show password/i });
       await userEvent.click(toggleButton);
       expect(passwordInput).toHaveAttribute('type', 'text');
     });

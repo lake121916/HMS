@@ -13,7 +13,7 @@ import {
   Stethoscope, FlaskConical, Scan, Pill, Syringe,
   CheckSquare, RefreshCw, AlertTriangle, ChevronRight,
   User, DollarSign, Lock, PlusCircle, Volume2,
-  CheckCircle2, AlertOctagon, History
+  CheckCircle2, AlertOctagon, History, FileText, Sparkles
 } from 'lucide-react';
 
 interface EncounterSummary {
@@ -100,6 +100,30 @@ const allergySeverityColors: Record<string, string> = {
   moderate:    'bg-amber-500 text-white',
   mild:        'bg-blue-500 text-white'
 };
+
+const COMMON_ICD10 = [
+  { name: 'Essential Hypertension', code: 'I10' },
+  { name: 'Type 2 Diabetes Mellitus', code: 'E11.9' },
+  { name: 'Acute URTI', code: 'J06.9' },
+  { name: 'Bronchopneumonia', code: 'J18.0' },
+  { name: 'Malaria, Unspecified', code: 'B54' },
+  { name: 'Typhoid Fever', code: 'A01.0' },
+  { name: 'Acute Gastroenteritis', code: 'A09' },
+  { name: 'Urinary Tract Infection (UTI)', code: 'N39.0' },
+  { name: 'Iron Deficiency Anemia', code: 'D64.9' },
+  { name: 'Peptic Ulcer Disease (PUD)', code: 'K27.9' },
+];
+
+const COMMON_LAB_BUNDLES = [
+  { name: 'Complete Blood Count (CBC)', type: 'Hematology' },
+  { name: 'Fasting Blood Sugar (FBS)', type: 'Biochemistry' },
+  { name: 'Lipid Profile', type: 'Biochemistry' },
+  { name: 'Renal Function (Urea & Creatinine)', type: 'Biochemistry' },
+  { name: 'Liver Function Test (LFT)', type: 'Biochemistry' },
+  { name: 'Urinalysis (Routine)', type: 'Clinical Pathology' },
+  { name: 'Widal / Typhoid Test', type: 'Serology' },
+  { name: 'Stool Examination', type: 'Parasitology' },
+];
 
 const DoctorConsultationPage: React.FC = () => {
   const [queue, setQueue] = useState<EncounterSummary[]>([]);
@@ -241,6 +265,24 @@ const DoctorConsultationPage: React.FC = () => {
     const full = res.data.data;
     setActiveEncounter(prev => ({ ...prev, ...full.encounter, ...full }));
     fetchConsultationAddenda(activeEncounter.id);
+  };
+
+  const insertSoapTemplate = () => {
+    if (isFinalized) return;
+    const template = `[S - Subjective]:\nChief Complaint: ${activeEncounter?.chief_complaint || 'Patient presents for medical consultation'}\nHistory of Present Illness: \n\n[O - Objective]:\nVitals: Temp ${activeEncounter?.temperature ? `${activeEncounter.temperature}°C` : 'N/A'}, BP ${activeEncounter?.blood_pressure_systolic ? `${activeEncounter.blood_pressure_systolic}/${activeEncounter.blood_pressure_diastolic} mmHg` : 'N/A'}, HR ${activeEncounter?.heart_rate ? `${activeEncounter.heart_rate} bpm` : 'N/A'}, SpO2 ${activeEncounter?.oxygen_saturation ? `${activeEncounter.oxygen_saturation}%` : 'N/A'}\nPhysical Examination: \n\n[A - Assessment]:\nPrimary Impression: \n\n[P - Plan]:\nInvestigations & Medical Prescriptions: \nPatient Education & Warning Signs: `;
+    setConsultForm(f => ({
+      ...f,
+      consultation_notes: f.consultation_notes ? `${f.consultation_notes}\n\n${template}` : template
+    }));
+  };
+
+  const selectIcd10 = (disease: { name: string; code: string }) => {
+    if (isFinalized) return;
+    setConsultForm(f => ({
+      ...f,
+      diagnosis: disease.name,
+      icd_code: disease.code
+    }));
   };
 
   // Complete consultation (finalizes record)
@@ -735,23 +777,62 @@ const DoctorConsultationPage: React.FC = () => {
 
                 {/* Consultation Notes Form */}
                 <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
-                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">
-                    Clinical Examination & Diagnostic Findings
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                      Clinical Examination & Diagnostic Findings
+                    </h3>
+                    {!isFinalized && (
+                      <button
+                        type="button"
+                        onClick={insertSoapTemplate}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300 transition"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        Load SOAP Note Template
+                      </button>
+                    )}
+                  </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
                       Consultation Notes {isFinalized && '(Locked)'}
                     </label>
                     <textarea
-                      rows={4}
+                      rows={5}
                       disabled={isFinalized}
                       value={consultForm.consultation_notes}
                       onChange={e => setConsultForm(f => ({ ...f, consultation_notes: e.target.value }))}
-                      placeholder="Clinical observations, physical examination, symptom evolution..."
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100 disabled:text-slate-600"
+                      placeholder="Clinical observations, physical examination, symptom evolution, SOAP findings..."
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100 disabled:text-slate-600 font-sans"
                     />
                   </div>
+
+                  {/* Common ICD-10 Quick Select Chips */}
+                  {!isFinalized && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                          <Sparkles className="h-3 w-3 text-amber-500" /> Common Diagnoses (1-Click ICD-10):
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {COMMON_ICD10.map(d => (
+                          <button
+                            key={d.code}
+                            type="button"
+                            onClick={() => selectIcd10(d)}
+                            className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition ${
+                              consultForm.icd_code === d.code
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300'
+                            }`}
+                          >
+                            {d.name} <span className="opacity-70 text-[10px]">({d.code})</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -952,6 +1033,30 @@ const DoctorConsultationPage: React.FC = () => {
                         placeholder="e.g. Complete Blood Count (CBC), Widal Test, Urinalysis"
                         className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-400"
                       />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                          <Sparkles className="h-3 w-3 text-cyan-500" /> Quick Lab Panels (1-Click Order):
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {COMMON_LAB_BUNDLES.map(b => (
+                          <button
+                            key={b.name}
+                            type="button"
+                            onClick={() => setLabForm(f => ({ ...f, test_name: b.name, test_type: b.type }))}
+                            className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition ${
+                              labForm.test_name === b.name
+                                ? 'bg-cyan-600 text-white border-cyan-600 shadow-xs'
+                                : 'bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 hover:border-cyan-300'
+                            }`}
+                          >
+                            {b.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <div className="flex justify-end">
                       <button

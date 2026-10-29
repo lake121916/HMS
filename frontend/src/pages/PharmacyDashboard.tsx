@@ -78,6 +78,7 @@ export const PharmacyDashboard: React.FC = () => {
   const [submitting, setSubmitting] = useState<number | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [search, setSearch] = useState('');
+  const [rxSearchTerm, setRxSearchTerm] = useState('');
   const [rxFilter, setRxFilter] = useState<'pending' | 'dispensed' | 'all'>('pending');
 
   // Batches state
@@ -227,6 +228,13 @@ export const PharmacyDashboard: React.FC = () => {
 
   // Filter Prescriptions
   const filteredRx = prescriptions.filter(p => {
+    if (rxSearchTerm) {
+      const q = rxSearchTerm.toLowerCase();
+      const matchName = (p.patient_name || '').toLowerCase().includes(q);
+      const matchMed = (p.medication_name || '').toLowerCase().includes(q);
+      const matchDoc = (p.doctor_name || '').toLowerCase().includes(q);
+      if (!matchName && !matchMed && !matchDoc) return false;
+    }
     const q = search.toLowerCase();
     return (
       p.patient_name?.toLowerCase().includes(q) ||
@@ -415,6 +423,24 @@ export const PharmacyDashboard: React.FC = () => {
 
       {/* ── TAB 1: PRESCRIPTION DISPENSING ──────────────────────────── */}
       {activeTab === 'prescriptions' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={rxSearchTerm}
+                onChange={e => setRxSearchTerm(e.target.value)}
+                placeholder="Search by patient, drug name, or prescriber..."
+                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 font-medium">
+                Showing {filteredRx.length} of {prescriptions.length} prescriptions
+              </span>
+            </div>
+          </div>
         <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden">
           {filteredRx.length === 0 ? (
             <div className="p-12 text-center">
@@ -487,6 +513,7 @@ export const PharmacyDashboard: React.FC = () => {
               </div>
             ))
           )}
+        </div>
         </div>
       )}
 

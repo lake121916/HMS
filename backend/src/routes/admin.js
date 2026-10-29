@@ -241,7 +241,7 @@ router.get('/departments', authenticate, authorize('super_admin', 'admin', 'hosp
   res.json({ success: true, data: { departments: result.rows } });
 }));
 
-router.post('/departments', authenticate, authorize('super_admin', 'admin'), handleAsync(async (req, res) => {
+router.post('/departments', authenticate, authorize('super_admin', 'admin', 'hospital_manager'), handleAsync(async (req, res) => {
   const { name, description } = req.body;
   if (!name) return sendError(res, 'Department name is required', 400);
   const result = await pool.query(
@@ -251,7 +251,7 @@ router.post('/departments', authenticate, authorize('super_admin', 'admin'), han
   res.status(201).json({ success: true, data: { department: result.rows[0] } });
 }));
 
-router.put('/departments/:id', authenticate, authorize('super_admin', 'admin'), handleAsync(async (req, res) => {
+router.put('/departments/:id', authenticate, authorize('super_admin', 'admin', 'hospital_manager'), handleAsync(async (req, res) => {
   const { name, description, head_doctor_id } = req.body;
   const result = await pool.query(
     `UPDATE departments SET
@@ -266,7 +266,7 @@ router.put('/departments/:id', authenticate, authorize('super_admin', 'admin'), 
   res.json({ success: true, data: { department: result.rows[0] } });
 }));
 
-router.delete('/departments/:id', authenticate, authorize('super_admin'), handleAsync(async (req, res) => {
+router.delete('/departments/:id', authenticate, authorize('super_admin', 'admin', 'hospital_manager'), handleAsync(async (req, res) => {
   const result = await pool.query('DELETE FROM departments WHERE id = $1 RETURNING id', [req.params.id]);
   if (!result.rows.length) return sendError(res, 'Department not found', 404);
   res.json({ success: true, message: 'Department deleted' });
@@ -289,7 +289,7 @@ router.get('/audit-logs', authenticate, authorize('super_admin'), handleAsync(as
 
 // ── System Stats ──────────────────────────────────────────────────────────────
 
-router.get('/stats', authenticate, authorize('super_admin', 'admin'), handleAsync(async (req, res) => {
+router.get('/stats', authenticate, authorize('super_admin', 'admin', 'hospital_manager'), handleAsync(async (req, res) => {
   const results = await Promise.all([
     pool.query('SELECT COUNT(*) FROM users'),
     pool.query('SELECT COUNT(*) FROM users WHERE is_active = true'),

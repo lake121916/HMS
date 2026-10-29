@@ -38,7 +38,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // POST create bed
-router.post('/', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+router.post('/', authenticate, authorize('admin', 'super_admin', 'hospital_manager'), async (req, res) => {
   try {
     const { ward, bed_number, bed_type, daily_rate, hourly_rate } = req.body;
     const result = await pool.query(
@@ -54,7 +54,7 @@ router.post('/', authenticate, authorize('admin', 'super_admin'), async (req, re
 });
 
 // PUT update bed
-router.put('/:id', authenticate, authorize('admin', 'super_admin', 'nurse'), async (req, res) => {
+router.put('/:id', authenticate, authorize('admin', 'super_admin', 'nurse', 'hospital_manager'), async (req, res) => {
   try {
     const { status, ward, bed_number, bed_type, daily_rate } = req.body;
     const result = await pool.query(
@@ -77,7 +77,7 @@ router.put('/:id', authenticate, authorize('admin', 'super_admin', 'nurse'), asy
 });
 
 // DELETE bed
-router.delete('/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticate, authorize('admin', 'super_admin', 'hospital_manager'), async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM beds WHERE id = $1 AND status != \'occupied\' RETURNING id', [req.params.id]);
     if (result.rows.length === 0) return res.status(400).json({ success: false, message: 'Bed not found or is currently occupied' });

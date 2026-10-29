@@ -226,4 +226,6 @@ export const en = {
   'role.cashier': 'Cashier POS',
   'role.lab_tech': 'Lab Tech',
   'role.pharmacist': 'Pharmacist',
+  'role.hospital_manager': 'Hospital Manager',
+  'role.patient': 'Patient',
 };

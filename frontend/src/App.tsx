@@ -74,7 +74,16 @@ const ALL_PAGES = [
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   super_admin:      ALL_PAGES,
   admin:            ALL_PAGES,
-  hospital_manager: ALL_PAGES,
+  hospital_manager: [
+    'dashboard',
+    'departments-admin',
+    'doctors',
+    'admissions',
+    'beds',
+    'finance-reports',
+    'reports',
+    'services-admin',
+  ],
   receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'invoices', 'reception', 'reception-workflow', 'vitals'],
   doctor:           ['dashboard', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
   nurse:            ['dashboard', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse'],
