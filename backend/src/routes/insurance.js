@@ -643,4 +643,198 @@ router.get('/analytics/summary', authenticate, authorize(...REVIEW_ROLES, 'cashi
   }
 });
 
+
+const insuranceCalc = require('../services/insuranceCalculationService');
+
+// ── Co-Pay Breakdown for Cashier Checkout ──────────────────────────────────
+router.get('/invoices/:id/copay-breakdown', authenticate, async (req, res) => {
+  try {
+    const invoiceId = parseInt(req.params.id, 10);
+    let { policy_id, pre_auth_id } = req.query;
+
+    if (!policy_id) {
+      const invRes = await pool.query('SELECT patient_id FROM invoices WHERE id = $1', [invoiceId]);
+      if (!invRes.rows.length) return res.status(404).json({ success: false, message: 'Invoice not found' });
+      const patientId = invRes.rows[0].patient_id;
+
+      const polRes = await pool.query(
+        'SELECT id FROM patient_insurance_policies WHERE patient_id = $1 AND is_active = true ORDER BY is_primary DESC, id DESC LIMIT 1',
+        [patientId]
+      );
+      if (polRes.rows.length) {
+        policy_id = polRes.rows[0].id;
+      }
+    }
+
+    if (!policy_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'No active insurance policy found for this patient. Please enroll policy first.'
+      });
+    }
+
+    const breakdown = await insuranceCalc.calculateInvoiceCoPay({
+      invoiceId,
+      policyId: parseInt(policy_id, 10),
+      preAuthId: pre_auth_id ? parseInt(pre_auth_id, 10) : null
+    });
+
+    res.json({ success: true, data: breakdown });
+  } catch (err) {
+    console.error('Error calculating co-pay breakdown:', err);
+    res.status(500).json({ success: false, message: err.message || 'Server error' });
+  }
+});
+
+// ── Apply Co-pay & Generate Claim for Cashier Checkout ─────────────────────
+router.post('/invoices/:id/apply-copay', authenticate, authorize('cashier', 'admin', 'super_admin', 'finance_officer'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const invoiceId = parseInt(req.params.id, 10);
+    const { policy_id, pre_auth_id, notes } = req.body;
+
+    if (!policy_id) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: 'policy_id is required to apply insurance co-pay' });
+    }
+
+    const calc = await insuranceCalc.calculateInvoiceCoPay({
+      invoiceId,
+      policyId: parseInt(policy_id, 10),
+      preAuthId: pre_auth_id ? parseInt(pre_auth_id, 10) : null,
+      dbClient: client
+    });
+
+    if (!calc.success) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: calc.message || 'Unable to apply insurance' });
+    }
+
+    // Update invoice with insurance split
+    await client.query(
+      `UPDATE invoices
+       SET insurance_policy_id = $1,
+           pre_auth_id = $2,
+           insurance_covered_amount = $3,
+           patient_copay_amount = $4,
+           insurance_claim_status = 'pending_claim',
+           notes = COALESCE(notes, '') || ' [Insurance Co-Pay: ' || $5 || ' ETB / Insurer: ' || $6 || ' ETB]',
+           updated_at = NOW()
+       WHERE id = $7`,
+      [
+        policy_id,
+        pre_auth_id || null,
+        calc.approvedInsuranceContribution,
+        calc.patientCoPay,
+        calc.patientCoPay,
+        calc.approvedInsuranceContribution,
+        invoiceId
+      ]
+    );
+
+    // Create Draft Insurance Claim
+    const claimRes = await client.query(
+      `INSERT INTO insurance_claims (
+        claim_number, policy_id, provider_id, provider_name, policy_number,
+        patient_id, encounter_id, claim_amount, total_billed, approved_amount,
+        patient_copay, status, submitted_by, submitted_at, notes
+      )
+      VALUES (
+        'CLM-' || TO_CHAR(NOW(), 'YYYY') || '-' || LPAD(nextval('claim_number_seq')::text, 5, '0'),
+        $1, $2, $3, $4,
+        $5, $6, $7, $8, $9,
+        $10, 'pending', $11, NOW(), $12
+      )
+      RETURNING *`,
+      [
+        calc.policyId,
+        calc.providerId,
+        calc.providerName || 'Insurance Provider',
+        calc.policyNumber || 'N/A',
+        calc.patientId,
+        null,
+        calc.approvedInsuranceContribution,
+        calc.totalInvoiceAmount,
+        calc.approvedInsuranceContribution,
+        calc.patientCoPay,
+        req.user.id,
+        notes || 'Automated claim generated at cashier checkout'
+      ]
+    );
+    const createdClaim = claimRes.rows[0];
+
+    // Deduct remaining benefit from policy
+    if (calc.remainingBenefitAfterClaim !== null) {
+      await client.query(
+        `UPDATE patient_insurance_policies
+         SET remaining_benefit = $1, updated_at = NOW()
+         WHERE id = $2`,
+        [calc.remainingBenefitAfterClaim, calc.policyId]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({
+      success: true,
+      message: 'Insurance co-pay successfully applied and claim created',
+      data: {
+        invoiceId,
+        claim: createdClaim,
+        calculation: calc
+      }
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error applying insurance co-pay:', err);
+    res.status(500).json({ success: false, message: err.message || 'Server error' });
+  } finally {
+    client.release();
+  }
+});
+
+// ── Financial Claims & Receivables Report ───────────────────────────────────
+router.get('/reports/claims-summary', authenticate, authorize('admin', 'super_admin', 'hospital_manager', 'finance_officer', 'cashier'), async (req, res) => {
+  try {
+    const totalsRes = await pool.query(`
+      SELECT 
+        COUNT(id) AS total_claims_count,
+        COALESCE(SUM(total_billed), 0) AS total_insurance_billed,
+        COALESCE(SUM(patient_copay), 0) AS total_copay_collected,
+        COALESCE(SUM(approved_amount), 0) AS total_claims_approved,
+        COALESCE(SUM(payment_amount), 0) AS total_reimbursements_received,
+        COALESCE(SUM(CASE WHEN status = 'rejected' THEN total_billed ELSE 0 END), 0) AS total_claims_rejected,
+        COALESCE(SUM(total_billed) - SUM(COALESCE(payment_amount, 0)), 0) AS outstanding_insurance_receivables
+      FROM insurance_claims
+    `);
+
+    const byProviderRes = await pool.query(`
+      SELECT 
+        ip.id AS provider_id,
+        ip.name_en AS provider_name,
+        ip.code AS provider_code,
+        ip.provider_type,
+        COUNT(ic.id) AS claim_count,
+        COALESCE(SUM(ic.total_billed), 0) AS billed_amount,
+        COALESCE(SUM(ic.payment_amount), 0) AS received_amount,
+        COALESCE(SUM(ic.total_billed) - SUM(COALESCE(ic.payment_amount, 0)), 0) AS outstanding_balance
+      FROM insurance_providers ip
+      LEFT JOIN insurance_claims ic ON ic.provider_id = ip.id
+      GROUP BY ip.id, ip.name_en, ip.code, ip.provider_type
+      ORDER BY billed_amount DESC
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        totals: totalsRes.rows[0],
+        byProvider: byProviderRes.rows
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching claims summary report:', err);
+    res.status(500).json({ success: false, message: 'Server error generating claims report' });
+  }
+});
+
 module.exports = router;

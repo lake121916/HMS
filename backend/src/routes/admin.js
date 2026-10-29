@@ -274,7 +274,7 @@ router.delete('/departments/:id', authenticate, authorize('super_admin', 'admin'
 
 // ── Audit Logs ────────────────────────────────────────────────────────────────
 
-router.get('/audit-logs', authenticate, authorize('super_admin'), handleAsync(async (req, res) => {
+router.get('/audit-logs', authenticate, authorize('super_admin', 'admin', 'hospital_manager'), handleAsync(async (req, res) => {
   const { limit = 100, offset = 0 } = req.query;
   const result = await pool.query(
     `SELECT al.*, u.email AS user_email
@@ -309,6 +309,113 @@ router.get('/stats', authenticate, authorize('super_admin', 'admin', 'hospital_m
       totalDepartments: parseInt(results[5].rows[0].count),
     }
   });
+}));
+
+
+// GET /api/admin/audit-logs/export — Secure CSV Export with Formula Injection Escaping
+function sanitizeCsvCell(val) {
+  if (val === null || val === undefined) return '';
+  let str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+  // Formula injection defense: cells starting with =, +, -, @, \t, \r are prepended with '
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = "'" + str;
+  }
+  // Standard CSV escaping: wrap in quotes if contains comma, quote, or newline
+  if (/[",\n\r]/.test(str)) {
+    str = '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+router.get('/audit-logs/export', authenticate, authorize('super_admin', 'admin', 'hospital_manager'), handleAsync(async (req, res) => {
+  const { start_date, end_date, action, entity_type, user_id } = req.query;
+  let query = `
+    SELECT al.id, al.timestamp, al.user_id, u.email AS user_email, u.role AS user_role,
+           al.action, al.entity_type, al.entity_id, al.ip_address,
+           al.old_values, al.new_values
+    FROM audit_logs al
+    LEFT JOIN users u ON al.user_id = u.id
+    WHERE 1=1
+  `;
+  const params = [];
+  let idx = 1;
+
+  if (start_date) {
+    query += ` AND al.timestamp >= ${idx++}`;
+    params.push(start_date);
+  }
+  if (end_date) {
+    query += ` AND al.timestamp <= ${idx++}`;
+    params.push(end_date);
+  }
+  if (action) {
+    query += ` AND al.action ILIKE ${idx++}`;
+    params.push(`%${action}%`);
+  }
+  if (entity_type) {
+    query += ` AND al.entity_type ILIKE ${idx++}`;
+    params.push(`%${entity_type}%`);
+  }
+  if (user_id) {
+    query += ` AND al.user_id = ${idx++}`;
+    params.push(parseInt(user_id, 10));
+  }
+
+  query += ' ORDER BY al.timestamp DESC LIMIT 10000';
+
+  const result = await pool.query(query, params);
+  const rows = result.rows;
+
+  // Build CSV content
+  const headers = [
+    'Log ID',
+    'Timestamp (UTC)',
+    'User ID',
+    'User Email',
+    'User Role',
+    'Action',
+    'Entity Type',
+    'Entity ID',
+    'IP Address',
+    'Old Values',
+    'New Values'
+  ];
+
+  const csvLines = [headers.map(sanitizeCsvCell).join(',')];
+
+  for (const row of rows) {
+    const line = [
+      row.id,
+      row.timestamp ? new Date(row.timestamp).toISOString() : '',
+      row.user_id || '',
+      row.user_email || 'System',
+      row.user_role || '',
+      row.action,
+      row.entity_type,
+      row.entity_id || '',
+      row.ip_address || '',
+      row.old_values ? JSON.stringify(row.old_values) : '',
+      row.new_values ? JSON.stringify(row.new_values) : ''
+    ].map(sanitizeCsvCell).join(',');
+
+    csvLines.push(line);
+  }
+
+  // Auditing the audit export event
+  await pool.query(
+    `INSERT INTO audit_logs (user_id, action, entity_type, ip_address, new_values, timestamp)
+     VALUES ($1, 'EXPORT_AUDIT_LOG_CSV', 'audit_logs', $2, $3, NOW())`,
+    [
+      req.user.id,
+      req.ip || '127.0.0.1',
+      JSON.stringify({ rowCount: rows.length, filters: { start_date, end_date, action, entity_type } })
+    ]
+  );
+
+  const filename = `hospital_audit_log_${new Date().toISOString().split('T')[0]}.csv`;
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.status(200).send(csvLines.join('\r\n'));
 }));
 
 module.exports = router;

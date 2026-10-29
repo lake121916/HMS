@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  X, AlertTriangle, CheckCircle2, QrCode, Smartphone, Building2,
-  Copy, Check, RefreshCw, Zap, ShieldCheck
+  X, AlertTriangle, CheckCircle2, QrCode,
+  Copy, Check, RefreshCw, Zap, ShieldCheck, Shield, CheckCircle, Clock
 } from 'lucide-react';
 import PaymentMethodSelector from './PaymentMethodSelector';
 import { fmt, toNum } from '../../utils/format';
@@ -42,18 +42,144 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ invoice, isOpen, onClose, o
     provider: string;
     message: string;
   } | null>(null);
-  const [copiedAccount, setCopiedAccount] = useState(false);
+  const [copiedPayload, setCopiedPayload] = useState(false);
+
+  // Dynamic QR States
+  const [loadingQr, setLoadingQr] = useState(false);
+  const [dynamicQr, setDynamicQr] = useState<{
+    requestId: string;
+    qrPayload: string;
+    qrCodeDataUrl: string;
+    amount: number;
+    provider: string;
+    expiresAt: string;
+  } | null>(null);
+  const [qrSecondsLeft, setQrSecondsLeft] = useState<number>(900);
+  const pollTimerRef = useRef<any>(null);
+
+  // Insurance Co-Pay States
+  const [loadingCopay, setLoadingCopay] = useState(false);
+  const [copayBreakdown, setCopayBreakdown] = useState<any | null>(null);
+  const [applyingCopay, setApplyingCopay] = useState(false);
+  const [copayApplied, setCopayApplied] = useState(false);
 
   const remaining = invoice.total_amount - invoice.amount_paid;
   const paymentAmount = parseFloat(amount);
 
-  // Reset verification when payment method or amount changes
+  // Clear timers on unmount
   useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, []);
+
+  // Fetch Dynamic QR when telebirr or cbe birr is selected
+  useEffect(() => {
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     setVerificationResult(null);
-    if (paymentMethod !== 'telebirr' && paymentMethod !== 'bank_transfer') {
-      setTransactionRef('');
+
+    if (paymentMethod === 'telebirr' || paymentMethod === 'bank_transfer') {
+      const provider = paymentMethod === 'telebirr' ? 'telebirr' : 'cbe_birr';
+      generateDynamicQr(provider);
+    } else {
+      setDynamicQr(null);
     }
-  }, [paymentMethod]);
+
+    if (paymentMethod === 'insurance') {
+      loadInsuranceBreakdown();
+    }
+  }, [paymentMethod, invoice.id]);
+
+  // Countdown timer for dynamic QR
+  useEffect(() => {
+    if (!dynamicQr?.expiresAt) return;
+    const interval = setInterval(() => {
+      const msLeft = new Date(dynamicQr.expiresAt).getTime() - Date.now();
+      const s = Math.max(0, Math.floor(msLeft / 1000));
+      setQrSecondsLeft(s);
+      if (s <= 0) clearInterval(interval);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [dynamicQr]);
+
+  const generateDynamicQr = async (provider: string) => {
+    setLoadingQr(true);
+    setError('');
+    try {
+      const res = await api.post('/payments/qr', {
+        invoice_id: invoice.id,
+        provider
+      });
+      if (res.data.success && res.data.data) {
+        setDynamicQr(res.data.data);
+        const msLeft = new Date(res.data.data.expiresAt).getTime() - Date.now();
+        setQrSecondsLeft(Math.max(0, Math.floor(msLeft / 1000)));
+
+        // Start background polling for status
+        if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+        pollTimerRef.current = setInterval(async () => {
+          try {
+            const statusRes = await api.get(`/payments/qr/${res.data.data.requestId}/status`);
+            if (statusRes.data.data?.status === 'completed') {
+              clearInterval(pollTimerRef.current);
+              setVerificationResult({
+                verified: true,
+                reference: statusRes.data.data.transactionId || 'AUTO-CONFIRMED',
+                provider: provider.toUpperCase(),
+                message: 'Customer scanned and completed payment on mobile app!'
+              });
+              setTransactionRef(statusRes.data.data.transactionId || '');
+            }
+          } catch (e) {
+            // silent poll failure
+          }
+        }, 4000);
+      }
+    } catch (err: any) {
+      console.warn('Could not load dynamic QR, falling back to static guide:', err.message);
+    } finally {
+      setLoadingQr(false);
+    }
+  };
+
+  const loadInsuranceBreakdown = async () => {
+    setLoadingCopay(true);
+    setError('');
+    try {
+      const res = await api.get(`/insurance/invoices/${invoice.id}/copay-breakdown`);
+      if (res.data.success) {
+        setCopayBreakdown(res.data.data);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Patient has no verified active insurance policy');
+    } finally {
+      setLoadingCopay(false);
+    }
+  };
+
+  const handleApplyCopaySplit = async () => {
+    if (!copayBreakdown) return;
+    setApplyingCopay(true);
+    setError('');
+    try {
+      const res = await api.post(`/insurance/invoices/${invoice.id}/apply-copay`, {
+        policy_id: copayBreakdown.policyId,
+        notes: `Cashier POS applied ${copayBreakdown.planName} (${copayBreakdown.coveragePercentage}% coverage)`
+      });
+      if (res.data.success) {
+        setCopayApplied(true);
+        // Patient balance now reduced to co-pay
+        const copay = res.data.data.patientCoPay;
+        setAmount(fmt(copay));
+        // Prompt cashier to collect co-pay
+        setPaymentMethod('cash');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to apply insurance co-pay split');
+    } finally {
+      setApplyingCopay(false);
+    }
+  };
 
   const handleVerifyReference = async () => {
     if (!paymentAmount || paymentAmount <= 0) {
@@ -67,6 +193,25 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ invoice, isOpen, onClose, o
     setError('');
     setVerifying(true);
     try {
+      // First try dynamic QR confirmation if requestId exists
+      if (dynamicQr?.requestId) {
+        const confirmRes = await api.post(`/payments/qr/${dynamicQr.requestId}/confirm`, {
+          transaction_id: transactionRef.trim(),
+          amount: paymentAmount
+        });
+        if (confirmRes.data.success) {
+          setVerificationResult({
+            verified: true,
+            reference: transactionRef.trim(),
+            provider: dynamicQr.provider.toUpperCase(),
+            message: confirmRes.data.message || 'Payment verified and receipt registered'
+          });
+          setVerifying(false);
+          return;
+        }
+      }
+
+      // Legacy fallback
       const res = await api.post('/cashier/payments/verify-reference', {
         method: paymentMethod,
         reference: transactionRef.trim(),
@@ -93,13 +238,20 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ invoice, isOpen, onClose, o
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    setCopiedAccount(true);
-    setTimeout(() => setCopiedAccount(false), 2500);
+    setCopiedPayload(true);
+    setTimeout(() => setCopiedPayload(false), 2500);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (paymentMethod === 'insurance') {
+      if (!copayApplied) {
+        setError('Please click "Apply Insurance Split & Claim" above before finalizing checkout.');
+        return;
+      }
+    }
 
     if (paymentAmount <= 0) {
       setError('Amount must be greater than 0');
@@ -174,50 +326,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ invoice, isOpen, onClose, o
             </div>
           </div>
 
-          {/* Invoice Items Summary */}
-          {invoice.items && invoice.items.length > 0 && (
-            <div>
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">Itemized Services</h3>
-              <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                <table className="w-full text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                    <tr>
-                      <th className="px-4 py-2.5 text-left font-bold">Service / Item</th>
-                      <th className="px-4 py-2.5 text-right font-bold">Qty</th>
-                      <th className="px-4 py-2.5 text-right font-bold">Unit Price</th>
-                      <th className="px-4 py-2.5 text-right font-bold">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {invoice.items.map((item, index) => (
-                      <tr key={index} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                        <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-slate-100">{item.service}</td>
-                        <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-400 font-semibold">{item.quantity}</td>
-                        <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-400">{fmt(item.unit_price)} ETB</td>
-                        <td className="px-4 py-2.5 text-right font-bold text-slate-900 dark:text-white">{fmt(item.total)} ETB</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Payment Balance Calculation */}
-          <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-lg flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Total Invoice Amount</p>
-              <p className="text-xl font-black text-white">{fmt(invoice.total_amount)} ETB</p>
-              {invoice.amount_paid > 0 && (
-                <p className="text-xs text-emerald-400 font-medium mt-0.5">Paid: {fmt(invoice.amount_paid)} ETB</p>
-              )}
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">Remaining Balance</p>
-              <p className="text-2xl font-black text-amber-400">{fmt(remaining)} ETB</p>
-            </div>
-          </div>
-
           {/* Payment Method Selector */}
           <div>
             <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
@@ -226,160 +334,244 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ invoice, isOpen, onClose, o
             <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} disabled={loading} />
           </div>
 
-          {/* Dynamic Mobile Payment Drawers (Telebirr & CBE Birr) */}
-          {paymentMethod === 'telebirr' && (
-            <div className="bg-gradient-to-br from-purple-900 via-purple-950 to-indigo-950 text-white rounded-3xl p-5 shadow-xl border border-purple-800/40 relative overflow-hidden space-y-4">
-              <div className="flex items-center justify-between border-b border-purple-800/50 pb-3">
+          {/* ── PRIORITY 1: INSURANCE CO-PAY AND CLAIMS BREAKDOWN ── */}
+          {paymentMethod === 'insurance' && (
+            <div className="bg-gradient-to-br from-cyan-950 via-slate-900 to-blue-950 text-white rounded-3xl p-5 shadow-xl border border-cyan-800/40 space-y-4">
+              <div className="flex items-center justify-between border-b border-cyan-800/40 pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-purple-600 flex items-center justify-center font-black text-lg text-white shadow-md">
-                    t
+                  <div className="w-10 h-10 rounded-2xl bg-cyan-500 flex items-center justify-center font-black text-slate-950 text-base shadow-md">
+                    <Shield className="w-5 h-5" />
                   </div>
                   <div>
                     <h4 className="text-base font-extrabold tracking-tight flex items-center gap-2">
-                      Telebirr Merchant QR Payment
-                      <span className="text-[9px] bg-purple-500/30 text-purple-300 border border-purple-400/40 px-2 py-0.5 rounded-full font-bold">
-                        Ethio Telecom Direct
+                      CBHI & Private Insurance Split
+                      <span className="text-[9px] bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-full font-bold uppercase">
+                        {copayBreakdown?.providerType || 'Insurance'}
                       </span>
                     </h4>
-                    <p className="text-xs text-purple-200">Merchant Till Code: <span className="font-mono font-bold text-yellow-300">654321</span></p>
+                    <p className="text-xs text-cyan-200">
+                      Policy: <span className="font-mono font-bold text-amber-300">{copayBreakdown?.policyNumber || 'Checking...'}</span> ({copayBreakdown?.providerName || 'Evaluating coverage'})
+                    </p>
                   </div>
                 </div>
-                <QrCode className="w-8 h-8 text-purple-300 opacity-80" />
+                <button
+                  type="button"
+                  onClick={loadInsuranceBreakdown}
+                  disabled={loadingCopay}
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 transition-all"
+                  title="Recalculate Coverage"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loadingCopay ? 'animate-spin' : ''}`} />
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                {/* Simulated Telebirr QR Code */}
-                <div className="bg-white p-3 rounded-2xl shadow-inner flex flex-col items-center justify-center text-slate-900 border-2 border-purple-400">
-                  <div className="relative w-36 h-36 bg-slate-950 rounded-xl p-2 flex items-center justify-center">
-                    {/* SVG QR Visual */}
-                    <svg viewBox="0 0 100 100" className="w-full h-full text-white fill-current">
-                      <path d="M0,0 h30 v30 h-30 z M10,10 h10 v10 h-10 z M70,0 h30 v30 h-30 z M80,10 h10 v10 h-10 z M0,70 h30 v30 h-30 z M10,80 h10 v10 h-10 z M40,10 h15 v15 h-15 z M45,45 h20 v20 h-20 z M75,75 h20 v20 h-20 z M15,45 h15 v15 h-15 z M70,40 h20 v15 h-20 z M40,75 h20 v15 h-20 z M85,55 h10 v10 h-10 z M55,0 h10 v20 h-10 z" />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-9 h-9 bg-purple-700 text-white font-black text-xs rounded-xl flex items-center justify-center border-2 border-white shadow-lg">
-                        telebirr
-                      </div>
+              {loadingCopay ? (
+                <div className="py-8 flex flex-col items-center justify-center gap-2 text-cyan-300">
+                  <RefreshCw className="w-6 h-6 animate-spin" />
+                  <p className="text-xs font-bold">Evaluating insurance policy formulary & limits...</p>
+                </div>
+              ) : copayBreakdown ? (
+                <div className="space-y-4">
+                  {/* Co-pay Calculation Matrix */}
+                  <div className="grid grid-cols-3 gap-2.5 text-center">
+                    <div className="bg-slate-950/70 p-3 rounded-2xl border border-slate-800">
+                      <p className="text-[10px] font-black uppercase text-slate-400">Total Billed</p>
+                      <p className="text-sm font-black text-white mt-0.5">{fmt(copayBreakdown.totalInvoiceAmount)} ETB</p>
+                    </div>
+                    <div className="bg-emerald-950/40 p-3 rounded-2xl border border-emerald-500/30">
+                      <p className="text-[10px] font-black uppercase text-emerald-400">Insurer Share ({copayBreakdown.coveragePercentage}%)</p>
+                      <p className="text-sm font-black text-emerald-300 mt-0.5">{fmt(copayBreakdown.approvedInsuranceContribution)} ETB</p>
+                    </div>
+                    <div className="bg-amber-950/40 p-3 rounded-2xl border border-amber-500/30">
+                      <p className="text-[10px] font-black uppercase text-amber-400">Patient Co-Pay ({copayBreakdown.copayPercentage}%)</p>
+                      <p className="text-sm font-black text-amber-300 mt-0.5">{fmt(copayBreakdown.patientCoPay)} ETB</p>
                     </div>
                   </div>
-                  <p className="text-[11px] font-bold text-slate-700 mt-2 text-center">
-                    Scan with Telebirr Mobile App
-                  </p>
-                  <p className="text-[10px] text-purple-700 font-extrabold mt-0.5">
-                    Payee: Alem Ketema Enat Hospital
-                  </p>
-                </div>
 
-                {/* USSD & Instant Verification Instructions */}
-                <div className="space-y-3">
-                  <div className="bg-purple-900/60 rounded-2xl p-3 border border-purple-700/50 space-y-1.5 text-xs">
-                    <p className="font-extrabold text-purple-200 flex items-center gap-1.5">
-                      <Smartphone className="w-4 h-4 text-purple-300" /> Dial USSD Instructions:
-                    </p>
-                    <ol className="list-decimal list-inside text-slate-200 space-y-1 text-[11px] leading-relaxed">
-                      <li>Dial <span className="font-mono font-bold text-amber-300">*127#</span> on phone</li>
-                      <li>Select <span className="font-bold text-white">Pay Merchant</span></li>
-                      <li>Till No: <span className="font-mono font-bold text-amber-300">654321</span></li>
-                      <li>Enter Amount: <span className="font-bold text-emerald-300">{paymentAmount || remaining} ETB</span></li>
-                    </ol>
+                  {/* Formulary Line Items */}
+                  {copayBreakdown.itemsBreakdown && (
+                    <div className="max-h-36 overflow-y-auto rounded-xl border border-slate-800 text-xs bg-slate-950/50">
+                      <table className="w-full">
+                        <thead className="bg-slate-900 text-slate-400 text-[10px] font-bold">
+                          <tr>
+                            <th className="px-3 py-1.5 text-left">Service / Item</th>
+                            <th className="px-3 py-1.5 text-right">Cost</th>
+                            <th className="px-3 py-1.5 text-right">Coverage</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800 text-[11px]">
+                          {copayBreakdown.itemsBreakdown.map((item: any, idx: number) => (
+                            <tr key={idx} className="hover:bg-slate-800/40">
+                              <td className="px-3 py-1.5 text-slate-200">{item.description}</td>
+                              <td className="px-3 py-1.5 text-right font-mono">{fmt(item.cost)} ETB</td>
+                              <td className="px-3 py-1.5 text-right">
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                  item.isEligible ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'
+                                }`}>
+                                  {item.isEligible ? `${copayBreakdown.coveragePercentage}% Covered` : 'Excluded'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Apply Co-Pay Action */}
+                  <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-cyan-500/30 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold text-cyan-200">
+                        {copayApplied ? 'Insurance Split Approved & Claim Recorded!' : 'Apply Insurance Split & Generate Claim'}
+                      </p>
+                      <p className="text-[10px] text-slate-400">
+                        {copayApplied 
+                          ? `Patient payable reduced to ${fmt(copayBreakdown.patientCoPay)} ETB. Proceed to collect co-pay.`
+                          : 'Records insurer receivable claim and allocates patient co-pay.'}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleApplyCopaySplit}
+                      disabled={applyingCopay || copayApplied}
+                      className={`px-4 py-2 rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                        copayApplied
+                          ? 'bg-emerald-500 text-slate-950 cursor-default'
+                          : 'bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 text-slate-950'
+                      }`}
+                    >
+                      {applyingCopay ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Applying...
+                        </>
+                      ) : copayApplied ? (
+                        <>
+                          <CheckCircle className="w-3.5 h-3.5" /> Split Applied
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-3.5 h-3.5 fill-current" /> Apply Split
+                        </>
+                      )}
+                    </button>
                   </div>
-
-                  {/* Auto verification trigger */}
-                  <button
-                    type="button"
-                    onClick={handleVerifyReference}
-                    disabled={verifying}
-                    className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
-                  >
-                    {verifying ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
-                        Connecting to Telebirr Server...
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="w-4 h-4 fill-current text-slate-950" />
-                        Auto-Verify Telebirr Payment
-                      </>
-                    )}
-                  </button>
                 </div>
-              </div>
+              ) : null}
             </div>
           )}
 
-          {paymentMethod === 'bank_transfer' && (
-            <div className="bg-gradient-to-br from-amber-950 via-slate-900 to-amber-900 text-white rounded-3xl p-5 shadow-xl border border-amber-800/40 space-y-4">
-              <div className="flex items-center justify-between border-b border-amber-800/40 pb-3">
+          {/* ── PRIORITY 2: DYNAMIC TELEBIRR & CBE BIRR QR DRAWER ── */}
+          {(paymentMethod === 'telebirr' || paymentMethod === 'bank_transfer') && (
+            <div className={`rounded-3xl p-5 shadow-xl border text-white space-y-4 ${
+              paymentMethod === 'telebirr'
+                ? 'bg-gradient-to-br from-purple-950 via-slate-900 to-indigo-950 border-purple-800/40'
+                : 'bg-gradient-to-br from-amber-950 via-slate-900 to-orange-950 border-amber-800/40'
+            }`}>
+              <div className="flex items-center justify-between border-b pb-3 border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-500 flex items-center justify-center font-black text-slate-950 text-sm shadow-md">
-                    CBE
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm shadow-md ${
+                    paymentMethod === 'telebirr' ? 'bg-purple-600 text-white' : 'bg-amber-500 text-slate-950'
+                  }`}>
+                    {paymentMethod === 'telebirr' ? 't' : 'CBE'}
                   </div>
                   <div>
                     <h4 className="text-base font-extrabold tracking-tight flex items-center gap-2">
-                      Commercial Bank of Ethiopia (CBE Birr)
-                      <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full font-bold">
-                        Direct Bank
+                      {paymentMethod === 'telebirr' ? 'Telebirr Dynamic QR Checkout' : 'CBE Birr Dynamic QR Checkout'}
+                      <span className={`text-[9px] border px-2 py-0.5 rounded-full font-bold ${
+                        paymentMethod === 'telebirr' 
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-400/40'
+                          : 'bg-amber-500/20 text-amber-300 border-amber-400/40'
+                      }`}>
+                        Exact Amount QR
                       </span>
                     </h4>
-                    <p className="text-xs text-amber-200">Official Hospital Account Handoff</p>
+                    <p className="text-xs opacity-80">
+                      Till / Merchant Account: <span className="font-mono font-bold text-emerald-300">
+                        {paymentMethod === 'telebirr' ? '654321' : '1000189922341'}
+                      </span>
+                    </p>
                   </div>
                 </div>
-                <Building2 className="w-8 h-8 text-amber-400 opacity-80" />
+
+                {dynamicQr && (
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/80 border border-slate-800 text-xs font-mono text-amber-400">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{Math.floor(qrSecondsLeft / 60)}:{String(qrSecondsLeft % 60).padStart(2, '0')}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Account Details Box */}
-                <div className="bg-slate-950/80 p-4 rounded-2xl border border-amber-500/30 space-y-2 text-xs">
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-amber-400 tracking-wider">Account Name</p>
-                    <p className="font-extrabold text-white text-sm">Alem Ketema Enat Hospital</p>
-                  </div>
-
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-amber-400 tracking-wider">CBE Account Number</p>
-                    <div className="flex items-center justify-between bg-slate-900 p-2 rounded-xl border border-slate-800 mt-0.5">
-                      <span className="font-mono text-sm font-black tracking-widest text-emerald-400">1000189922341</span>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard('1000189922341')}
-                        className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 rounded-lg font-bold text-[10px] transition-all flex items-center gap-1"
-                      >
-                        {copiedAccount ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                        {copiedAccount ? 'Copied' : 'Copy'}
-                      </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                {/* Genuine Dynamic QR Image */}
+                <div className="bg-white p-4 rounded-2xl shadow-inner flex flex-col items-center justify-center text-slate-900 border-2 border-slate-300">
+                  {loadingQr ? (
+                    <div className="w-40 h-40 flex flex-col items-center justify-center text-slate-500 gap-2">
+                      <RefreshCw className="w-6 h-6 animate-spin text-purple-600" />
+                      <span className="text-[11px] font-bold">Generating dynamic QR...</span>
                     </div>
-                  </div>
-
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-amber-400 tracking-wider">Branch / USSD</p>
-                    <p className="text-slate-300 font-semibold">Addis Ababa Main | USSD: <span className="font-mono font-bold text-amber-300">*847#</span></p>
-                  </div>
+                  ) : dynamicQr?.qrCodeDataUrl ? (
+                    <img 
+                      src={dynamicQr.qrCodeDataUrl} 
+                      alt="Payment QR Code" 
+                      className="w-44 h-44 object-contain rounded-xl shadow-md"
+                    />
+                  ) : (
+                    <div className="w-40 h-40 bg-slate-900 rounded-xl flex items-center justify-center text-white">
+                      <QrCode className="w-16 h-16 opacity-40" />
+                    </div>
+                  )}
+                  
+                  <p className="text-[11px] font-bold text-slate-800 mt-2 text-center">
+                    Scan with {paymentMethod === 'telebirr' ? 'Telebirr' : 'CBE Birr'} App
+                  </p>
+                  <p className="text-[10px] text-emerald-700 font-black mt-0.5">
+                    Amount: {fmt(dynamicQr?.amount || paymentAmount || remaining)} ETB
+                  </p>
                 </div>
 
-                {/* CBE Birr Verification instructions */}
-                <div className="flex flex-col justify-between space-y-3">
-                  <div className="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 text-xs space-y-1">
-                    <p className="font-extrabold text-amber-300">CBE Transfer Instructions:</p>
-                    <p className="text-slate-300 text-[11px] leading-relaxed">
-                      Instruct patient to complete transfer via CBE Birr App, Mobile Banking, or ATM. Provide reference number below for validation.
-                    </p>
+                {/* Instructions and Deep Link Info */}
+                <div className="space-y-3">
+                  <div className="bg-slate-950/70 rounded-2xl p-3.5 border border-slate-800 text-xs space-y-2">
+                    <p className="font-extrabold text-amber-300">How Patient Pays:</p>
+                    <ol className="list-decimal list-inside text-slate-300 text-[11px] space-y-1">
+                      <li>Open {paymentMethod === 'telebirr' ? 'Telebirr' : 'CBE Birr'} app on phone</li>
+                      <li>Scan the dynamic QR code on screen</li>
+                      <li>The exact amount of <span className="font-bold text-emerald-300">{fmt(paymentAmount || remaining)} ETB</span> is pre-loaded</li>
+                      <li>Patient authorizes with PIN and gives Transaction ID</li>
+                    </ol>
+
+                    {dynamicQr && (
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(dynamicQr.qrPayload)}
+                          className="text-[10px] font-mono text-slate-400 hover:text-white flex items-center gap-1"
+                        >
+                          {copiedPayload ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          Copy Deep Link Payload
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <button
                     type="button"
                     onClick={handleVerifyReference}
                     disabled={verifying}
-                    className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                    className={`w-full py-2.5 px-4 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 ${
+                      paymentMethod === 'telebirr'
+                        ? 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 text-white'
+                        : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 text-slate-950'
+                    }`}
                   >
                     {verifying ? (
                       <>
-                        <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
-                        Validating CBE System...
+                        <RefreshCw className="w-4 h-4 animate-spin" /> Verifying Transaction...
                       </>
                     ) : (
                       <>
-                        <ShieldCheck className="w-4 h-4 fill-current text-slate-950" />
-                        Verify CBE Birr Transfer
+                        <ShieldCheck className="w-4 h-4 fill-current" /> Authorize / Validate Transaction Code
                       </>
                     )}
                   </button>

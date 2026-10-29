@@ -218,11 +218,141 @@ const deletePatient = handleAsync(async (req, res) => {
   sendSuccess(res, null, 'Patient deleted successfully');
 });
 
+const lookupPatientByIdentifier = handleAsync(async (req, res) => {
+  const { identifier } = req.body;
+  if (!identifier || typeof identifier !== 'string') {
+    return sendError(res, 'identifier string is required', 400);
+  }
+
+  const raw = identifier.trim();
+
+  // Try extracting numeric ID if formatted as PAT-000123 or #123
+  let numericId = null;
+  const patMatch = raw.match(/^(?:PAT-?|#)?(\d+)$/i);
+  if (patMatch) {
+    numericId = parseInt(patMatch[1], 10);
+  }
+
+  // Check 1: By barcode log
+  let patientId = null;
+  const barcodeRes = await pool.query(
+    'SELECT patient_id FROM patient_wristband_logs WHERE wristband_barcode = $1 LIMIT 1',
+    [raw]
+  );
+  if (barcodeRes.rows.length > 0) {
+    patientId = barcodeRes.rows[0].patient_id;
+  } else if (numericId) {
+    patientId = numericId;
+  }
+
+  let patient = null;
+  if (patientId) {
+    const pRes = await pool.query('SELECT * FROM patients WHERE id = $1', [patientId]);
+    if (pRes.rows.length > 0) {
+      patient = pRes.rows[0];
+    }
+  }
+
+  // If still not found, search by phone, email, or insurance
+  if (!patient) {
+    const searchRes = await pool.query(
+      `SELECT * FROM patients 
+       WHERE phone = $1 OR email = $1 
+       LIMIT 1`,
+      [raw]
+    );
+    if (searchRes.rows.length > 0) {
+      patient = searchRes.rows[0];
+    }
+  }
+
+  if (!patient) {
+    return sendError(res, `No patient record found for identifier "${raw}"`, 404);
+  }
+
+  // Fetch active / recent encounters
+  let activeEncounters = [];
+  try {
+    const encRes = await pool.query(
+      `SELECT pe.*, d.name AS department_name
+       FROM patient_encounters pe
+       LEFT JOIN departments d ON d.id = pe.department_id
+       WHERE pe.patient_id = $1
+       ORDER BY pe.started_at DESC LIMIT 3`,
+      [patient.id]
+    );
+    activeEncounters = encRes.rows;
+  } catch (e) {
+    // Encounters optional if table empty
+  }
+
+  // Fetch verified allergies
+  let allergies = [];
+  try {
+    const allergyRes = await pool.query(
+      `SELECT * FROM patient_allergies WHERE patient_id = $1`,
+      [patient.id]
+    );
+    allergies = allergyRes.rows;
+  } catch (e) {
+    // Optional
+  }
+
+  // Log / Update wristband verification audit
+  const effectiveBarcode = raw.startsWith('PAT-') ? raw : `PAT-${String(patient.id).padStart(4, '0')}`;
+  try {
+    await pool.query(
+      `UPDATE patient_wristband_logs
+       SET verified_count = verified_count + 1,
+           last_verified_at = NOW(),
+           last_verified_by = $1
+       WHERE patient_id = $2`,
+      [req.user?.id || null, patient.id]
+    );
+  } catch (e) {
+    // Non-fatal
+  }
+
+  sendSuccess(res, {
+    patient: {
+      ...patient,
+      mrn: `PAT-${String(patient.id).padStart(4, '0')}`
+    },
+    activeEncounters,
+    allergies,
+    scannedAt: new Date().toISOString(),
+    scannedBy: req.user ? { id: req.user.id, email: req.user.email, role: req.user.role } : null
+  });
+});
+
+const recordWristbandPrinted = handleAsync(async (req, res) => {
+  const patientId = parseInt(req.params.id, 10);
+  const { encounter_id, barcode } = req.body;
+
+  const effectiveBarcode = barcode || `PAT-${String(patientId).padStart(4, '0')}`;
+
+  const logRes = await pool.query(
+    `INSERT INTO patient_wristband_logs (
+      patient_id, encounter_id, wristband_barcode, printed_by, printed_at
+    )
+    VALUES ($1, $2, $3, $4, NOW())
+    RETURNING *`,
+    [patientId, encounter_id || null, effectiveBarcode, req.user?.id || null]
+  );
+
+  sendSuccess(res, {
+    message: 'Wristband print event recorded',
+    log: logRes.rows[0]
+  });
+});
+
 module.exports = {
   getAllPatients,
   getPatientById,
   registerPatient,
   updatePatient,
   getPatientHistory,
-  deletePatient
+  deletePatient,
+  lookupPatientByIdentifier,
+  recordWristbandPrinted
 };

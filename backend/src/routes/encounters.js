@@ -14,6 +14,8 @@ const router  = express.Router();
 const pool    = require('../config/database');
 const { authenticate, authorize } = require('../middleware/auth');
 const billing = require('../services/billingService');
+const socketService = require('../services/socketService');
+const patientAssignment = require('../services/patientAssignmentService');
 
 // ─── Helper: update encounter status + log history ──────────
 async function transitionStatus(client, encounterId, toStatus, userId, notes = null) {
@@ -234,8 +236,39 @@ router.post('/:id/triage', authenticate, authorize('nurse', 'admin', 'super_admi
 
     await transitionStatus(client, req.params.id, 'triage_completed', req.user.id, 'Triage completed by nurse');
 
-    // Optional direct department/doctor assignment during triage
-    if (department_id || doctor_id) {
+    // Auto-create persistent emergency alert if priority is emergency/critical
+    let emergencyAlertId = null;
+    if (['emergency', 'critical', 'resuscitation'].includes(String(priority).toLowerCase())) {
+      const existingAlert = await client.query(
+        `SELECT id FROM emergency_alerts WHERE encounter_id = $1 AND status != 'resolved'`,
+        [req.params.id]
+      );
+      if (existingAlert.rows.length) {
+        emergencyAlertId = existingAlert.rows[0].id;
+        await client.query(
+          `UPDATE emergency_alerts 
+           SET priority = $1, reason = $2, department_id = COALESCE($3, department_id), updated_at = NOW() 
+           WHERE id = $4`,
+          [priority, chief_complaint, department_id ? parseInt(department_id) : null, emergencyAlertId]
+        );
+      } else {
+        const ins = await client.query(
+          `INSERT INTO emergency_alerts 
+             (encounter_id, patient_id, department_id, priority, reason, status, created_by)
+           VALUES ($1, $2, $3, $4, $5, 'active', $6) RETURNING id`,
+          [req.params.id, enc.rows[0].patient_id, department_id ? parseInt(department_id) : null, priority, chief_complaint, req.user.id]
+        );
+        emergencyAlertId = ins.rows[0].id;
+      }
+      await client.query(
+        `INSERT INTO emergency_audit_logs (alert_id, action, performed_by, notes)
+         VALUES ($1, 'created', $2, $3)`,
+        [emergencyAlertId, req.user.id, `Emergency alert flagged during triage assessment by nurse. Priority: ${priority}`]
+      );
+    }
+
+    // Priority-Based or Intelligent Doctor Assignment during triage
+    if (department_id || doctor_id || ['emergency', 'critical', 'resuscitation'].includes(String(priority).toLowerCase())) {
       let resolvedDeptId = department_id ? parseInt(department_id) : null;
       let resolvedDocId  = doctor_id ? parseInt(doctor_id) : null;
 
@@ -256,23 +289,38 @@ router.post('/:id/triage', authenticate, authorize('nurse', 'admin', 'super_admi
           });
         }
 
-        // If department wasn't explicitly provided, set from doctor's profile
         if (!resolvedDeptId && doc.department_id) {
           resolvedDeptId = doc.department_id;
         }
-      }
 
-      await client.query(
-        `INSERT INTO encounter_assignments (encounter_id, patient_id, department_id, doctor_id, assigned_by, notes)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (encounter_id) DO UPDATE SET
-           department_id = COALESCE(EXCLUDED.department_id, encounter_assignments.department_id),
-           doctor_id     = COALESCE(EXCLUDED.doctor_id, encounter_assignments.doctor_id),
-           assigned_by   = EXCLUDED.assigned_by,
-           notes         = EXCLUDED.notes,
-           assigned_at   = NOW()`,
-        [req.params.id, enc.rows[0].patient_id, resolvedDeptId, resolvedDocId, req.user.id, 'Assigned during triage assessment']
-      );
+        await client.query(
+          `INSERT INTO encounter_assignments (encounter_id, patient_id, department_id, doctor_id, assigned_by, notes)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (encounter_id) DO UPDATE SET
+             department_id = COALESCE(EXCLUDED.department_id, encounter_assignments.department_id),
+             doctor_id     = COALESCE(EXCLUDED.doctor_id, encounter_assignments.doctor_id),
+             assigned_by   = EXCLUDED.assigned_by,
+             notes         = EXCLUDED.notes,
+             assigned_at   = NOW()`,
+          [req.params.id, enc.rows[0].patient_id, resolvedDeptId, resolvedDocId, req.user.id, 'Assigned during triage assessment']
+        );
+      } else {
+        // Intelligent automated assignment to on-duty doctor
+        const autoResult = await patientAssignment.assignPatientToDoctor({
+          encounterId: req.params.id,
+          patientId: enc.rows[0].patient_id,
+          departmentId: resolvedDeptId,
+          priority: priority || 'normal',
+          requestedDoctorId: null,
+          assignedBy: req.user.id,
+          notes: 'Auto-assigned by Priority 3 Intelligent Assignment Engine during triage',
+          client
+        });
+
+        if (autoResult.assigned && autoResult.doctor?.id) {
+          resolvedDocId = autoResult.doctor.id;
+        }
+      }
 
       if (resolvedDeptId) {
         await transitionStatus(client, req.params.id, 'department_assigned', req.user.id, `Dept ID: ${resolvedDeptId}`);
@@ -302,6 +350,30 @@ router.post('/:id/triage', authenticate, authorize('nurse', 'admin', 'super_admi
     }
 
     await client.query('COMMIT');
+
+    // Broadcast real-time emergency alert if flagged
+    if (emergencyAlertId) {
+      try {
+        const alertRes = await pool.query(`
+          SELECT ea.*, pe.encounter_number, p.first_name, p.last_name, p.gender, p.phone, d.name AS department_name
+          FROM emergency_alerts ea
+          JOIN patient_encounters pe ON pe.id = ea.encounter_id
+          JOIN patients p ON p.id = ea.patient_id
+          LEFT JOIN departments d ON d.id = ea.department_id
+          WHERE ea.id = $1
+        `, [emergencyAlertId]);
+        if (alertRes.rows.length) {
+          const payload = {
+            type: 'emergency_alert',
+            alert: alertRes.rows[0],
+            timestamp: new Date().toISOString()
+          };
+          socketService.broadcast('emergency:alert', payload);
+        }
+      } catch (sErr) {
+        console.error('Socket broadcast error (non-fatal):', sErr.message);
+      }
+    }
     res.json({
       success: true,
       message: doctor_id

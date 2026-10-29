@@ -6,8 +6,15 @@ const validate = require('../middleware/validation');
 const { authenticate, authorize } = require('../middleware/auth');
 
 router.get('/', authenticate, patientController.getAllPatients);
+
+// Identifier / Wristband lookup (must precede /:id)
+router.post('/lookup-by-identifier', authenticate, patientController.lookupPatientByIdentifier);
+
 router.get('/:id', authenticate, patientController.getPatientById);
 router.get('/:id/history', authenticate, patientController.getPatientHistory);
+
+// Record wristband printed event
+router.post('/:id/wristband-printed', authenticate, authorize('receptionist', 'nurse', 'doctor', 'admin', 'super_admin'), patientController.recordWristbandPrinted);
 
 router.post(
   '/',

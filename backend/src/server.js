@@ -123,6 +123,10 @@ app.use('/api/services', require('./routes/services'));
 app.use('/api/pharmacy', require('./routes/pharmacy'));
 app.use('/api/consultations', require('./routes/consultations'));
 app.use('/api/opd', require('./routes/opdQueue'));
+app.use('/api/emergency', auditLog, require('./routes/emergency'));
+app.use('/api/documents', require('./routes/documents'));
+app.use('/api/shifts', require('./routes/shifts'));
+app.use('/api/sync', require('./routes/sync'));
 
 // Error handling
 app.use(notFound);

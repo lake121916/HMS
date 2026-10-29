@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import {
-  Shield, Search, X, ChevronLeft, ChevronRight, Info
+  Shield, Search, X, ChevronLeft, ChevronRight, Info, Download, RefreshCw
 } from 'lucide-react';
 
 interface AuditLog {
@@ -25,6 +25,7 @@ const AuditPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [exporting, setExporting] = useState(false);
   
   const LIMIT = 15;
 
@@ -48,6 +49,29 @@ const AuditPage: React.FC = () => {
     }
   };
 
+  const handleExportCsv = async () => {
+    setExporting(true);
+    try {
+      const response = await api.get('/admin/audit-logs/export', {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `hospital_audit_trail_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to export audit trail:', err);
+      alert('Failed to export audit trail. Please check your administrative permissions.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const getActionColor = (act: string) => {
     if (act.includes('DELETE') || act.includes('REMOVE')) return 'text-red-600 bg-red-50 dark:bg-red-950/20 dark:text-red-400';
     if (act.includes('CREATE') || act.includes('ADD') || act.includes('REGISTER')) return 'text-green-600 bg-green-50 dark:bg-green-950/20 dark:text-green-400';
@@ -67,13 +91,32 @@ const AuditPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <Shield className="w-6 h-6 text-yellow-600" /> System Audit Logs
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Authorized monitoring of security compliance events, login timestamps, and changes to database states.
-        </p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Shield className="w-6 h-6 text-yellow-600" /> System Audit Logs
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Authorized monitoring of security compliance events, login timestamps, and changes to database states.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleExportCsv}
+          disabled={exporting}
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md transition disabled:opacity-50"
+        >
+          {exporting ? (
+            <>
+              <RefreshCw className="w-4 h-4 animate-spin" /> Preparing CSV...
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" /> Download CSV / Audit Report
+            </>
+          )}
+        </button>
       </div>
 
       {/* Search Filter */}

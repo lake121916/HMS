@@ -58,6 +58,8 @@ import CashierWorkflow from './pages/CashierWorkflow';
 import ServicesAdminPage from './pages/ServicesAdminPage';
 import DepartmentsAdminPage from './pages/DepartmentsAdminPage';
 import OPDQueueDisplay from './pages/OPDQueueDisplay';
+import DocumentVerificationPage from './pages/DocumentVerificationPage';
+import DoctorShiftManagementPage from './pages/DoctorShiftManagementPage';
 import InactivityLock from './components/security/InactivityLock';
 
 // ── Role permission map ──────────────────────────────────────────────────────
@@ -68,7 +70,7 @@ const ALL_PAGES = [
   'user-management', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
   'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
   'assignment', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-  'services-admin'
+  'services-admin', 'shifts', 'shifts'
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -85,8 +87,8 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'services-admin',
   ],
   receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'invoices', 'reception', 'reception-workflow', 'vitals'],
-  doctor:           ['dashboard', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
-  nurse:            ['dashboard', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse'],
+  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
+  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse'],
   lab_technician:   ['dashboard', 'lab-tests', 'lab-dashboard', 'patients'],
   pharmacist:       ['dashboard', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
   cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow'],
@@ -162,6 +164,9 @@ function App() {
           <Route path="/search" element={<SearchResults />} />
           <Route path="/gallery" element={<GalleryPage />} />
           <Route path="/news" element={<NewsPage />} />
+
+          {/* ── Public Document Verification ── */}
+          <Route path="/verify/:token" element={<DocumentVerificationPage />} />
 
           {/* ── Public OPD Waiting Room TV Display ── */}
           <Route path="/queue-display" element={<OPDQueueDisplay />} />
@@ -296,6 +301,9 @@ function App() {
             } />
             <Route path="cashier-workflow" element={
               <ProtectedRoute page="cashier-workflow"><CashierWorkflow /></ProtectedRoute>
+            } />
+            <Route path="shifts" element={
+              <ProtectedRoute page="shifts"><DoctorShiftManagementPage /></ProtectedRoute>
             } />
             <Route path="services-admin" element={
               <ProtectedRoute page="services-admin"><ServicesAdminPage /></ProtectedRoute>

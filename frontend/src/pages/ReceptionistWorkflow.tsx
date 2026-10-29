@@ -11,6 +11,7 @@ import {
   CheckCircle2, User, Printer
 } from 'lucide-react';
 import QueueTokenTicket, { QueueTicketData } from '../components/queue/QueueTokenTicket';
+import PatientWristbandModal from '../components/PatientWristbandModal';
 
 interface Patient {
   id: number;
@@ -74,6 +75,7 @@ const ReceptionistWorkflow: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'search' | 'encounters'>('search');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [printTicket, setPrintTicket] = useState<QueueTicketData | null>(null);
+  const [wristbandPatient, setWristbandPatient] = useState<any | null>(null);
 
   // New patient form
   const [showRegForm, setShowRegForm] = useState(false);
@@ -397,6 +399,19 @@ const ReceptionistWorkflow: React.FC = () => {
                   >
                     <Printer className="h-3.5 w-3.5" /> Ticket
                   </button>
+                  <button
+                    onClick={() => setWristbandPatient({
+                      id: enc.patient_id,
+                      first_name: enc.first_name,
+                      last_name: enc.last_name,
+                      created_at: enc.created_at,
+                      encounterId: enc.id
+                    })}
+                    className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                    title="Print patient medical identification wristband"
+                  >
+                    <Printer className="h-3.5 w-3.5 text-indigo-600" /> Wristband
+                  </button>
                   <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusColors[enc.status] || 'bg-slate-100'}`}>
                     {statusLabels[enc.status] || enc.status}
                   </span>
@@ -508,6 +523,16 @@ const ReceptionistWorkflow: React.FC = () => {
               printOrReprintTicket(printTicket.patient_id, printTicket.encounter_id);
             }
           }}
+        />
+      )}
+
+      {/* ── Printable Patient Wristband Modal ── */}
+      {wristbandPatient && (
+        <PatientWristbandModal
+          isOpen={!!wristbandPatient}
+          onClose={() => setWristbandPatient(null)}
+          patient={wristbandPatient}
+          encounterId={wristbandPatient?.encounterId}
         />
       )}
     </div>

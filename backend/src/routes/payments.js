@@ -146,4 +146,89 @@ router.post('/refund', authenticate, authorize('admin', 'cashier', 'super_admin'
 // Stripe Webhook
 router.post('/webhook', express.raw({ type: 'application/json' }), handleWebhook);
 
+
+// ── Dynamic Telebirr & CBE Birr QR Payment Checkout ───────────────────────
+const dynamicQr = require('../services/dynamicQrPaymentService');
+
+// POST /api/payments/qr — Generate dynamic QR payment request
+router.post('/qr', authenticate, authorize('cashier', 'admin', 'super_admin', 'receptionist'), async (req, res) => {
+  try {
+    const { invoice_id, provider = 'telebirr', patient_id } = req.body;
+    if (!invoice_id) {
+      return res.status(400).json({ success: false, message: 'invoice_id is required' });
+    }
+
+    const qrData = await dynamicQr.createDynamicPaymentRequest({
+      invoiceId: parseInt(invoice_id, 10),
+      patientId: patient_id ? parseInt(patient_id, 10) : null,
+      provider,
+      createdBy: req.user.id
+    });
+
+    res.status(201).json({ success: true, data: qrData });
+  } catch (error) {
+    console.error('Error generating dynamic QR payment:', error);
+    res.status(400).json({ success: false, message: error.message || 'Failed to generate QR payment' });
+  }
+});
+
+// GET /api/payments/qr/:requestId/status — Polling / Checking status
+router.get('/qr/:requestId/status', authenticate, async (req, res) => {
+  try {
+    const statusData = await dynamicQr.getPaymentRequestStatus(req.params.requestId);
+    res.json({ success: true, data: statusData });
+  } catch (error) {
+    console.error('Error checking QR status:', error);
+    res.status(404).json({ success: false, message: error.message || 'Payment request not found' });
+  }
+});
+
+// POST /api/payments/qr/:requestId/confirm — Cashier / Staff verified confirmation
+router.post('/qr/:requestId/confirm', authenticate, authorize('cashier', 'admin', 'super_admin'), async (req, res) => {
+  try {
+    const { transaction_id, amount, notes } = req.body;
+    if (!transaction_id) {
+      return res.status(400).json({ success: false, message: 'transaction_id is required to confirm payment' });
+    }
+
+    const result = await dynamicQr.processVerifiedPayment({
+      requestId: req.params.requestId,
+      transactionId: transaction_id,
+      paidAmount: amount ? Number(amount) : null,
+      verifierUser: req.user,
+      notes
+    });
+
+    res.json({ success: true, message: result.message, data: result });
+  } catch (error) {
+    console.error('Error confirming QR payment:', error);
+    res.status(400).json({ success: false, message: error.message || 'Failed to confirm payment' });
+  }
+});
+
+// POST /api/payments/webhooks/:provider — Webhook for Telebirr / CBE Birr
+router.post('/webhooks/:provider', async (req, res) => {
+  try {
+    const provider = req.params.provider.toLowerCase();
+    const { requestId, transactionId, amount, currency } = req.body;
+
+    if (!requestId || !transactionId) {
+      return res.status(400).json({ success: false, message: 'Missing requestId or transactionId' });
+    }
+
+    const result = await dynamicQr.processVerifiedPayment({
+      requestId,
+      transactionId,
+      paidAmount: amount ? Number(amount) : null,
+      verifierUser: { id: 1, role: 'admin' }, // System webhook actor
+      notes: `Webhook callback from ${provider.toUpperCase()} Gateway`
+    });
+
+    res.json({ success: true, message: 'Webhook processed', data: result });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

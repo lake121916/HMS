@@ -10,7 +10,7 @@
     "migrate:test": "node scripts/run-test-migration.js",
     "db:migrate": "node-pg-migrate up",
     "db:down": "node-pg-migrate down",
-    "test": "jest"
+    "test": "jest --forceExit"
   },
   "keywords": [
     "hospital",
@@ -33,6 +33,7 @@
     "nodemailer": "^6.9.7",
     "pdfkit": "^0.13.0",
     "pg": "^8.11.3",
+    "qrcode": "^1.5.4",
     "socket.io": "^4.8.3",
     "stripe": "^14.10.0",
     "twilio": "^4.19.3",

@@ -301,4 +301,63 @@ router.get('/ledger', authenticate, authorize('pharmacist', 'admin', 'super_admi
   }
 });
 
+// ── 8. Pharmacy Persistent Alerts & Quarantine Routes ─────────────────────────
+const alertService = require('../services/pharmacyAlertService');
+
+// GET /api/pharmacy/inventory/alerts
+router.get('/inventory/alerts', authenticate, async (req, res) => {
+  try {
+    const { severity, alert_type, unacknowledged_only } = req.query;
+    const alerts = await alertService.getActiveAlerts({
+      severity,
+      alertType: alert_type,
+      unacknowledgedOnly: unacknowledged_only === 'true'
+    });
+    res.json({ success: true, data: { alerts, total: alerts.length } });
+  } catch (error) {
+    console.error('Error fetching inventory alerts:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/pharmacy/inventory/evaluate-alerts — Trigger fresh evaluation
+router.post('/inventory/evaluate-alerts', authenticate, authorize('pharmacist', 'admin', 'super_admin'), async (req, res) => {
+  try {
+    const summary = await alertService.evaluateInventoryAlerts();
+    res.json({ success: true, message: 'Inventory alert evaluation complete', data: summary });
+  } catch (error) {
+    console.error('Error evaluating inventory alerts:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PATCH /api/pharmacy/inventory/alerts/:id/acknowledge — Acknowledge an alert
+router.patch('/inventory/alerts/:id/acknowledge', authenticate, authorize('pharmacist', 'admin', 'super_admin'), async (req, res) => {
+  try {
+    const alertId = parseInt(req.params.id, 10);
+    const updatedAlert = await alertService.acknowledgeAlert(alertId, req.user.id);
+    res.json({ success: true, message: 'Alert acknowledged', data: { alert: updatedAlert } });
+  } catch (error) {
+    console.error('Error acknowledging alert:', error);
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/pharmacy/inventory/batches/:id/quarantine — Quarantine expired batch
+router.post('/inventory/batches/:id/quarantine', authenticate, authorize('pharmacist', 'admin', 'super_admin'), async (req, res) => {
+  try {
+    const batchId = parseInt(req.params.id, 10);
+    const { reason } = req.body;
+    const result = await alertService.quarantineExpiredBatch({
+      batchId,
+      userId: req.user.id,
+      reason
+    });
+    res.json(result);
+  } catch (error) {
+    console.error('Error quarantining batch:', error);
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

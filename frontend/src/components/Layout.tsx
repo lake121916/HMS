@@ -6,8 +6,9 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import api from '../services/api';
+import OfflineStatusBanner from './OfflineStatusBanner';
 import {
-  LayoutDashboard, Users, Stethoscope, Calendar, LogOut, Menu, X,
+  LayoutDashboard, Users, Stethoscope, Calendar, Clock, LogOut, Menu, X,
   Activity, Pill, FlaskConical, Bed, FileText, Shield,
   BarChart2, CreditCard, Settings, Bell, MapPin,
   Palette, Sun, Moon, RefreshCw, ClipboardCheck,
@@ -212,6 +213,7 @@ const Layout: React.FC = () => {
       { name: 'Cashier POS',        href: '/cashier-workflow',   icon: Receipt         },
       // ── PATIENTS group ─────────────────────────────────────────────
       { name: 'Patients',           href: '/patients',           icon: Users,          group: 'PATIENTS'  },
+      { name: 'Doctor Shifts',      href: '/shifts',             icon: Clock,          group: 'CLINICAL'  },
       { name: 'Doctors',            href: '/doctors',            icon: Stethoscope,    group: 'PATIENTS'  },
       { name: 'Appointments',       href: '/appointments',       icon: Calendar,       group: 'PATIENTS'  },
       { name: 'Admissions',         href: '/admissions',         icon: Bed,            group: 'PATIENTS'  },
@@ -239,11 +241,11 @@ const Layout: React.FC = () => {
     ];
 
     const roleMap: Record<string, string[]> = {
-      super_admin:      ['Dashboard', 'Users', 'Departments', 'Services', 'Finance Reports', 'Reports', 'Audit Logs'],
-      admin:            ['Dashboard', 'Users', 'Departments', 'Services', 'Finance Reports', 'Reports', 'Audit Logs'],
-      hospital_manager: ['Dashboard', 'Departments', 'Doctors', 'Admissions', 'Beds', 'Finance Reports', 'Reports'],
+      super_admin:      ['Dashboard', 'Doctor Shifts', 'Users', 'Departments', 'Services', 'Finance Reports', 'Reports', 'Audit Logs'],
+      admin:            ['Dashboard', 'Doctor Shifts', 'Users', 'Departments', 'Services', 'Finance Reports', 'Reports', 'Audit Logs'],
+      hospital_manager: ['Dashboard', 'Doctor Shifts', 'Departments', 'Doctors', 'Admissions', 'Beds', 'Finance Reports', 'Reports'],
       receptionist:     ['Reception Workflow','Patients','Appointments','Admissions','Invoices'],
-      doctor:           ['Dashboard','My Consultations','Patients','Appointments','Vitals','Prescriptions','Lab Tests','Radiology','Admissions'],
+      doctor:           ['Dashboard', 'Doctor Shifts','My Consultations','Patients','Appointments','Vitals','Prescriptions','Lab Tests','Radiology','Admissions'],
       nurse:            ['Triage Worklist','Patients','Appointments','Vitals','Admissions','Beds'],
       lab_technician:   ['Lab Dashboard','Lab Tests','Patients'],
       pharmacist:       ['Pharmacy','Prescriptions','Medicines','Inventory'],
@@ -720,6 +722,7 @@ const Layout: React.FC = () => {
         </div>
 
         {/* Page content */}
+        <OfflineStatusBanner />
         <main className="p-4 lg:p-8">
           <Outlet />
         </main>

@@ -88,6 +88,10 @@ export const PharmacyDashboard: React.FC = () => {
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [showAdjustModal, setShowAdjustModal] = useState<MedicationBatch | null>(null);
 
+  // Persistent Inventory Alerts state
+  const [inventoryAlerts, setInventoryAlerts] = useState<any[]>([]);
+  const [evaluatingAlerts, setEvaluatingAlerts] = useState(false);
+
   // Forms
   const [receiveForm, setReceiveForm] = useState({
     medication_id: '',
@@ -114,7 +118,57 @@ export const PharmacyDashboard: React.FC = () => {
     fetchPrescriptions();
     fetchBatches();
     fetchMedicines();
+    fetchAlerts();
   }, []);
+
+  const fetchAlerts = async () => {
+    try {
+      const res = await api.get('/pharmacy/inventory/alerts');
+      setInventoryAlerts(res.data.data.alerts || []);
+    } catch {
+      console.error('Error fetching inventory alerts');
+    }
+  };
+
+  const handleEvaluateAlerts = async () => {
+    setEvaluatingAlerts(true);
+    try {
+      const res = await api.post('/pharmacy/inventory/evaluate-alerts');
+      showToast('success', `Safety audit complete: ${res.data.data.alertsCreated} created, ${res.data.data.alertsUpdated} updated.`);
+      await fetchAlerts();
+      await fetchBatches();
+    } catch (err: any) {
+      showToast('error', err.response?.data?.message || 'Failed to evaluate inventory');
+    } finally {
+      setEvaluatingAlerts(false);
+    }
+  };
+
+  const handleAcknowledgeAlert = async (alertId: number) => {
+    try {
+      await api.patch(`/pharmacy/inventory/alerts/${alertId}/acknowledge`);
+      showToast('success', 'Alert acknowledged.');
+      await fetchAlerts();
+    } catch (err: any) {
+      showToast('error', err.response?.data?.message || 'Failed to acknowledge alert');
+    }
+  };
+
+  const handleQuarantineBatch = async (batchId: number, batchNumber: string) => {
+    if (!window.confirm(`Are you sure you want to quarantine batch ${batchNumber}? This will immediately halt dispensing and remove stock from active circulation.`)) {
+      return;
+    }
+    try {
+      await api.post(`/pharmacy/inventory/batches/${batchId}/quarantine`, {
+        reason: 'Pharmacist initiated clinical safety quarantine'
+      });
+      showToast('success', `Batch ${batchNumber} successfully quarantined.`);
+      await fetchAlerts();
+      await fetchBatches();
+    } catch (err: any) {
+      showToast('error', err.response?.data?.message || 'Failed to quarantine batch');
+    }
+  };
 
   const fetchPrescriptions = async () => {
     setLoading(true);
@@ -370,6 +424,23 @@ export const PharmacyDashboard: React.FC = () => {
             {batches.length}
           </span>
         </button>
+
+        <button
+          onClick={() => setActiveTab('alerts')}
+          className={`pb-3 px-3 text-sm font-bold flex items-center gap-2 border-b-2 transition ${
+            activeTab === 'alerts'
+              ? 'border-violet-600 text-violet-600 dark:text-violet-400'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <ShieldAlert className="h-4 w-4" />
+          <span>Safety & Inventory Alerts</span>
+          {inventoryAlerts.filter(a => !a.is_acknowledged).length > 0 && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-bold">
+              {inventoryAlerts.filter(a => !a.is_acknowledged).length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Search & Sub-Filter Bar */}
@@ -611,6 +682,129 @@ export const PharmacyDashboard: React.FC = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 3: SAFETY & INVENTORY ALERTS ─────────────────────────── */}
+      {activeTab === 'alerts' && (
+        <div className="space-y-4">
+          {/* Action & Metric Header */}
+          <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h2 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5 text-red-500" />
+                Automated Inventory & Shelf-Life Safety Alerts
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Real-time evaluation of expiry dates, FEFO compliance, and clinical stock thresholds
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleEvaluateAlerts}
+                disabled={evaluatingAlerts}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${evaluatingAlerts ? 'animate-spin' : ''}`} />
+                {evaluatingAlerts ? 'Auditing Inventory...' : 'Run Stock & Expiry Audit'}
+              </button>
+            </div>
+          </div>
+
+          {/* Alert Cards List */}
+          <div className="space-y-3">
+            {inventoryAlerts.length === 0 ? (
+              <div className="p-12 text-center bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700">
+                <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-2" />
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">All Inventory Clean & Safe</p>
+                <p className="text-xs text-slate-400 mt-1">No active stockouts, expired batches, or critical thresholds detected.</p>
+              </div>
+            ) : (
+              inventoryAlerts.map((alert: any) => {
+                const isCritical = alert.severity === 'critical';
+                const isWarning = alert.severity === 'warning';
+                const borderClass = isCritical 
+                  ? 'border-red-300 dark:border-red-900/60 bg-red-50/50 dark:bg-red-950/20'
+                  : isWarning 
+                  ? 'border-amber-300 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20'
+                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800';
+
+                return (
+                  <div key={alert.id} className={`p-4 rounded-2xl border-2 transition ${borderClass} flex items-start justify-between flex-wrap gap-4`}>
+                    <div className="space-y-1.5 flex-1 min-w-[280px]">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          isCritical ? 'bg-red-600 text-white' : isWarning ? 'bg-amber-500 text-slate-950' : 'bg-slate-500 text-white'
+                        }`}>
+                          {alert.severity}
+                        </span>
+
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                          {alert.alert_type.replace('_', ' ')}
+                        </span>
+
+                        <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                          {alert.medication_name}
+                        </span>
+
+                        {alert.batch_number && (
+                          <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                            Batch: {alert.batch_number}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs font-medium text-slate-800 dark:text-slate-200">
+                        {alert.message}
+                      </p>
+
+                      {alert.suggested_action && (
+                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                          <span className="font-bold text-violet-600 dark:text-violet-400">Suggested Action:</span> {alert.suggested_action}
+                        </p>
+                      )}
+
+                      <div className="flex items-center gap-3 text-[10px] text-slate-400 pt-1">
+                        <span>Reported: {new Date(alert.created_at).toLocaleString('en-GB')}</span>
+                        {alert.is_acknowledged ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Acknowledged {alert.acknowledged_by_name ? `by ${alert.acknowledged_by_name}` : ''}
+                          </span>
+                        ) : (
+                          <span className="text-amber-600 dark:text-amber-400 font-bold">Unacknowledged</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Alert Action Buttons */}
+                    <div className="flex items-center gap-2 self-center">
+                      {!alert.is_acknowledged && (
+                        <button
+                          type="button"
+                          onClick={() => handleAcknowledgeAlert(alert.id)}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Acknowledge
+                        </button>
+                      )}
+
+                      {alert.batch_id && (alert.alert_type === 'expired' || alert.alert_type === 'near_expiry') && (
+                        <button
+                          type="button"
+                          onClick={() => handleQuarantineBatch(alert.batch_id, alert.batch_number || `ID ${alert.batch_id}`)}
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1"
+                        >
+                          <ShieldAlert className="w-3.5 h-3.5" /> Quarantine Batch
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}

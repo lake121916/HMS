@@ -10,7 +10,7 @@ import api from '../services/api';
 import {
   Activity, Heart, Thermometer, Wind,
   Weight, Ruler, RefreshCw, AlertTriangle,
-  UserCheck, Stethoscope, Clock, CheckCircle2,
+  UserCheck, Stethoscope, Clock, CheckCircle2, AlertOctagon,
   ChevronRight, Eye, Search, FileText
 } from 'lucide-react';
 
@@ -559,6 +559,17 @@ const TriageDashboard: React.FC = () => {
                       </button>
                     ))}
                   </div>
+                  {vitals.priority === 'emergency' && (
+                    <div className="mt-3 p-3 bg-red-50 dark:bg-red-950/40 border-2 border-red-500 rounded-xl text-xs text-red-900 dark:text-red-200 flex items-start gap-2.5 animate-pulse">
+                      <AlertOctagon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <strong>🚨 CODE RED / EMERGENCY ESCALATION ACTIVATED:</strong>
+                        <p className="mt-0.5 text-[11px] text-red-700 dark:text-red-300">
+                          Submitting this assessment will bypass routine queue scheduling and immediately broadcast an audible emergency alert to all on-duty physicians!
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Vitals Recording Grid */}

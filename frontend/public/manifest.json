@@ -1,0 +1,18 @@
+{
+  "short_name": "Alem Ketema HMS",
+  "name": "Alem Ketema Enat Hospital Management System",
+  "description": "Hospital Operations, Clinical Workflow & Patient Management for Alem Ketema Enat Hospital",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

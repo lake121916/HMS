@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Plus, Search, X, LogOut } from 'lucide-react';
+import { Plus, Search, X, LogOut, Printer } from 'lucide-react';
 import RoleGuard from '../components/RoleGuard';
 
 interface Admission {
@@ -160,6 +160,13 @@ const AdmissionsPage: React.FC = () => {
                           <LogOut className="w-4 h-4 mr-1" /> Discharge
                         </button>
                       )}
+                      <button
+                        onClick={() => window.open(`/api/documents/discharge/${a.id}/pdf`, '_blank')}
+                        title="Print Discharge Summary PDF"
+                        className="flex items-center text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800"
+                      >
+                        <Printer className="w-3.5 h-3.5 mr-1" /> Summary PDF
+                      </button>
                     </div>
                   </td>
                 </tr>

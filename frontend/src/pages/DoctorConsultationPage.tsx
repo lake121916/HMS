@@ -8,12 +8,14 @@
  * - Order prescriptions, lab tests, radiology, procedures with auto-billing
  */
 import React, { useEffect, useState } from 'react';
+import { DoctorEmergencyQueue } from '../components/DoctorEmergencyQueue';
+import WristbandScannerModal from '../components/WristbandScannerModal';
 import api from '../services/api';
 import {
   Stethoscope, FlaskConical, Scan, Pill, Syringe,
   CheckSquare, RefreshCw, AlertTriangle, ChevronRight,
   User, DollarSign, Lock, PlusCircle, Volume2,
-  CheckCircle2, AlertOctagon, History, FileText, Sparkles
+  CheckCircle2, AlertOctagon, History, FileText, Sparkles, Printer, QrCode
 } from 'lucide-react';
 
 interface EncounterSummary {
@@ -159,6 +161,9 @@ const DoctorConsultationPage: React.FC = () => {
     reason: ''
   });
 
+  // Wristband Scanner Modal State
+  const [showScannerModal, setShowScannerModal] = useState(false);
+
   // Form states
   const [consultForm, setConsultForm] = useState({
     consultation_notes: '',
@@ -226,6 +231,15 @@ const DoctorConsultationPage: React.FC = () => {
       setConsultationAddenda(res.data.data.addenda || []);
     } catch (err) {
       console.error('Failed to load consultation addenda');
+    }
+  };
+
+  const openEncounterById = async (encounterId: number) => {
+    const existing = queue.find(q => q.id === encounterId);
+    if (existing) {
+      await openEncounter(existing);
+    } else {
+      await openEncounter({ id: encounterId, status: 'waiting_for_doctor' } as any);
     }
   };
 
@@ -354,6 +368,20 @@ const DoctorConsultationPage: React.FC = () => {
       }
     } catch (err) {
       showToast('error', 'Failed to trigger patient call announcement');
+    }
+  };
+
+  const handleScanVerified = (data: any) => {
+    const pId = data.patient.id;
+    const matchingEnc = queue.find(q => q.patient_id === pId);
+    if (matchingEnc) {
+      openEncounterById(matchingEnc.id);
+      showToast('success', `Verified & selected ${data.patient.first_name} ${data.patient.last_name} (${data.patient.mrn})`);
+    } else if (data.activeEncounters && data.activeEncounters.length > 0) {
+      openEncounterById(data.activeEncounters[0].id);
+      showToast('success', `Loaded active encounter for ${data.patient.first_name} ${data.patient.last_name}`);
+    } else {
+      showToast('success', `Verified ${data.patient.first_name} ${data.patient.last_name} (${data.patient.mrn}) - Not queued in OPD`);
     }
   };
 
@@ -517,7 +545,16 @@ const DoctorConsultationPage: React.FC = () => {
   ];
 
   return (
-    <div className="h-full flex gap-0 overflow-hidden">
+    <div className="h-full flex flex-col gap-0 overflow-hidden">
+      {/* ── Emergency / Code Red Live Queue Banner ────────────────── */}
+      <div className="p-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
+        <DoctorEmergencyQueue
+          onSelectEncounter={(encId) => openEncounterById(encId)}
+          activeEncounterId={activeEncounter?.id}
+        />
+      </div>
+
+      <div className="flex-1 flex gap-0 overflow-hidden">
       {/* Toast Notification */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-2xl shadow-xl text-white text-sm font-semibold flex items-center gap-2
@@ -534,9 +571,19 @@ const DoctorConsultationPage: React.FC = () => {
             <h2 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
               <Stethoscope className="h-4 w-4 text-blue-600" /> My Patient Queue
             </h2>
-            <button onClick={fetchQueue} disabled={loading} className="text-slate-400 hover:text-slate-600">
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setShowScannerModal(true)}
+                className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-bold transition flex items-center gap-1"
+                title="Scan patient wristband or enter MRN"
+              >
+                <QrCode className="h-3.5 w-3.5" /> Scan
+              </button>
+              <button onClick={fetchQueue} disabled={loading} className="text-slate-400 hover:text-slate-600">
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
           </div>
           <div className="mt-2 flex gap-1.5">
             {[
@@ -1004,11 +1051,22 @@ const DoctorConsultationPage: React.FC = () => {
                             {rx.instructions && ` · ${rx.instructions}`}
                           </div>
                         </div>
-                        <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold ${
-                          rx.is_dispensed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {rx.is_dispensed ? 'Dispensed' : 'Pending Pharmacy'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold ${
+                            rx.is_dispensed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {rx.is_dispensed ? 'Dispensed' : 'Pending Pharmacy'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => window.open(`/api/documents/prescription/${rx.id}/pdf`, '_blank')}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100 rounded-lg border border-violet-200 dark:border-violet-800 transition"
+                            title="Generate Official Signed Prescription PDF"
+                          >
+                            <Printer className="h-3.5 w-3.5" />
+                            Print Rx
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1069,6 +1127,46 @@ const DoctorConsultationPage: React.FC = () => {
                     </div>
                   </form>
                 </div>
+
+                {/* Lab Tests List */}
+                {(activeEncounter.labTests || []).length > 0 && (
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden shadow-sm">
+                    {(activeEncounter.labTests || []).map((lab: any) => (
+                      <div key={lab.id} className="p-4 flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-2">
+                            {lab.test_name}
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                              lab.status === 'completed'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : lab.status === 'in_progress'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {lab.status}
+                            </span>
+                          </div>
+                          {lab.results && (
+                            <div className="text-xs text-slate-600 dark:text-slate-300 mt-1">
+                              Result: {typeof lab.results === 'object' ? JSON.stringify(lab.results) : lab.results}
+                            </div>
+                          )}
+                        </div>
+                        {lab.status === 'completed' && (
+                          <button
+                            type="button"
+                            onClick={() => window.open(`/api/documents/lab-result/${lab.id}/pdf`, '_blank')}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/40 hover:bg-cyan-100 rounded-lg border border-cyan-200 dark:border-cyan-800 transition"
+                            title="Print Official Certified Lab Result PDF"
+                          >
+                            <Printer className="h-3.5 w-3.5" />
+                            Print Certificate
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1193,6 +1291,7 @@ const DoctorConsultationPage: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
 
       {/* ── MODAL: ALLERGY CONFLICT WARNING & OVERRIDE ──────────────── */}
       {allergyConflictModal && (
@@ -1442,6 +1541,13 @@ const DoctorConsultationPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ── WRISTBAND / BARCODE SCANNER MODAL ── */}
+      <WristbandScannerModal
+        isOpen={showScannerModal}
+        onClose={() => setShowScannerModal(false)}
+        onPatientVerified={handleScanVerified}
+      />
     </div>
   );
 };

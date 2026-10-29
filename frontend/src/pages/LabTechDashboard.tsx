@@ -6,7 +6,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
-import { FlaskConical, RefreshCw, CheckCircle2, Search, AlertCircle } from 'lucide-react';
+import { FlaskConical, RefreshCw, CheckCircle2, Search, AlertCircle, Printer } from 'lucide-react';
 
 interface LabTest {
   id: number;
@@ -182,6 +182,18 @@ const LabTechDashboard: React.FC = () => {
                     test.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
                   {test.status.replace('_',' ')}
                 </span>
+                {test.status === 'completed' && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(`/api/documents/lab-result/${test.id}/pdf`, '_blank');
+                    }}
+                    className="mt-1 flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 rounded-lg hover:bg-cyan-100 transition border border-cyan-200"
+                    title="Print Official Lab Certificate PDF"
+                  >
+                    <Printer className="w-3.5 h-3.5" /> Certificate PDF
+                  </button>
+                )}
                 {test.payment_status === 'UNPAID' && (
                   <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700">
                     Payment Required
