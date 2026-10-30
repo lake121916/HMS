@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import {
   Calendar, Clock, UserCheck, ShieldAlert, CheckCircle2,
@@ -8,7 +9,10 @@ import {
 
 interface DoctorShift {
   id: number;
-  doctor_id: number;
+  doctor_id?: number;
+  user_id?: number;
+  staff_role?: string;
+  staff_name?: string;
   department_id?: number;
   shift_date: string;
   shift_type: 'morning' | 'evening' | 'night' | 'on_call' | 'custom';
@@ -72,6 +76,10 @@ export const DoctorShiftManagementPage: React.FC = () => {
   const [shifts, setShifts] = useState<DoctorShift[]>([]);
   const [onDutyList, setOnDutyList] = useState<OnDutyDoctor[]>([]);
   const [handovers, setHandovers] = useState<ClinicalHandover[]>([]);
+  const { user: currentUser } = useAuth();
+  const canManageShifts = ['super_admin', 'admin', 'hospital_manager'].includes(currentUser?.role || '');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'doctor' | 'nurse' | 'lab_technician' | 'pharmacist'>('all');
+  const [staffList, setStaffList] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,6 +93,8 @@ export const DoctorShiftManagementPage: React.FC = () => {
 
   // Form states
   const [shiftForm, setShiftForm] = useState({
+    staff_role: 'doctor',
+    user_id: '',
     doctor_id: '',
     department_id: '',
     shift_date: new Date().toISOString().split('T')[0],
@@ -112,10 +122,11 @@ export const DoctorShiftManagementPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [shiftsRes, onDutyRes, handoversRes, docsRes, deptsRes] = await Promise.all([
+      const [shiftsRes, onDutyRes, handoversRes, staffRes, docsRes, deptsRes] = await Promise.all([
         api.get(`/shifts?shift_date=${filterDate}`),
         api.get('/shifts/on-duty'),
         api.get('/shifts/handovers'),
+        api.get('/shifts/staff'),
         api.get('/doctors'),
         api.get('/departments')
       ]);
@@ -123,6 +134,7 @@ export const DoctorShiftManagementPage: React.FC = () => {
       setShifts(shiftsRes.data?.data || []);
       setOnDutyList(onDutyRes.data?.data || []);
       setHandovers(handoversRes.data?.data || []);
+      setStaffList(staffRes.data?.data || []);
       setDoctors(docsRes.data?.data?.doctors || docsRes.data?.data || []);
       setDepartments(deptsRes.data?.data?.departments || deptsRes.data?.data || []);
     } catch (err: any) {
@@ -154,25 +166,32 @@ export const DoctorShiftManagementPage: React.FC = () => {
 
   const handleCreateShift = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shiftForm.doctor_id) {
-      showNotification('error', 'Please select a doctor');
+    if (!shiftForm.doctor_id && !shiftForm.user_id) {
+      showNotification('error', 'Please select a staff member');
       return;
     }
 
     setSubmitting(true);
     try {
       await api.post('/shifts', {
-        ...shiftForm,
-        doctor_id: parseInt(shiftForm.doctor_id),
+        doctor_id: shiftForm.doctor_id ? parseInt(shiftForm.doctor_id) : undefined,
+        user_id: shiftForm.user_id ? parseInt(shiftForm.user_id) : undefined,
+        staff_role: shiftForm.staff_role,
         department_id: shiftForm.department_id ? parseInt(shiftForm.department_id) : undefined,
-        max_active_patients: parseInt(String(shiftForm.max_active_patients)),
+        shift_date: shiftForm.shift_date,
+        shift_type: shiftForm.shift_type,
         start_time: shiftForm.start_time + (shiftForm.start_time.length === 5 ? ':00' : ''),
-        end_time: shiftForm.end_time + (shiftForm.end_time.length === 5 ? ':00' : '')
+        end_time: shiftForm.end_time + (shiftForm.end_time.length === 5 ? ':00' : ''),
+        max_active_patients: parseInt(String(shiftForm.max_active_patients)),
+        is_on_duty: shiftForm.is_on_duty,
+        notes: shiftForm.notes
       });
 
-      showNotification('success', 'Doctor shift scheduled successfully');
+      showNotification('success', 'Staff shift scheduled successfully');
       setShowScheduleModal(false);
       setShiftForm({
+        staff_role: 'doctor',
+        user_id: '',
         doctor_id: '',
         department_id: '',
         shift_date: new Date().toISOString().split('T')[0],
@@ -188,6 +207,17 @@ export const DoctorShiftManagementPage: React.FC = () => {
       showNotification('error', err.response?.data?.message || 'Failed to schedule shift');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCancelShift = async (shiftId: number) => {
+    if (!window.confirm('Are you sure you want to cancel this scheduled shift?')) return;
+    try {
+      await api.delete(`/shifts/${shiftId}`);
+      showNotification('success', 'Shift cancelled successfully');
+      loadData();
+    } catch (err: any) {
+      showNotification('error', err.response?.data?.message || 'Failed to cancel shift');
     }
   };
 
@@ -268,7 +298,7 @@ export const DoctorShiftManagementPage: React.FC = () => {
             <Building2 className="w-4 h-4" /> Alem Ketema Enat Hospital · North Shewa
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-            Doctor Shift Scheduling & Clinical Handover
+            Staff Shift Management & Clinical Duty Roster
           </h1>
           <p className="text-blue-200 text-xs sm:text-sm mt-1 max-w-2xl">
             Roster management, intelligent patient workload balancing, and seamless inter-shift clinical handovers.
@@ -276,12 +306,14 @@ export const DoctorShiftManagementPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowScheduleModal(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-2xl shadow-md transition"
-          >
-            <PlusCircle className="w-4 h-4" /> Schedule Doctor Shift
-          </button>
+          {canManageShifts && (
+            <button
+              onClick={() => setShowScheduleModal(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-2xl shadow-md transition cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" /> Schedule Staff Shift
+            </button>
+          )}
           <button
             onClick={() => setShowHandoverModal(true)}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-2xl shadow-md transition"
@@ -492,23 +524,49 @@ export const DoctorShiftManagementPage: React.FC = () => {
       {/* ── TAB 2: SHIFT SCHEDULE & ROSTER ── */}
       {activeTab === 'roster' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-3">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Filter Shift Date:</label>
-              <input
-                type="date"
-                value={filterDate}
-                onChange={e => setFilterDate(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Date:</label>
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={e => setFilterDate(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[
+                  { id: 'all', label: 'All Personnel' },
+                  { id: 'doctor', label: 'Doctors' },
+                  { id: 'nurse', label: 'Nurses' },
+                  { id: 'lab_technician', label: 'Lab Techs' },
+                  { id: 'pharmacist', label: 'Pharmacists' }
+                ].map(rf => (
+                  <button
+                    key={rf.id}
+                    onClick={() => setRoleFilter(rf.id as any)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      roleFilter === rf.id
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                    }`}
+                  >
+                    {rf.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <button
-              onClick={() => setShowScheduleModal(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm"
-            >
-              <PlusCircle className="w-4 h-4" /> Add Shift Entry
-            </button>
+            {canManageShifts && (
+              <button
+                onClick={() => setShowScheduleModal(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer"
+              >
+                <PlusCircle className="w-4 h-4" /> Add Shift Entry
+              </button>
+            )}
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
@@ -516,7 +574,8 @@ export const DoctorShiftManagementPage: React.FC = () => {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-900/60 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200 dark:border-slate-700">
                   <tr>
-                    <th className="p-4">Doctor</th>
+                    <th className="p-4">Staff Member</th>
+                    <th className="p-4">Role</th>
                     <th className="p-4">Department</th>
                     <th className="p-4">Shift Type</th>
                     <th className="p-4">Hours</th>
@@ -527,23 +586,34 @@ export const DoctorShiftManagementPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                  {shifts.length === 0 ? (
+                  {shifts.filter(s => roleFilter === 'all' || (s.staff_role || 'doctor') === roleFilter).length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-slate-500">
-                        No doctor shifts scheduled for {filterDate}. Click "Add Shift Entry" to schedule.
+                      <td colSpan={9} className="p-8 text-center text-slate-500">
+                        No shifts scheduled for selected category on {filterDate}. Click "Add Shift Entry" to schedule.
                       </td>
                     </tr>
                   ) : (
-                    shifts.map(shift => (
+                    shifts.filter(s => roleFilter === 'all' || (s.staff_role || 'doctor') === roleFilter).map(shift => (
                       <tr key={shift.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition">
                         <td className="p-4 font-bold text-slate-900 dark:text-white">
-                          Dr. {shift.doctor_first_name} {shift.doctor_last_name}
+                          {shift.staff_name || (shift.doctor_first_name ? `Dr. ${shift.doctor_first_name} ${shift.doctor_last_name}` : 'Staff Personnel')}
                           <span className="block text-[10px] font-normal text-slate-400">
-                            {shift.doctor_specialization || 'Physician'}
+                            {shift.doctor_specialization || shift.department_name || 'Hospital Clinical Staff'}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                            (shift.staff_role || 'doctor') === 'doctor' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
+                            shift.staff_role === 'nurse' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' :
+                            shift.staff_role === 'lab_technician' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300' :
+                            shift.staff_role === 'pharmacist' ? 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {(shift.staff_role || 'doctor').replace(/_/g, ' ')}
                           </span>
                         </td>
                         <td className="p-4 text-slate-600 dark:text-slate-300 font-medium">
-                          {shift.department_name || 'General OPD'}
+                          {shift.department_name || 'General Hospital'}
                         </td>
                         <td className="p-4">
                           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
@@ -554,16 +624,27 @@ export const DoctorShiftManagementPage: React.FC = () => {
                           {shift.start_time.slice(0, 5)} - {shift.end_time.slice(0, 5)}
                         </td>
                         <td className="p-4">
-                          <button
-                            onClick={() => handleToggleDuty(shift.id)}
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase transition ${
+                          {(canManageShifts || (shift.user_id && shift.user_id === currentUser?.id)) ? (
+                            <button
+                              onClick={() => handleToggleDuty(shift.id)}
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase transition cursor-pointer ${
+                                shift.is_on_duty
+                                  ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                  : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                              }`}
+                              title={canManageShifts ? 'Manager duty toggle' : 'Clock in / clock out for this shift'}
+                            >
+                              {shift.is_on_duty ? '✓ On Duty' : 'Off Duty'}
+                            </button>
+                          ) : (
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
                               shift.is_on_duty
-                                ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                                : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                            }`}
-                          >
-                            {shift.is_on_duty ? '✓ On Duty' : 'Off Duty'}
-                          </button>
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200'
+                                : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                            }`}>
+                              {shift.is_on_duty ? 'On Duty' : 'Off Duty'}
+                            </span>
+                          )}
                         </td>
                         <td className="p-4 font-mono font-bold text-slate-800 dark:text-slate-200">
                           {shift.active_patient_load || 0} / {shift.max_active_patients}
@@ -574,12 +655,24 @@ export const DoctorShiftManagementPage: React.FC = () => {
                           </span>
                         </td>
                         <td className="p-4 text-right">
-                          <button
-                            onClick={() => handleToggleDuty(shift.id)}
-                            className="text-xs font-bold text-blue-600 hover:underline"
-                          >
-                            Toggle Duty
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            {(canManageShifts || (shift.user_id && shift.user_id === currentUser?.id)) && (
+                              <button
+                                onClick={() => handleToggleDuty(shift.id)}
+                                className="text-xs font-bold text-blue-600 hover:underline cursor-pointer"
+                              >
+                                {shift.is_on_duty ? 'Clock Out' : 'Clock In'}
+                              </button>
+                            )}
+                            {canManageShifts && (
+                              <button
+                                onClick={() => handleCancelShift(shift.id)}
+                                className="text-xs font-bold text-rose-600 hover:underline cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -712,17 +805,56 @@ export const DoctorShiftManagementPage: React.FC = () => {
 
             <form onSubmit={handleCreateShift} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Doctor *</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Staff Role Category *</label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[
+                    { id: 'doctor', label: 'Doctor' },
+                    { id: 'nurse', label: 'Nurse' },
+                    { id: 'lab_technician', label: 'Lab Tech' },
+                    { id: 'pharmacist', label: 'Pharmacist' }
+                  ].map(r => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setShiftForm(f => ({ ...f, staff_role: r.id, user_id: '', doctor_id: '' }))}
+                      className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                        shiftForm.staff_role === r.id
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Assign Staff Personnel ({shiftForm.staff_role.replace(/_/g, ' ').toUpperCase()}) *
+                </label>
                 <select
                   required
-                  value={shiftForm.doctor_id}
-                  onChange={e => setShiftForm(f => ({ ...f, doctor_id: e.target.value }))}
+                  value={shiftForm.user_id || shiftForm.doctor_id}
+                  onChange={e => {
+                    const val = e.target.value;
+                    const found = staffList.find(s => String(s.user_id) === val || String(s.doctor_id) === val);
+                    setShiftForm(f => ({
+                      ...f,
+                      user_id: found ? String(found.user_id) : val,
+                      doctor_id: found?.doctor_id ? String(found.doctor_id) : (f.staff_role === 'doctor' ? val : ''),
+                      department_id: found?.department_id ? String(found.department_id) : f.department_id
+                    }));
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium"
                 >
-                  <option value="">-- Select Doctor --</option>
-                  {doctors.map(d => (
-                    <option key={d.id} value={d.id}>
-                      Dr. {d.first_name} {d.last_name} ({d.specialization || 'General'})
+                  <option value="">-- Select {shiftForm.staff_role.replace(/_/g, ' ')} --</option>
+                  {(staffList.filter(s => s.staff_role === shiftForm.staff_role).length > 0
+                    ? staffList.filter(s => s.staff_role === shiftForm.staff_role)
+                    : (shiftForm.staff_role === 'doctor' ? doctors.map(d => ({ user_id: d.user_id || d.id, doctor_id: d.id, staff_name: `Dr. ${d.first_name} ${d.last_name}`, designation: d.specialization })) : [])
+                  ).map((s: any) => (
+                    <option key={s.user_id || s.doctor_id} value={String(s.user_id || s.doctor_id)}>
+                      {s.staff_name} ({s.designation || s.department_name || 'Staff'})
                     </option>
                   ))}
                 </select>

@@ -49,11 +49,13 @@ describe('End-to-End Clinical Workflow Integration', () => {
       // pool.query checks email
       pool.query.mockResolvedValueOnce({ rows: [] });
 
-      // mockClient transaction queries: BEGIN, insert user, insert patient, COMMIT
+      // mockClient transaction queries: BEGIN, insert user, insert patient, auto-invoice, auto-items, COMMIT
       mockClient.query
         .mockResolvedValueOnce({}) // BEGIN
         .mockResolvedValueOnce({ rows: [{ id: 88, email: 'jane.smith@example.com', role: 'patient' }] }) // insert user
         .mockResolvedValueOnce({ rows: [mockPatient] }) // insert patient
+        .mockResolvedValueOnce({ rows: [{ id: 101, patient_id: 42, total_amount: 50, status: 'pending' }] }) // auto-invoice
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // auto-items
         .mockResolvedValueOnce({}); // COMMIT
 
       const response = await request(app)
@@ -154,6 +156,10 @@ describe('End-to-End Clinical Workflow Integration', () => {
         invoice_number: 'INV-2026-0901'
       };
 
+      mockClient.query
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rows: [mockInvoice] }) // insert invoice
+        .mockResolvedValueOnce({}); // COMMIT
       pool.query.mockResolvedValueOnce({ rows: [mockInvoice] });
 
       const response = await request(app)

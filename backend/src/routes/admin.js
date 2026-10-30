@@ -74,6 +74,10 @@ router.post('/users', authenticate, authorize('super_admin', 'admin'), handleAsy
     firstName, lastName, phone, gender, address, emergencyContact,
     departmentId, specialization, licenseNumber, qualification, experienceYears, consultationFee
   } = req.body;
+  if (role === 'super_admin' && req.user.role !== 'super_admin') {
+    return sendError(res, 'Only super administrators can create super admin accounts', 403);
+  }
+
   if (!email || !password || !role) return sendError(res, 'Email, password, and role are required', 400);
 
   const cleanEmail = email.toLowerCase().trim();
@@ -141,6 +145,12 @@ router.put('/users/:id', authenticate, authorize('super_admin', 'admin'), handle
     firstName, lastName, phone, gender, address, emergencyContact,
     departmentId, specialization, licenseNumber, qualification, experienceYears, consultationFee
   } = req.body;
+  const targetCheck = await pool.query('SELECT id, role FROM users WHERE id = $1', [req.params.id]);
+  if (!targetCheck.rows.length) return sendError(res, 'User not found', 404);
+  if ((role === 'super_admin' || targetCheck.rows[0].role === 'super_admin') && req.user.role !== 'super_admin') {
+    return sendError(res, 'Only super administrators can manage super admin accounts', 403);
+  }
+
   const validRoles = ['super_admin', 'admin', 'receptionist', 'doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier', 'hospital_manager', 'patient'];
   if (role && !validRoles.includes(role)) return sendError(res, 'Invalid role', 400);
 
@@ -219,6 +229,11 @@ router.delete('/users/:id', authenticate, authorize('super_admin'), handleAsync(
 // PUT reset user password (admin)
 router.put('/users/:id/reset-password', authenticate, authorize('super_admin', 'admin'), handleAsync(async (req, res) => {
   const { newPassword } = req.body;
+  const targetCheck = await pool.query('SELECT id, role FROM users WHERE id = $1', [req.params.id]);
+  if (!targetCheck.rows.length) return sendError(res, 'User not found', 404);
+  if (targetCheck.rows[0].role === 'super_admin' && req.user.role !== 'super_admin') {
+    return sendError(res, 'Only super administrators can reset passwords for super admin accounts', 403);
+  }
   if (!newPassword || newPassword.length < 6) return sendError(res, 'Password must be at least 6 characters', 400);
   const hash = await bcrypt.hash(newPassword, 10);
   await pool.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [hash, req.params.id]);
@@ -274,7 +289,7 @@ router.delete('/departments/:id', authenticate, authorize('super_admin', 'admin'
 
 // ── Audit Logs ────────────────────────────────────────────────────────────────
 
-router.get('/audit-logs', authenticate, authorize('super_admin', 'admin', 'hospital_manager'), handleAsync(async (req, res) => {
+router.get('/audit-logs', authenticate, authorize('super_admin'), handleAsync(async (req, res) => {
   const { limit = 100, offset = 0 } = req.query;
   const result = await pool.query(
     `SELECT al.*, u.email AS user_email
@@ -327,7 +342,7 @@ function sanitizeCsvCell(val) {
   return str;
 }
 
-router.get('/audit-logs/export', authenticate, authorize('super_admin', 'admin', 'hospital_manager'), handleAsync(async (req, res) => {
+router.get('/audit-logs/export', authenticate, authorize('super_admin'), handleAsync(async (req, res) => {
   const { start_date, end_date, action, entity_type, user_id } = req.query;
   let query = `
     SELECT al.id, al.timestamp, al.user_id, u.email AS user_email, u.role AS user_role,

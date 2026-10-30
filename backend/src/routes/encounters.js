@@ -68,8 +68,20 @@ router.post('/', authenticate, authorize('receptionist', 'admin', 'super_admin')
       [encounter.id, req.user.id]
     );
 
+    // ── AUTOMATIC ENCOUNTER INVOICE CREATION ────────────────────────────
+    let autoInvoice = null;
+    try {
+      autoInvoice = await billing.getOrCreateInvoice(client, {
+        encounterId: encounter.id,
+        patientId: encounter.patient_id,
+        doctorId: null
+      });
+    } catch (invErr) {
+      console.warn('Encounter automatic invoice creation deferred:', invErr.message);
+    }
+
     await client.query('COMMIT');
-    res.status(201).json({ success: true, data: { encounter: enc.rows[0] } });
+    res.status(201).json({ success: true, data: { encounter: enc.rows[0], invoice: autoInvoice } });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Create encounter error:', err);

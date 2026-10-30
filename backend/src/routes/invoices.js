@@ -123,11 +123,11 @@ router.post('/clinical', authenticate, authorize('doctor', 'nurse', 'lab_technic
       }
     } else {
       // Create new clinical invoice
-      const total_amount = items.reduce((sum, item) => sum + parseFloat(item.total), 0);
+      const total_amount = items.reduce((sum, item) => sum + parseFloat(item.total || item.unit_price || 0), 0);
       
-      const result = await pool.query(
-        `INSERT INTO invoices (patient_id, encounter_id, invoice_type, subtotal, tax, discount, total_amount, notes, status)
-         SELECT $1, $2, 'clinical', $3, 0, 0, $4, 'Clinical services', 'UNPAID' RETURNING *
+      const result = await client.query(
+        `INSERT INTO invoices (patient_id, encounter_id, subtotal, tax, discount, total_amount, notes, status)
+         SELECT $1, $2, $3, 0, 0, $4, 'Clinical services', 'pending' RETURNING *
          FROM encounters WHERE id = $2`,
         [total_amount, encounter_id, total_amount, encounter_id]
       );
@@ -135,11 +135,18 @@ router.post('/clinical', authenticate, authorize('doctor', 'nurse', 'lab_technic
       invoiceId = result.rows[0].id;
 
       // Add items
-      for (const item of items) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const desc = item.service || item.description || 'Clinical Service';
+        const qty = parseInt(item.quantity, 10) || 1;
+        const price = parseFloat(item.unit_price) || 0;
+        const srcId = item.source_id || (invoiceId * 10000 + i + 1);
+
         await client.query(
-          `INSERT INTO invoice_items (invoice_id, service, quantity, unit_price, total)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [invoiceId, item.service, item.quantity, item.unit_price, item.total]
+          `INSERT INTO invoice_items 
+             (invoice_id, patient_id, encounter_id, description, quantity, unit_price, source_type, source_id)
+           VALUES ($1, $2, $3, $4, $5, $6, 'other', $7)`,
+          [invoiceId, result.rows[0].patient_id, encounter_id, desc, qty, price, srcId]
         );
       }
     }
@@ -157,26 +164,33 @@ router.post('/clinical', authenticate, authorize('doctor', 'nurse', 'lab_technic
 });
 
 // POST create invoice
-router.post('/', authenticate, authorize('receptionist'), async (req, res) => {
+router.post('/', authenticate, authorize('receptionist', 'admin', 'super_admin', 'cashier'), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const { patient_id, admission_id, due_date, subtotal, tax = 0, discount = 0, notes, items } = req.body;
     const total_amount = parseFloat(subtotal) + parseFloat(tax) - parseFloat(discount);
 
-    const result = await pool.query(
+    const result = await client.query(
       `INSERT INTO invoices (patient_id, admission_id, due_date, subtotal, tax, discount, total_amount, notes, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'UNPAID') RETURNING *`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending') RETURNING *`,
       [patient_id, admission_id || null, due_date || null, subtotal, tax, discount, total_amount, notes || null]
     );
 
     // Create invoice items if provided
     if (items && Array.isArray(items) && items.length > 0) {
-      for (const item of items) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const desc = item.service || item.description || 'Registration Service';
+        const qty = parseInt(item.quantity, 10) || 1;
+        const price = parseFloat(item.unit_price) || 0;
+        const srcId = item.source_id || (result.rows[0].id * 10000 + i + 1);
+
         await client.query(
-          `INSERT INTO invoice_items (invoice_id, service, quantity, unit_price, total)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [result.rows[0].id, item.service, item.quantity, item.unit_price, item.total]
+          `INSERT INTO invoice_items 
+             (invoice_id, patient_id, description, quantity, unit_price, source_type, source_id)
+           VALUES ($1, $2, $3, $4, $5, 'other', $6)`,
+          [result.rows[0].id, patient_id, desc, qty, price, srcId]
         );
       }
     }

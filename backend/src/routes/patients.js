@@ -19,13 +19,38 @@ router.post('/:id/wristband-printed', authenticate, authorize('receptionist', 'n
 router.post(
   '/',
   authenticate,
-  authorize('receptionist'),
+  authorize('receptionist', 'admin', 'super_admin', 'nurse'),
   [
-    body('firstName').notEmpty().withMessage('First name is required'),
-    body('lastName').notEmpty().withMessage('Last name is required'),
-    body('dateOfBirth').isISO8601().withMessage('Valid date of birth is required'),
-    body('gender').isIn(['male', 'female', 'other']).withMessage('Valid gender is required'),
-    body('email').isEmail().withMessage('Valid email is required')
+    body('firstName').custom((value, { req }) => {
+      const name = value || req.body.first_name;
+      if (!name || !String(name).trim()) throw new Error('First name is required');
+      return true;
+    }),
+    body('lastName').custom((value, { req }) => {
+      const name = value || req.body.last_name;
+      if (!name || !String(name).trim()) throw new Error('Last name is required');
+      return true;
+    }),
+    body('dateOfBirth').custom((value, { req }) => {
+      const dob = value || req.body.date_of_birth;
+      if (!dob || isNaN(Date.parse(dob))) throw new Error('Valid date of birth is required');
+      return true;
+    }),
+    body('gender').custom((value, { req }) => {
+      const g = (value || req.body.gender || '').toLowerCase();
+      if (!['male', 'female', 'other'].includes(g)) throw new Error('Valid gender is required');
+      return true;
+    }),
+    body('email').custom((value, { req }) => {
+      const em = value || req.body.email;
+      if (em && String(em).trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(String(em).trim())) {
+          throw new Error('Valid email address is required if provided');
+        }
+      }
+      return true;
+    })
   ],
   validate,
   patientController.registerPatient

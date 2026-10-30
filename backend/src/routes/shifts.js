@@ -19,19 +19,90 @@ const SHIFT_PRESETS = {
 };
 
 // ══════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════
+// 0. GET ALL ELIGIBLE STAFF FOR SHIFTS (Doctors, Nurses, Lab, Pharmacy)
+// ══════════════════════════════════════════════════════════════
+router.get('/staff', authenticate, async (req, res) => {
+  try {
+    const { role, department_id } = req.query;
+    let query = `
+      SELECT 
+        u.id AS user_id,
+        u.email,
+        u.role AS staff_role,
+        COALESCE(
+          (SELECT TRIM(d.first_name || ' ' || d.last_name) FROM doctors d WHERE d.user_id = u.id LIMIT 1),
+          (SELECT TRIM(n.first_name || ' ' || n.last_name) FROM nurses n WHERE n.user_id = u.id LIMIT 1),
+          TRIM(u.first_name || ' ' || u.last_name),
+          split_part(u.email, '@', 1)
+        ) AS staff_name,
+        (SELECT d.id FROM doctors d WHERE d.user_id = u.id LIMIT 1) AS doctor_id,
+        COALESCE(
+          (SELECT d.department_id FROM doctors d WHERE d.user_id = u.id LIMIT 1),
+          (SELECT n.department_id FROM nurses n WHERE n.user_id = u.id LIMIT 1),
+          NULL
+        ) AS department_id,
+        COALESCE(
+          (SELECT dep.name FROM doctors d JOIN departments dep ON dep.id = d.department_id WHERE d.user_id = u.id LIMIT 1),
+          (SELECT dep.name FROM nurses n JOIN departments dep ON dep.id = n.department_id WHERE n.user_id = u.id LIMIT 1),
+          'General Hospital'
+        ) AS department_name,
+        COALESCE(
+          (SELECT d.specialization FROM doctors d WHERE d.user_id = u.id LIMIT 1),
+          (SELECT n.qualification FROM nurses n WHERE n.user_id = u.id LIMIT 1),
+          INITCAP(REPLACE(u.role, '_', ' '))
+        ) AS designation
+      FROM users u
+      WHERE u.role IN ('doctor', 'nurse', 'lab_technician', 'pharmacist')
+        AND u.is_active = true
+    `;
+    const params = [];
+    let idx = 1;
+    if (role) {
+      query += ` AND u.role = $${idx++}`;
+      params.push(role);
+    }
+
+    if (department_id) {
+      query += ` AND (
+        (SELECT d.department_id FROM doctors d WHERE d.user_id = u.id LIMIT 1) = $${idx}
+        OR (SELECT n.department_id FROM nurses n WHERE n.user_id = u.id LIMIT 1) = $${idx}
+      )`;
+      idx++;
+      params.push(parseInt(department_id));
+    }
+    query += ' ORDER BY u.role, staff_name';
+    const result = await pool.query(query, params);
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Error fetching staff list for shifts:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch staff list' });
+  }
+});
+
 // 1. GET ALL SHIFTS (Filtered by date, doctor, department, duty)
 // ══════════════════════════════════════════════════════════════
 router.get('/', authenticate, async (req, res) => {
   try {
-    const { shift_date, start_date, end_date, doctor_id, department_id, status, is_on_duty } = req.query;
+    const { shift_date, start_date, end_date, doctor_id, user_id, department_id, status, is_on_duty, role, staff_role } = req.query;
+    const requestedRole = role || staff_role;
 
     let query = `
       SELECT 
         ds.*,
+        COALESCE(ds.staff_role, 'doctor') AS staff_role,
+        COALESCE(
+          ds.staff_name,
+          CASE WHEN d.id IS NOT NULL THEN 'Dr. ' || d.first_name || ' ' || d.last_name ELSE NULL END,
+          TRIM(su.first_name || ' ' || su.last_name),
+          TRIM(n.first_name || ' ' || n.last_name),
+          split_part(su.email, '@', 1)
+        ) AS staff_name,
         d.first_name AS doctor_first_name,
         d.last_name AS doctor_last_name,
         d.specialization AS doctor_specialization,
-        d.phone AS doctor_phone,
+        COALESCE(d.phone, su.phone, n.phone) AS doctor_phone,
         dep.name AS department_name,
         u.first_name AS created_by_first_name,
         u.last_name AS created_by_last_name,
@@ -43,7 +114,9 @@ router.get('/', authenticate, async (req, res) => {
             AND pe.status IN ('waiting_for_doctor', 'in_consultation')
         )::integer AS active_patient_load
       FROM doctor_shifts ds
-      JOIN doctors d ON d.id = ds.doctor_id
+      LEFT JOIN doctors d ON d.id = ds.doctor_id
+      LEFT JOIN users su ON su.id = ds.user_id
+      LEFT JOIN nurses n ON (n.user_id = ds.user_id OR (su.id IS NOT NULL AND n.user_id = su.id))
       LEFT JOIN departments dep ON dep.id = ds.department_id
       LEFT JOIN users u ON u.id = ds.created_by
       WHERE 1=1
@@ -108,10 +181,12 @@ router.get('/on-duty', authenticate, async (req, res) => {
 // ══════════════════════════════════════════════════════════════
 // 3. POST CREATE / SCHEDULE DOCTOR SHIFT
 // ══════════════════════════════════════════════════════════════
-router.post('/', authenticate, authorize('super_admin', 'admin', 'hospital_manager', 'doctor'), async (req, res) => {
+router.post('/', authenticate, authorize('super_admin', 'admin', 'hospital_manager'), async (req, res) => {
   try {
     const {
       doctor_id,
+      user_id,
+      staff_role: inputStaffRole,
       department_id,
       shift_date,
       shift_type = 'morning',
@@ -123,74 +198,113 @@ router.post('/', authenticate, authorize('super_admin', 'admin', 'hospital_manag
       status = 'scheduled'
     } = req.body;
 
-    if (!doctor_id || !shift_date) {
-      return res.status(400).json({ success: false, message: 'doctor_id and shift_date are required' });
+    if ((!doctor_id && !user_id) || !shift_date) {
+      return res.status(400).json({ success: false, message: 'Staff member (doctor_id or user_id) and shift_date are required' });
     }
 
-    // Determine shift times (defaults from presets if not explicitly provided)
+
+
     const preset = SHIFT_PRESETS[shift_type];
     const finalStartTime = start_time || (preset ? preset.start : '08:00:00');
     const finalEndTime   = end_time   || (preset ? preset.end   : '16:00:00');
 
-    // Verify doctor exists and lookup department if missing
-    const docCheck = await pool.query('SELECT id, first_name, last_name, department_id FROM doctors WHERE id = $1', [doctor_id]);
-    if (!docCheck.rows.length) {
-      return res.status(404).json({ success: false, message: 'Doctor record not found' });
-    }
-    const finalDeptId = department_id || docCheck.rows[0].department_id;
+    let resolvedDoctorId = doctor_id ? parseInt(doctor_id) : null;
+    let resolvedUserId = user_id ? parseInt(user_id) : null;
+    let resolvedStaffRole = inputStaffRole || 'doctor';
+    let resolvedStaffName = '';
+    let finalDeptId = department_id ? parseInt(department_id) : null;
 
-    // Conflict Check: Prevent overlapping shifts on the same date for the same doctor
+    if (resolvedDoctorId) {
+      const docCheck = await pool.query('SELECT id, user_id, first_name, last_name, department_id FROM doctors WHERE id = $1', [resolvedDoctorId]);
+      if (!docCheck.rows.length) {
+        return res.status(404).json({ success: false, message: 'Doctor record not found' });
+      }
+      const doc = docCheck.rows[0];
+      resolvedUserId = resolvedUserId || doc.user_id;
+      resolvedStaffRole = 'doctor';
+      resolvedStaffName = `Dr. ${doc.first_name} ${doc.last_name}`;
+      finalDeptId = finalDeptId || doc.department_id;
+    } else if (resolvedUserId) {
+      const userCheck = await pool.query(`
+        SELECT u.id, u.first_name, u.last_name, u.role, u.email,
+               (SELECT d.id FROM doctors d WHERE d.user_id = u.id LIMIT 1) AS doc_id,
+               COALESCE((SELECT d.department_id FROM doctors d WHERE d.user_id = u.id LIMIT 1),
+                        (SELECT n.department_id FROM nurses n WHERE n.user_id = u.id LIMIT 1)) AS dept_id
+        FROM users u WHERE u.id = $1
+      `, [resolvedUserId]);
+      if (!userCheck.rows.length) {
+        return res.status(404).json({ success: false, message: 'Staff user not found' });
+      }
+      const usr = userCheck.rows[0];
+      resolvedStaffRole = inputStaffRole || usr.role || 'staff';
+      const rawName = `${usr.first_name || ''} ${usr.last_name || ''}`.trim() || usr.email.split('@')[0];
+      resolvedStaffName = usr.role === 'doctor' ? `Dr. ${rawName}` : rawName;
+      if (usr.role === 'doctor') {
+        resolvedDoctorId = usr.doc_id || null;
+      }
+      finalDeptId = finalDeptId || usr.dept_id;
+    }
+
+    // Conflict Check: Prevent overlapping shifts on the same date for the same staff
     const conflictQuery = `
       SELECT id, shift_type, start_time, end_time, status
       FROM doctor_shifts
-      WHERE doctor_id = $1
-        AND shift_date = $2
+      WHERE (
+        ($1::integer IS NOT NULL AND doctor_id = $1)
+        OR ($2::integer IS NOT NULL AND user_id = $2)
+      )
+        AND shift_date = $3
         AND status NOT IN ('cancelled', 'absence')
         AND (
-          (start_time < $4::time AND end_time > $3::time)
-          OR (start_time = $3::time AND end_time = $4::time)
+          (start_time < $5::time AND end_time > $4::time)
+          OR (start_time = $4::time AND end_time = $5::time)
         )
     `;
-    const conflictRes = await pool.query(conflictQuery, [doctor_id, shift_date, finalStartTime, finalEndTime]);
+    const conflictRes = await pool.query(conflictQuery, [resolvedDoctorId, resolvedUserId, shift_date, finalStartTime, finalEndTime]);
 
     if (conflictRes.rows.length > 0) {
       const existing = conflictRes.rows[0];
       return res.status(409).json({
         success: false,
-        message: `Shift conflict: Dr. ${docCheck.rows[0].first_name} ${docCheck.rows[0].last_name} already has a ${existing.shift_type} shift scheduled on ${shift_date} (${existing.start_time} - ${existing.end_time}).`
+        message: `Shift conflict: ${resolvedStaffName} already has a ${existing.shift_type} shift scheduled on ${shift_date} (${existing.start_time} - ${existing.end_time}).`
       });
     }
 
     // Insert shift
     const insertRes = await pool.query(`
       INSERT INTO doctor_shifts (
-        doctor_id, department_id, shift_date, shift_type,
+        doctor_id, user_id, staff_role, staff_name, department_id, shift_date, shift_type,
         start_time, end_time, max_active_patients, notes,
         is_on_duty, status, created_by, created_at, updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
       RETURNING *
     `, [
-      doctor_id, finalDeptId, shift_date, shift_type,
+      resolvedDoctorId, resolvedUserId, resolvedStaffRole, resolvedStaffName, finalDeptId, shift_date, shift_type,
       finalStartTime, finalEndTime, max_active_patients, notes,
-      is_on_duty, status, req.user.id
+      is_on_duty, status, (await pool.query('SELECT id FROM users WHERE id = $1', [req.user.id])).rows[0]?.id || null
     ]);
 
     const createdShift = insertRes.rows[0];
 
-    // If marked on_duty, also update doctors.is_available
     if (is_on_duty) {
-      await pool.query('UPDATE doctors SET is_available = true WHERE id = $1', [doctor_id]);
+      if (resolvedDoctorId) {
+        await pool.query('UPDATE doctors SET is_available = true WHERE id = $1', [resolvedDoctorId]);
+      }
+      if (resolvedUserId) {
+        await pool.query('UPDATE nurses SET is_available = true WHERE user_id = $1', [resolvedUserId]);
+      }
     }
 
     socketService.broadcast('shift:created', {
       shift: createdShift,
-      doctor_name: `Dr. ${docCheck.rows[0].first_name} ${docCheck.rows[0].last_name}`
+      staff_name: resolvedStaffName,
+      staff_role: resolvedStaffRole
     });
 
     res.status(201).json({
       success: true,
-      message: 'Doctor shift scheduled successfully',
+      message: `${resolvedStaffRole ? resolvedStaffRole.toUpperCase() : 'Staff'} shift scheduled successfully`,
       data: createdShift
     });
   } catch (error) {
@@ -202,7 +316,7 @@ router.post('/', authenticate, authorize('super_admin', 'admin', 'hospital_manag
 // ══════════════════════════════════════════════════════════════
 // 4. PUT UPDATE DOCTOR SHIFT
 // ══════════════════════════════════════════════════════════════
-router.put('/:id', authenticate, authorize('super_admin', 'admin', 'hospital_manager', 'doctor'), async (req, res) => {
+router.put('/:id', authenticate, authorize('super_admin', 'admin', 'hospital_manager'), async (req, res) => {
   try {
     const { id } = req.params;
     const { shift_type, start_time, end_time, max_active_patients, notes, status, is_on_duty } = req.body;
@@ -249,7 +363,7 @@ router.put('/:id', authenticate, authorize('super_admin', 'admin', 'hospital_man
 // ══════════════════════════════════════════════════════════════
 // 5. PUT TOGGLE ON-DUTY STATUS
 // ══════════════════════════════════════════════════════════════
-router.put('/:id/toggle-duty', authenticate, authorize('super_admin', 'admin', 'hospital_manager', 'doctor'), async (req, res) => {
+router.put('/:id/toggle-duty', authenticate, authorize('super_admin', 'admin', 'hospital_manager', 'doctor', 'nurse', 'lab_technician', 'pharmacist'), async (req, res) => {
   try {
     const { id } = req.params;
     const shiftRes = await pool.query('SELECT * FROM doctor_shifts WHERE id = $1', [id]);
@@ -258,6 +372,19 @@ router.put('/:id/toggle-duty', authenticate, authorize('super_admin', 'admin', '
     }
 
     const shift = shiftRes.rows[0];
+
+    // Non-manager participants can only toggle their own shifts
+    if (!['super_admin', 'admin', 'hospital_manager'].includes(req.user.role)) {
+      const ownDoc = await pool.query('SELECT id FROM doctors WHERE user_id = $1 OR id = $1', [req.user.id]);
+      const ownDocIds = ownDoc.rows.map(r => r.id);
+      const isOwner = 
+        (shift.user_id && shift.user_id === req.user.id) || 
+        (shift.doctor_id && (ownDocIds.includes(shift.doctor_id) || shift.doctor_id === req.user.id));
+      if (!isOwner && (shift.user_id || shift.doctor_id)) {
+        return res.status(403).json({ success: false, message: 'You can only clock in or clock out for your own assigned shift.' });
+      }
+    }
+
     const newDutyStatus = !shift.is_on_duty;
 
     const updateRes = await pool.query(`
@@ -267,7 +394,12 @@ router.put('/:id/toggle-duty', authenticate, authorize('super_admin', 'admin', '
       RETURNING *
     `, [newDutyStatus, id]);
 
-    await pool.query('UPDATE doctors SET is_available = $1 WHERE id = $2', [newDutyStatus, shift.doctor_id]);
+    if (shift.doctor_id) {
+      await pool.query('UPDATE doctors SET is_available = $1 WHERE id = $2', [newDutyStatus, shift.doctor_id]);
+    }
+    if (shift.user_id) {
+      await pool.query('UPDATE nurses SET is_available = $1 WHERE user_id = $2', [newDutyStatus, shift.user_id]);
+    }
 
     socketService.broadcast('shift:duty_changed', {
       shift_id: id,

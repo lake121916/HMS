@@ -114,25 +114,24 @@ const ReceptionistWorkflow: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await api.post('/patients', regForm);
-      const patient = res.data.data.patient;
-      
-      // Automatically create registration invoice
-      void api.post('/invoices', {
-        patient_id: patient.id,
-        subtotal: 50,
-        tax: 0,
-        discount: 0,
-        notes: 'Patient registration fee',
-        items: [{
-          service: 'Patient Registration',
-          quantity: 1,
-          unit_price: 50,
-          total: 50
-        }]
-      });
-      
-      showToast('success', `Patient ${patient.first_name} ${patient.last_name} registered! Registration invoice created.`);
+      const payload = {
+        ...regForm,
+        firstName: regForm.first_name.trim(),
+        lastName: regForm.last_name.trim(),
+        dateOfBirth: regForm.date_of_birth,
+        gender: regForm.gender,
+        email: regForm.email.trim() || undefined,
+        phone: regForm.phone.trim() || undefined,
+      };
+
+      const res = await api.post('/patients', payload);
+      const patient = res.data?.data?.patient || res.data?.data || res.data?.patient;
+
+      if (!patient || !patient.id) {
+        throw new Error('Patient record was not returned by the server');
+      }
+
+      showToast('success', `Patient ${patient.first_name} ${patient.last_name} registered successfully! Invoice generated automatically.`);
       setSelectedPatient(patient);
       setShowRegForm(false);
       setRegForm({
@@ -140,8 +139,10 @@ const ReceptionistWorkflow: React.FC = () => {
         phone: '', email: '', blood_type: '', address: '', allergies: '',
         emergency_contact_name: '', emergency_contact_phone: ''
       });
+      // Also add newly registered patient to the search list
+      setPatients(prev => [patient, ...prev.filter(p => p.id !== patient.id)]);
     } catch (err: any) {
-      showToast('error', err.response?.data?.message || 'Registration failed');
+      showToast('error', err.response?.data?.message || err.message || 'Registration failed');
     } finally { setLoading(false); }
   };
 

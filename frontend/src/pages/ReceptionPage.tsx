@@ -144,22 +144,18 @@ const ReceptionPage: React.FC = () => {
   // Modals state
   const [showRegModal, setShowRegModal] = useState(false);
   const [showApptModal, setShowApptModal] = useState(false);
-  const [invoiceModalPatient, setInvoiceModalPatient] = useState<Patient | null>(null);
 
   // Form states
   const [regForm, setRegForm] = useState({
     firstName: '', lastName: '', dateOfBirth: '', gender: 'male',
     phone: '', email: '', bloodType: 'O+', address: '', allergies: '',
     emergencyContactName: '', emergencyContactPhone: '', insuranceNumber: '',
-    createInvoiceNow: true, sendToTriageNow: true
+    sendToTriageNow: true
   });
 
   const [apptForm, setApptForm] = useState({
     patientId: '', doctorId: '', appointmentDate: '', appointmentTime: '09:00', reason: 'General Consultation'
   });
-
-  const [invoiceTotal, setInvoiceTotal] = useState<number>(50);
-  const [invoiceNote, setInvoiceNote] = useState('Patient registration & intake fee');
 
   useEffect(() => {
     void fetchData();
@@ -259,26 +255,13 @@ const ReceptionPage: React.FC = () => {
         } catch (_) {}
       }
 
-      if (regForm.createInvoiceNow && patientId) {
-        try {
-          await api.post('/invoices', {
-            patient_id: patientId,
-            subtotal: 50,
-            tax: 0,
-            discount: 0,
-            notes: 'Walk-in registration fee',
-            items: [{ service: 'Patient Registration', quantity: 1, unit_price: 50, total: 50 }]
-          });
-        } catch (_) {}
-      }
-
       showNotice('success', `Patient ${regForm.firstName} ${regForm.lastName} registered successfully!${encMessage}`);
       setShowRegModal(false);
       setRegForm({
         firstName: '', lastName: '', dateOfBirth: '', gender: 'male',
         phone: '', email: '', bloodType: 'O+', address: '', allergies: '',
         emergencyContactName: '', emergencyContactPhone: '', insuranceNumber: '',
-        createInvoiceNow: true, sendToTriageNow: true
+        sendToTriageNow: true
       });
       await fetchData();
     } catch (err: any) {
@@ -313,49 +296,6 @@ const ReceptionPage: React.FC = () => {
       console.error('Failed to send patient to triage:', error);
       setEncounters(current => current.map(item => item.patient_id === patientId ? { ...item, status: 'waiting_for_triage' } : item));
       showNotice('success', 'Patient updated to triage queue locally.');
-    } finally {
-      setActionBusy(null);
-    }
-  };
-
-  // ── Create Invoice Handler ──────────────────────────────────────────────────
-  const handleCreateInvoice = async (patientId: number) => {
-    setActionBusy(`invoice-${patientId}`);
-    try {
-      await api.post('/invoices', {
-        patient_id: patientId,
-        subtotal: invoiceTotal,
-        tax: 0,
-        discount: 0,
-        notes: invoiceNote,
-        items: [{
-          service: 'Patient Registration & Consultation Fee',
-          quantity: 1,
-          unit_price: invoiceTotal,
-          total: invoiceTotal,
-        }],
-      });
-
-      showNotice('success', 'Registration invoice generated successfully.');
-      setInvoiceModalPatient(null);
-      setInvoiceNote('Patient registration & intake fee');
-      setInvoiceTotal(50);
-      await fetchData();
-    } catch (error: any) {
-      console.error('Failed to create invoice:', error);
-      const pat = patients.find(p => p.id === patientId);
-      if (pat) {
-        setInvoices(curr => [{
-          id: Date.now(),
-          patient_name: `${pat.first_name || ''} ${pat.last_name || ''}`.trim(),
-          total_amount: invoiceTotal,
-          amount_paid: 0,
-          status: 'pending',
-          created_at: new Date().toISOString()
-        }, ...curr]);
-      }
-      showNotice('success', 'Invoice recorded in local desk billing queue.');
-      setInvoiceModalPatient(null);
     } finally {
       setActionBusy(null);
     }
@@ -461,17 +401,6 @@ const ReceptionPage: React.FC = () => {
           >
             <Calendar className="h-4 w-4 text-teal-600" />
             Book Appointment
-          </button>
-
-          <button
-            onClick={() => {
-              if (selectedPatient) setInvoiceModalPatient(selectedPatient);
-              else showNotice('error', 'Select a patient first to create an invoice');
-            }}
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white dark:bg-slate-700 dark:border-slate-600 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 transition"
-          >
-            <DollarSign className="h-4 w-4 text-amber-600" />
-            Intake Invoice
           </button>
 
           <button
@@ -636,16 +565,6 @@ const ReceptionPage: React.FC = () => {
                                 {actionBusy === `triage-${item.patient_id}` ? 'Sending...' : 'Send to Triage'}
                               </button>
                             )}
-
-                            <button
-                              onClick={() => {
-                                const pat = patObj || { id: item.patient_id, first_name: item.first_name, last_name: item.last_name };
-                                setInvoiceModalPatient(pat as Patient);
-                              }}
-                              className="rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100"
-                            >
-                              + Invoice
-                            </button>
                           </div>
                         </div>
                       </div>
@@ -873,13 +792,6 @@ const ReceptionPage: React.FC = () => {
                     Book Appt
                   </button>
 
-                  <button
-                    onClick={() => setInvoiceModalPatient(selectedPatient)}
-                    className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-center font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50"
-                  >
-                    Generate Fee
-                  </button>
-
                   <Link
                     to="/vitals"
                     className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-center font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 text-center"
@@ -1027,15 +939,6 @@ const ReceptionPage: React.FC = () => {
                   />
                   <span>Automatically place in <strong>Triage Waiting Queue</strong></span>
                 </label>
-                <label className="flex items-center gap-2 text-slate-700 dark:text-slate-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={regForm.createInvoiceNow}
-                    onChange={e => setRegForm({ ...regForm, createInvoiceNow: e.target.checked })}
-                    className="rounded border-slate-300 text-teal-600"
-                  />
-                  <span>Generate <strong>$50 Registration Fee Invoice</strong> for Cashier</span>
-                </label>
               </div>
 
               <div className="pt-4 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-700">
@@ -1159,79 +1062,6 @@ const ReceptionPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── MODAL 3: INTAKE INVOICE ────────────────────────────────────────────── */}
-      {invoiceModalPatient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-amber-600" />
-                Create Intake Invoice
-              </h3>
-              <button onClick={() => setInvoiceModalPatient(null)} className="text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
-            </div>
-
-            <div className="rounded-xl bg-amber-50 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-200 border border-amber-200">
-              <div className="font-bold">{invoiceModalPatient.first_name || 'Patient'} {invoiceModalPatient.last_name || `#${invoiceModalPatient.id}`}</div>
-              <div className="text-[11px] text-amber-700 dark:text-amber-300">Patient ID #{invoiceModalPatient.id}</div>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Service</label>
-                <input
-                  value="Patient Registration & Intake Fee"
-                  readOnly
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-900 px-3 py-2 text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Amount (ETB / USD)</label>
-                <input
-                  type="number" min="0"
-                  value={invoiceTotal}
-                  onChange={e => setInvoiceTotal(Number(e.target.value || 0))}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-600 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Invoice Notes</label>
-                <textarea
-                  rows={2}
-                  value={invoiceNote}
-                  onChange={e => setInvoiceNote(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-600 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900"
-                />
-              </div>
-
-              <div className="flex items-center justify-between rounded-xl bg-slate-100 dark:bg-slate-900 px-4 py-3 font-bold text-slate-900 dark:text-white">
-                <span>Total Due</span>
-                <span className="text-base text-teal-600">{fmt(invoiceTotal)}</span>
-              </div>
-            </div>
-
-            <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={() => setInvoiceModalPatient(null)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleCreateInvoice(invoiceModalPatient.id)}
-                disabled={actionBusy === `invoice-${invoiceModalPatient.id}`}
-                className="rounded-xl bg-amber-600 px-5 py-2 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-50"
-              >
-                {actionBusy === `invoice-${invoiceModalPatient.id}` ? 'Creating...' : 'Create Invoice'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

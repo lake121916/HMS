@@ -75,7 +75,15 @@ const ALL_PAGES = [
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   super_admin:      ALL_PAGES,
-  admin:            ALL_PAGES,
+  admin: [
+    'dashboard', 'doctor-dashboard', 'patients', 'doctors', 'appointments',
+    'vitals', 'prescriptions', 'lab-tests', 'admissions', 'invoices', 'payments',
+    'reception', 'medicines', 'inventory', 'beds', 'reports',
+    'user-management', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'radiology',
+    'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
+    'assignment', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
+    'services-admin', 'shifts'
+  ],
   hospital_manager: [
     'dashboard',
     'departments-admin',
@@ -85,12 +93,13 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'finance-reports',
     'reports',
     'services-admin',
+    'shifts',
   ],
   receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'invoices', 'reception', 'reception-workflow', 'vitals'],
   doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
   nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse'],
-  lab_technician:   ['dashboard', 'lab-tests', 'lab-dashboard', 'patients'],
-  pharmacist:       ['dashboard', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
+  lab_technician:   ['dashboard', 'shifts', 'lab-tests', 'lab-dashboard', 'patients'],
+  pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
   cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow'],
   patient:          ['patient-portal', 'appointments'],
 };

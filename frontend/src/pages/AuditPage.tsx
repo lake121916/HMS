@@ -1,3 +1,4 @@
+import RoleGuard from '../components/RoleGuard';
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import {
@@ -89,6 +90,7 @@ const AuditPage: React.FC = () => {
   const totalPages = Math.ceil(total / LIMIT) || 1;
 
   return (
+    <RoleGuard allowedRoles={['super_admin']}>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -283,6 +285,7 @@ const AuditPage: React.FC = () => {
         </div>
       )}
     </div>
+    </RoleGuard>
   );
 };
 

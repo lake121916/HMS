@@ -7,6 +7,8 @@ import {
   User, HeartHandshake, Briefcase
 } from 'lucide-react';
 import RoleGuard from '../components/RoleGuard';
+import { useAuth } from '../contexts/AuthContext';
+import { useRoleAccess } from '../hooks/useRoleAccess';
 
 interface User {
   id: number;
@@ -38,6 +40,7 @@ interface Department {
 
 const ROLES = [
   'super_admin',
+  'admin',
   'doctor',
   'nurse',
   'receptionist',
@@ -50,6 +53,7 @@ const ROLES = [
 
 const ROLE_COLORS: Record<string, string> = {
   super_admin: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200',
+  admin: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border-indigo-200',
   doctor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200',
   nurse: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300 border-rose-200',
   receptionist: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border-indigo-200',
@@ -61,6 +65,8 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const UserManagementPage: React.FC = () => {
+  const { user: currentUser } = useAuth();
+  const { can } = useRoleAccess();
   // Users State
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -159,6 +165,10 @@ const UserManagementPage: React.FC = () => {
   };
 
   const handleEditUser = (user: User) => {
+    if (user.role === 'super_admin' && currentUser?.role !== 'super_admin') {
+      alert('Only super administrators can edit super admin accounts.');
+      return;
+    }
     setEditingUser(user);
     setShowPassword(false);
     const nameParts = (user.full_name || '').split(' ');
@@ -171,7 +181,7 @@ const UserManagementPage: React.FC = () => {
       address: user.address || '',
       emergency_contact: user.emergency_contact || '',
       password: '',
-      role: user.role === 'admin' ? 'super_admin' : user.role,
+      role: user.role,
       department_id: user.department_id ? String(user.department_id) : (departments[0]?.id ? String(departments[0].id) : ''),
       specialization: user.specialization || 'General Physician',
       qualification: user.qualification || 'MD',
@@ -185,6 +195,10 @@ const UserManagementPage: React.FC = () => {
   };
 
   const handleDeleteUser = async (id: number) => {
+    if (currentUser?.role !== 'super_admin') {
+      alert('Only super administrators have permission to delete user accounts.');
+      return;
+    }
     if (!window.confirm('Are you sure you want to delete this user account?')) return;
     try {
       await api.delete(`/admin/users/${id}`);
@@ -196,6 +210,11 @@ const UserManagementPage: React.FC = () => {
   };
 
   const handleToggleUserStatus = async (id: number, currentActive: boolean) => {
+    const target = users.find(u => u.id === id);
+    if (target?.role === 'super_admin' && currentUser?.role !== 'super_admin') {
+      alert('Only super administrators can modify super admin account status.');
+      return;
+    }
     try {
       await api.put(`/admin/users/${id}`, { is_active: !currentActive });
       notifySuccess(`User ${!currentActive ? 'activated' : 'deactivated'} successfully.`);
@@ -254,7 +273,7 @@ const UserManagementPage: React.FC = () => {
       (u.specialization && u.specialization.toLowerCase().includes(userSearch.toLowerCase()));
 
     const matchesRole = roleFilter
-      ? (u.role === roleFilter || (roleFilter === 'super_admin' && u.role === 'admin'))
+      ? u.role === roleFilter
       : true;
 
     const matchesDept = deptFilter
@@ -333,7 +352,7 @@ const UserManagementPage: React.FC = () => {
             className="px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 shadow-xs font-medium cursor-pointer"
           >
             <option value="" className="bg-white text-gray-900 dark:bg-gray-800 dark:text-white">All Roles ({users.length})</option>
-            {ROLES.map(r => (
+            {ROLES.filter(r => currentUser?.role === 'super_admin' || r !== 'super_admin').map(r => (
               <option key={r} value={r} className="bg-white text-gray-900 dark:bg-gray-800 dark:text-white">{r.replace(/_/g, ' ')}</option>
             ))}
           </select>
@@ -371,7 +390,7 @@ const UserManagementPage: React.FC = () => {
                   <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-400">No matching user accounts found</td></tr>
                 ) : (
                   filteredUsers.map(user => {
-                    const displayRole = user.role === 'admin' ? 'super_admin' : user.role;
+                    const displayRole = user.role;
                     return (
                       <tr key={user.id} className="hover:bg-gray-50/70 dark:hover:bg-gray-750 transition-colors">
                         <td className="px-5 py-4">
@@ -461,13 +480,15 @@ const UserManagementPage: React.FC = () => {
                             >
                               {user.is_active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                             </button>
-                            <button
-                              onClick={() => handleDeleteUser(user.id)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
-                              title="Delete User"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {can('admin:delete_user') && user.id !== currentUser?.id && (
+                              <button
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
+                                title="Delete User (Super Admin only)"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

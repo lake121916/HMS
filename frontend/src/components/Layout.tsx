@@ -213,7 +213,7 @@ const Layout: React.FC = () => {
       { name: 'Cashier POS',        href: '/cashier-workflow',   icon: Receipt         },
       // ── PATIENTS group ─────────────────────────────────────────────
       { name: 'Patients',           href: '/patients',           icon: Users,          group: 'PATIENTS'  },
-      { name: 'Doctor Shifts',      href: '/shifts',             icon: Clock,          group: 'CLINICAL'  },
+      { name: 'Staff Shifts',       href: '/shifts',             icon: Clock,          group: 'CLINICAL'  },
       { name: 'Doctors',            href: '/doctors',            icon: Stethoscope,    group: 'PATIENTS'  },
       { name: 'Appointments',       href: '/appointments',       icon: Calendar,       group: 'PATIENTS'  },
       { name: 'Admissions',         href: '/admissions',         icon: Bed,            group: 'PATIENTS'  },
@@ -241,14 +241,14 @@ const Layout: React.FC = () => {
     ];
 
     const roleMap: Record<string, string[]> = {
-      super_admin:      ['Dashboard', 'Doctor Shifts', 'Users', 'Departments', 'Services', 'Finance Reports', 'Reports', 'Audit Logs'],
-      admin:            ['Dashboard', 'Doctor Shifts', 'Users', 'Departments', 'Services', 'Finance Reports', 'Reports', 'Audit Logs'],
-      hospital_manager: ['Dashboard', 'Doctor Shifts', 'Departments', 'Doctors', 'Admissions', 'Beds', 'Finance Reports', 'Reports'],
-      receptionist:     ['Reception Workflow','Patients','Appointments','Admissions','Invoices'],
-      doctor:           ['Dashboard', 'Doctor Shifts','My Consultations','Patients','Appointments','Vitals','Prescriptions','Lab Tests','Radiology','Admissions'],
-      nurse:            ['Triage Worklist','Patients','Appointments','Vitals','Admissions','Beds'],
-      lab_technician:   ['Lab Dashboard','Lab Tests','Patients'],
-      pharmacist:       ['Pharmacy','Prescriptions','Medicines','Inventory'],
+      super_admin:      ['Dashboard', 'System Admin', 'Staff Shifts', 'Users', 'Audit Logs', 'Departments', 'Services', 'Finance Reports', 'Reports'],
+      admin:            ['Dashboard', 'Staff Shifts', 'Users', 'Departments', 'Services', 'Finance Reports', 'Reports'],
+      hospital_manager: ['Dashboard', 'Staff Shifts', 'Departments', 'Doctors', 'Admissions', 'Beds', 'Finance Reports', 'Reports'],
+      receptionist:     ['Reception Workflow','Patients','Appointments','Admissions'],
+      doctor:           ['Dashboard', 'Staff Shifts','My Consultations','Patients','Appointments','Vitals','Prescriptions','Lab Tests','Radiology','Admissions'],
+      nurse:            ['Triage Worklist','Staff Shifts','Patients','Appointments','Vitals','Admissions','Beds'],
+      lab_technician:   ['Lab Dashboard','Staff Shifts','Lab Tests','Patients'],
+      pharmacist:       ['Pharmacy','Staff Shifts','Prescriptions','Medicines','Inventory'],
       cashier:          ['Cashier POS','Invoices','Payments','Finance Reports'],
       patient:          ['Patient Portal','Appointments','Invoices','Prescriptions'],
     };

@@ -218,7 +218,7 @@ const PaymentsPage: React.FC = () => {
           <p className="mt-1 text-gray-600 dark:text-gray-400">Track collections, invoices, payments, and daily reconciliations in one place.</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link to="/invoices" className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">Create Invoice</Link>
+          
           <Link to="/reports" className="px-4 py-2 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">View Reports</Link>
         </div>
       </div>

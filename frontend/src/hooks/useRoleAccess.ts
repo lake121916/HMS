@@ -68,7 +68,7 @@ const PERMISSIONS: Record<string, string[]> = {
   'cashier:view':      ['super_admin','admin','hospital_manager','cashier'],
   'insurance:view':    ['super_admin','admin'],
   'blood_bank:view':   ['super_admin','admin'],
-  'audit:view':        ['super_admin','admin'],
+  'audit:view':        ['super_admin'],
   'radiology:view':    ['super_admin','admin','doctor'],
   'finance_reports:view': ['super_admin','admin','hospital_manager','cashier'],
 
@@ -92,6 +92,7 @@ const PERMISSIONS: Record<string, string[]> = {
   'admin:create_staff':['super_admin','admin'],
   'admin:delete_user': ['super_admin'],
   'admin:departments': ['super_admin','admin','hospital_manager'],
+  'admin:system_settings': ['super_admin'],
 };
 
 export const useRoleAccess = () => {

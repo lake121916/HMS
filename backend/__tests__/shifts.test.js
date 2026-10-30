@@ -11,7 +11,7 @@ const adminToken = jwt.sign(
   { expiresIn: '1h' }
 );
 
-const doctorToken = jwt.sign(
+let doctorToken = jwt.sign(
   { id: 2, email: 'doctor@hospital.com', role: 'doctor', firstName: 'Doctor' },
   JWT_SECRET,
   { expiresIn: '1h' }
@@ -35,10 +35,31 @@ describe('Priority 3: Doctor Shift Scheduling & Intelligent Patient Assignment',
 
   beforeAll(async () => {
     // Look up sample doctor(s), department, and encounter for testing
-    const docRes = await pool.query('SELECT id, department_id FROM doctors ORDER BY id ASC LIMIT 2');
+    const docRes = await pool.query('SELECT id, department_id, user_id FROM doctors ORDER BY id ASC LIMIT 2');
     if (docRes.rows.length > 0) {
       sampleDoctorId = docRes.rows[0].id;
       sampleDeptId = docRes.rows[0].department_id;
+      let docUserId = docRes.rows[0].user_id;
+      if (!docUserId) {
+        const uRes = await pool.query("SELECT id FROM users WHERE role = 'doctor' LIMIT 1");
+        if (uRes.rows.length > 0) {
+          docUserId = uRes.rows[0].id;
+        } else {
+          const newDocUser = await pool.query(`
+            INSERT INTO users (email, password_hash, role, is_active, first_name, last_name)
+            VALUES ('shift_test_doc@hospital.com', 'dummyhash', 'doctor', true, 'Test', 'Doctor')
+            ON CONFLICT (email) DO UPDATE SET role = 'doctor'
+            RETURNING id
+          `);
+          docUserId = newDocUser.rows[0].id;
+        }
+        await pool.query('UPDATE doctors SET user_id = $1 WHERE id = $2', [docUserId, sampleDoctorId]);
+      }
+      doctorToken = jwt.sign(
+        { id: docUserId, email: 'doctor@hospital.com', role: 'doctor', firstName: 'Doctor' },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      );
     }
     if (docRes.rows.length > 1) {
       sampleDoctor2Id = docRes.rows[1].id;

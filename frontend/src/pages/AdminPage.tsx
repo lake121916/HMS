@@ -1,3 +1,4 @@
+import RoleGuard from '../components/RoleGuard';
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import {
@@ -299,6 +300,7 @@ const AdminPage: React.FC = () => {
   const inputClass = "w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all";
 
   return (
+    <RoleGuard allowedRoles={['super_admin']}>
     <div className="space-y-6">
       {/* ── Priority 1: Header Command Banner & Quick Actions ── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 rounded-3xl text-white shadow-xl">
@@ -964,6 +966,7 @@ const AdminPage: React.FC = () => {
         </div>
       )}
     </div>
+    </RoleGuard>
   );
 };
 

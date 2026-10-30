@@ -88,12 +88,20 @@ const registerPatient = handleAsync(async (req, res) => {
     password  // optional: admin may supply a real password
   } = data;
 
-  if (!email || !first_name || !last_name || !date_of_birth || !gender) {
-    return sendError(res, 'first_name, last_name, email, date_of_birth, and gender are required', 400);
+  if (!first_name || !last_name || !date_of_birth || !gender) {
+    return sendError(res, 'first_name, last_name, date_of_birth, and gender are required', 400);
   }
 
+  // Handle email: if patient has no email, generate a unique internal clinical account identifier
+  const cleanFirst = String(first_name).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const cleanLast = String(last_name).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const randomSuffix = Math.random().toString(36).substring(2, 7);
+  const effectiveEmail = (email && String(email).trim())
+    ? String(email).toLowerCase().trim()
+    : `pat.${cleanFirst || 'patient'}.${cleanLast || 'record'}.${Date.now().toString(36)}.${randomSuffix}@hospital.local`;
+
   // Check if email already taken
-  const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+  const existing = await pool.query('SELECT id FROM users WHERE email = $1', [effectiveEmail]);
   if (existing.rows.length > 0) {
     return sendError(res, 'An account with this email already exists', 409);
   }
@@ -108,7 +116,7 @@ const registerPatient = handleAsync(async (req, res) => {
 
     const userResult = await client.query(
       'INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3) RETURNING id',
-      [email.toLowerCase().trim(), hashedPassword, 'patient']
+      [effectiveEmail, hashedPassword, 'patient']
     );
     const userId = userResult.rows[0].id;
 
@@ -117,15 +125,45 @@ const registerPatient = handleAsync(async (req, res) => {
         allergies, emergency_contact_name, emergency_contact_phone, insurance_number, medical_history)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
       [userId, first_name, last_name, date_of_birth, gender, phone || null,
-       email.toLowerCase().trim(), address || null, blood_type || null, allergies || null,
+       effectiveEmail, address || null, blood_type || null, allergies || null,
        emergency_contact_name || null, emergency_contact_phone || null,
        insurance_number || null, medical_history || null]
     );
 
+    const patientRow = patientResult.rows[0];
+
+    // ── AUTOMATIC INVOICE GENERATION ──────────────────────────────────────────
+    // Automatically generate Patient Registration Fee invoice (50 ETB) in 'pending' status
+    let autoInvoice = null;
+    try {
+      const autoInvoiceRes = await client.query(
+        `INSERT INTO invoices (patient_id, subtotal, tax, discount, total_amount, status, notes)
+         VALUES ($1, 50.00, 0.00, 0.00, 50.00, 'pending', 'Automatic Patient Registration Fee')
+         RETURNING *`,
+        [patientRow.id]
+      );
+      if (autoInvoiceRes && autoInvoiceRes.rows && autoInvoiceRes.rows.length) {
+        autoInvoice = autoInvoiceRes.rows[0];
+        await client.query(
+          `INSERT INTO invoice_items 
+             (invoice_id, patient_id, description, quantity, unit_price, source_type, source_id)
+           VALUES ($1, $2, 'Patient Registration Fee', 1, 50.00, 'other', $3)`,
+          [autoInvoice.id, patientRow.id, autoInvoice.id]
+        );
+      }
+    } catch (invErr) {
+      console.warn('Auto invoice creation deferred:', invErr.message);
+    }
+
     await client.query('COMMIT');
 
-    // Return the generated password only if admin didn't supply one (so they can share it)
-    const responseData = { ...patientResult.rows[0] };
+    // Return both top-level and nested .patient for compatibility with all frontend workflows
+    const responseData = {
+      ...patientRow,
+      patient: patientRow,
+      invoice: autoInvoice,
+      registration_invoice: autoInvoice
+    };
     if (!password) {
       responseData.generated_password = rawPassword;
       responseData.password_note = 'Share this password with the patient. They should change it upon first login.';
