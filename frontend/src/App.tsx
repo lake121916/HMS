@@ -38,7 +38,7 @@ import InventoryPage from './pages/InventoryPage';
 import BedsPage from './pages/BedsPage';
 import ReportsPage from './pages/ReportsPage';
 import AdminPage from './pages/AdminPage';
-import UserManagementPage from './pages/UserManagementPage';
+// Standalone UserManagementPage unified into AdminPage
 import CashierDashboard from './pages/CashierDashboard';
 import InsurancePage from './pages/InsurancePage';
 import BloodBankPage from './pages/BloodBankPage';
@@ -95,21 +95,21 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'services-admin',
     'shifts',
   ],
-  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'invoices', 'reception', 'reception-workflow', 'vitals'],
+  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'reception', 'reception-workflow', 'vitals'],
   doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
   nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse'],
   lab_technician:   ['dashboard', 'shifts', 'lab-tests', 'lab-dashboard', 'patients'],
   pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
   cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow'],
-  patient:          ['patient-portal', 'appointments'],
+  patient:          ['patient-portal', 'appointments', 'prescriptions', 'invoices'],
 };
 
 const DEFAULT_ROUTE_BY_ROLE: Record<string, string> = {
   super_admin: '/dashboard',
   admin: '/dashboard',
   hospital_manager: '/dashboard',
-  receptionist: '/reception',
-  doctor: '/doctor',
+  receptionist: '/reception-workflow',
+  doctor: '/consultation',
   nurse: '/nurse',
   lab_technician: '/lab-dashboard',
   pharmacist: '/pharmacy',
@@ -280,7 +280,7 @@ function App() {
               <ProtectedRoute page="admin"><AdminPage /></ProtectedRoute>
             } />
             <Route path="user-management" element={
-              <ProtectedRoute page="user-management"><UserManagementPage /></ProtectedRoute>
+              <Navigate to="/admin" replace />
             } />
             <Route path="departments-admin" element={
               <ProtectedRoute page="departments-admin"><DepartmentsAdminPage /></ProtectedRoute>

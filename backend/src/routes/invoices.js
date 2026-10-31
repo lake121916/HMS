@@ -164,7 +164,7 @@ router.post('/clinical', authenticate, authorize('doctor', 'nurse', 'lab_technic
 });
 
 // POST create invoice
-router.post('/', authenticate, authorize('receptionist', 'admin', 'super_admin', 'cashier'), async (req, res) => {
+router.post('/', authenticate, authorize('cashier', 'admin', 'super_admin'), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

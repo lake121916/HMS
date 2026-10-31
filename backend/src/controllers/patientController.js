@@ -21,9 +21,38 @@ const getAllPatients = handleAsync(async (req, res) => {
   let paramCount = 0;
 
   if (search) {
+    const rawSearch = search.trim();
+    const patMatch = rawSearch.match(/^(?:PAT-?|#)?(\d+)$/i);
+    const numericPart = patMatch ? patMatch[1] : null;
+
+    let altPhone = null;
+    if (rawSearch.startsWith('09') || rawSearch.startsWith('07')) {
+      altPhone = `+251${rawSearch.slice(1)}`;
+    } else if (rawSearch.startsWith('+2519') || rawSearch.startsWith('+2517')) {
+      altPhone = `0${rawSearch.slice(5)}`;
+    } else if (rawSearch.startsWith('2519') || rawSearch.startsWith('2517')) {
+      altPhone = `0${rawSearch.slice(4)}`;
+    }
+
     paramCount++;
-    query += ` AND (first_name ILIKE $${paramCount} OR last_name ILIKE $${paramCount} OR email ILIKE $${paramCount} OR phone ILIKE $${paramCount})`;
-    params.push(`%${search}%`);
+    const sIdx = paramCount;
+    params.push(`%${rawSearch}%`);
+
+    let searchClause = `(first_name ILIKE $${sIdx} OR last_name ILIKE $${sIdx} OR email ILIKE $${sIdx} OR phone ILIKE $${sIdx} OR (first_name || ' ' || last_name) ILIKE $${sIdx} OR id::text ILIKE $${sIdx})`;
+
+    if (numericPart) {
+      paramCount++;
+      searchClause += ` OR id = $${paramCount}`;
+      params.push(parseInt(numericPart, 10));
+    }
+
+    if (altPhone) {
+      paramCount++;
+      searchClause += ` OR phone ILIKE $${paramCount}`;
+      params.push(`%${altPhone}%`);
+    }
+
+    query += ` AND (${searchClause})`;
   }
 
   if (bloodType) {
@@ -37,16 +66,48 @@ const getAllPatients = handleAsync(async (req, res) => {
 
   const result = await pool.query(query, params);
 
-  // Safe parameterized count query
+  // Safe parameterized count query matching same conditions
   let countQuery = 'SELECT COUNT(*) FROM patients WHERE 1=1';
   const countParams = [];
-  let countIdx = 1;
+  let countIdx = 0;
+
   if (search) {
-    countQuery += ` AND (first_name ILIKE $${countIdx} OR last_name ILIKE $${countIdx} OR email ILIKE $${countIdx} OR phone ILIKE $${countIdx})`;
-    countParams.push(`%${search}%`);
+    const rawSearch = search.trim();
+    const patMatch = rawSearch.match(/^(?:PAT-?|#)?(\d+)$/i);
+    const numericPart = patMatch ? patMatch[1] : null;
+
+    let altPhone = null;
+    if (rawSearch.startsWith('09') || rawSearch.startsWith('07')) {
+      altPhone = `+251${rawSearch.slice(1)}`;
+    } else if (rawSearch.startsWith('+2519') || rawSearch.startsWith('+2517')) {
+      altPhone = `0${rawSearch.slice(5)}`;
+    } else if (rawSearch.startsWith('2519') || rawSearch.startsWith('2517')) {
+      altPhone = `0${rawSearch.slice(4)}`;
+    }
+
     countIdx++;
+    const sIdx = countIdx;
+    countParams.push(`%${rawSearch}%`);
+
+    let searchClause = `(first_name ILIKE $${sIdx} OR last_name ILIKE $${sIdx} OR email ILIKE $${sIdx} OR phone ILIKE $${sIdx} OR (first_name || ' ' || last_name) ILIKE $${sIdx} OR id::text ILIKE $${sIdx})`;
+
+    if (numericPart) {
+      countIdx++;
+      searchClause += ` OR id = $${countIdx}`;
+      countParams.push(parseInt(numericPart, 10));
+    }
+
+    if (altPhone) {
+      countIdx++;
+      searchClause += ` OR phone ILIKE $${countIdx}`;
+      countParams.push(`%${altPhone}%`);
+    }
+
+    countQuery += ` AND (${searchClause})`;
   }
+
   if (bloodType) {
+    countIdx++;
     countQuery += ` AND blood_type = $${countIdx}`;
     countParams.push(bloodType);
   }
@@ -243,6 +304,34 @@ const getPatientHistory = handleAsync(async (req, res) => {
 
 const deletePatient = handleAsync(async (req, res) => {
   const { id } = req.params;
+
+  if (req.user?.role !== 'super_admin') {
+    return sendError(res, 'Access denied. Only Super Admin may permanently delete patient records.', 403);
+  }
+
+  // Check if patient has any clinical encounters, prescriptions, lab tests, or invoices
+  const linkCheck = await pool.query(
+    `SELECT
+       (SELECT COUNT(*) FROM patient_encounters WHERE patient_id = $1) AS encounter_count,
+       (SELECT COUNT(*) FROM prescriptions WHERE patient_id = $1) AS prescription_count,
+       (SELECT COUNT(*) FROM lab_tests WHERE patient_id = $1) AS lab_count,
+       (SELECT COUNT(*) FROM invoices WHERE patient_id = $1) AS invoice_count`,
+    [id]
+  );
+
+  const row = linkCheck.rows[0];
+  const totalLinked = parseInt(row.encounter_count || 0) + 
+                      parseInt(row.prescription_count || 0) + 
+                      parseInt(row.lab_count || 0) + 
+                      parseInt(row.invoice_count || 0);
+
+  if (totalLinked > 0) {
+    return sendError(
+      res,
+      `Cannot delete patient record: patient has linked clinical encounters (${row.encounter_count}), prescriptions (${row.prescription_count}), lab tests (${row.lab_count}), or billing records (${row.invoice_count}). Medical and financial records must be preserved.`,
+      400
+    );
+  }
 
   const result = await pool.query(
     'DELETE FROM patients WHERE id = $1 RETURNING *',

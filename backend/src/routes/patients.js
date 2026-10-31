@@ -78,7 +78,7 @@ router.put(
 router.delete(
   '/:id',
   authenticate,
-  authorize('admin'),
+  authorize('super_admin'),
   patientController.deletePatient
 );
 

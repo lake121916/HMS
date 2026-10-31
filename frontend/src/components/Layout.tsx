@@ -5,6 +5,7 @@ import { useRoleAccess } from '../hooks/useRoleAccess';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import PatientQuickSearchModal from './PatientQuickSearchModal';
 import api from '../services/api';
 import OfflineStatusBanner from './OfflineStatusBanner';
 import {
@@ -14,7 +15,7 @@ import {
   Palette, Sun, Moon, RefreshCw, ClipboardCheck,
   UserCheck, Building2, Receipt, Package, Scan,
   ChevronLeft, ChevronRight, User, Key, Eye, EyeOff,
-  CheckCircle2, AlertCircle
+  CheckCircle2, AlertCircle, Search, Loader2
 } from 'lucide-react';
 
 interface NavItem {
@@ -22,7 +23,7 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ElementType;
-  group: string;
+  group: 'Daily Workbench' | 'Records & Schedule' | 'Duty & Account' | string;
   permission?: string;
   translationKey: string;
 }
@@ -50,6 +51,31 @@ const Layout: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileModalOpen, setProfileModalOpen] = React.useState(false);
   const [changePasswordModalOpen, setChangePasswordModalOpen] = React.useState(false);
+
+  // Live Workload & Authoritative Duty State (Phase 3 & Phase 4)
+  const [workloadCounts, setWorkloadCounts] = React.useState({
+    triage: 0,
+    doctorQueue: 0,
+    labPending: 0,
+    pharmacyPending: 0,
+    cashierPending: 0,
+    activeAdmissions: 0
+  });
+  const [dutyStatus, setDutyStatus] = React.useState<{
+    isOnDuty: boolean;
+    hasScheduledShift: boolean;
+    shiftId: number | null;
+    shiftType: string;
+    shiftLabel: string;
+    startTime: string | null;
+    endTime: string | null;
+    department: string | null;
+  } | null>(null);
+  const [dutyModalOpen, setDutyModalOpen] = React.useState(false);
+  const [dutyToggling, setDutyToggling] = React.useState(false);
+
+  // Universal Quick-Search State (Phase 5)
+  const [quickSearchOpen, setQuickSearchOpen] = React.useState(false);
 
   // Change password form state
   const [oldPassword, setOldPassword] = React.useState('');
@@ -107,7 +133,7 @@ const Layout: React.FC = () => {
 
   const { hue, saturation, isDark, setHue, setSaturation, setIsDark, resetTheme } = useTheme();
 
-  // Fetch notifications on mount and poll every 30s
+  // Fetch notifications
   React.useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -124,9 +150,58 @@ const Layout: React.FC = () => {
       } catch (_) {}
     };
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000); // refresh every 30s
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch Workload Summary & Authoritative Duty Status (Phase 3 & Phase 4)
+  const fetchWorkloadSummary = React.useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await api.get('/workload/summary');
+      if (res.data?.success) {
+        setWorkloadCounts(res.data.data.counts || {});
+        setDutyStatus(res.data.data.dutyStatus || null);
+      }
+    } catch (_) {}
+  }, []);
+
+  React.useEffect(() => {
+    fetchWorkloadSummary();
+    const interval = setInterval(fetchWorkloadSummary, 20000);
+    return () => clearInterval(interval);
+  }, [fetchWorkloadSummary]);
+
+  // Global Keyboard Shortcut: Ctrl + K (or Cmd + K) for Universal Quick Search
+  React.useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setQuickSearchOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
+  // Duty Toggle Handler
+  const handleToggleDuty = async () => {
+    setDutyToggling(true);
+    try {
+      const res = await api.post('/workload/duty-toggle');
+      if (res.data?.success) {
+        setDutyStatus(prev => prev ? {
+          ...prev,
+          isOnDuty: res.data.data.isOnDuty
+        } : null);
+      }
+    } catch (err) {
+      console.error('Failed to toggle duty:', err);
+    } finally {
+      setDutyToggling(false);
+    }
+  };
 
   const markAllRead = async () => {
     try {
@@ -162,7 +237,7 @@ const Layout: React.FC = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, [themeOpen]);
 
-  // Mobile swipe-to-open/close sidebar gesture
+  // Mobile swipe gestures
   React.useEffect(() => {
     let touchStartX = 0;
     let touchStartY = 0;
@@ -173,11 +248,8 @@ const Layout: React.FC = () => {
     const onTouchEnd = (e: TouchEvent) => {
       const dx = e.changedTouches[0].clientX - touchStartX;
       const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
-      // Only register horizontal swipes (not vertical scrolling)
       if (dy > 60) return;
-      // Swipe right from left edge (≤ 40px) → open sidebar
       if (dx > 60 && touchStartX <= 40) setSidebarOpen(true);
-      // Swipe left when sidebar is open → close sidebar
       if (dx < -60 && sidebarOpen) setSidebarOpen(false);
     };
     document.addEventListener('touchstart', onTouchStart, { passive: true });
@@ -188,386 +260,110 @@ const Layout: React.FC = () => {
     };
   }, [sidebarOpen]);
 
+  // ══════════════════════════════════════════════════════════════
+  // ROLE-BASED NAVIGATION WITH STRICT 3-GROUP ARCHITECTURE (PHASE 2)
+  // 1. Daily Workbench   2. Records & Schedule   3. Duty & Account
+  // ══════════════════════════════════════════════════════════════
   const getNavigationByRole = (role: string): NavItem[] => {
-    const dashboardHrefMap: Record<string, string> = {
-      super_admin:      '/dashboard',
-      admin:            '/dashboard',
-      hospital_manager: '/dashboard',
-      receptionist:     '/reception-workflow',
-      doctor:           '/dashboard',
-      nurse:            '/nurse',
-      lab_technician:   '/lab-dashboard',
-      pharmacist:       '/pharmacy',
-      cashier:          '/cashier-workflow',
-      patient:          '/patient-portal',
-    };
-    const dashboardHref = dashboardHrefMap[role] || '/dashboard';
+    switch (role) {
+      case 'receptionist':
+        return [
+          { id: 'reception_workflow', name: 'Reception & Intake Desk', href: '/reception-workflow', icon: UserCheck, group: 'Daily Workbench', translationKey: 'nav.reception' },
+          { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
+          { id: 'appointments', name: 'Appointments Schedule', href: '/appointments', icon: Calendar, group: 'Records & Schedule', permission: 'appointments:view', translationKey: 'nav.appointments' },
+          { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
+        ];
 
-    const allItems: NavItem[] = [
-      // ── OVERVIEW ──────────────────────────────────────────────────────────
-      {
-        id: 'dashboard',
-        name: 'Dashboard',
-        href: dashboardHref,
-        icon: LayoutDashboard,
-        group: 'OVERVIEW',
-        translationKey: 'nav.dashboard',
-      },
-      {
-        id: 'patient_portal',
-        name: 'Patient Health Portal',
-        href: '/patient-portal',
-        icon: LayoutDashboard,
-        group: 'OVERVIEW',
-        translationKey: 'nav.patient_portal',
-      },
-      {
-        id: 'reception_workflow',
-        name: 'Reception & Intake Desk',
-        href: '/reception-workflow',
-        icon: UserCheck,
-        group: 'OVERVIEW',
-        translationKey: 'nav.reception',
-      },
-      {
-        id: 'nurse_worklist',
-        name: 'Triage & Nursing Worklist',
-        href: '/nurse',
-        icon: ClipboardCheck,
-        group: 'OVERVIEW',
-        translationKey: 'nav.triage',
-      },
-      {
-        id: 'lab_dashboard',
-        name: 'Laboratory Worklist',
-        href: '/lab-dashboard',
-        icon: FlaskConical,
-        group: 'OVERVIEW',
-        translationKey: 'nav.lab',
-      },
-      {
-        id: 'pharmacy_dashboard',
-        name: 'Pharmacy & Dispensing',
-        href: '/pharmacy',
-        icon: Pill,
-        group: 'OVERVIEW',
-        translationKey: 'nav.pharmacy',
-      },
-      {
-        id: 'cashier_pos',
-        name: 'Cashier & POS Register',
-        href: '/cashier-workflow',
-        icon: Receipt,
-        group: 'OVERVIEW',
-        translationKey: 'nav.cashier',
-      },
+      case 'nurse':
+        return [
+          { id: 'nurse_worklist', name: 'Triage & Nursing Worklist', href: '/nurse', icon: ClipboardCheck, group: 'Daily Workbench', translationKey: 'nav.triage' },
+          { id: 'vitals', name: 'Vital Signs & Triage', href: '/vitals', icon: Activity, group: 'Daily Workbench', permission: 'vitals:view', translationKey: 'nav.vitals' },
+          { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
+          { id: 'beds', name: 'Ward & Bed Management', href: '/beds', icon: Bed, group: 'Records & Schedule', permission: 'beds:view', translationKey: 'nav.beds' },
+          { id: 'admissions', name: 'Inpatient Admissions', href: '/admissions', icon: Bed, group: 'Records & Schedule', permission: 'admissions:view', translationKey: 'nav.admissions' },
+          { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
+        ];
 
-      // ── WORKFORCE & ROSTER ────────────────────────────────────────────────
-      {
-        id: 'shifts',
-        name: 'Staff Shifts & Rosters',
-        href: '/shifts',
-        icon: Clock,
-        group: 'WORKFORCE & ROSTER',
-        translationKey: 'nav.shifts',
-      },
+      case 'doctor':
+        return [
+          { id: 'consultation', name: 'Clinical Consultations', href: '/consultation', icon: Stethoscope, group: 'Daily Workbench', translationKey: 'nav.consultations' },
+          { id: 'vitals', name: 'Vital Signs & Triage', href: '/vitals', icon: Activity, group: 'Daily Workbench', permission: 'vitals:view', translationKey: 'nav.vitals' },
+          { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
+          { id: 'prescriptions', name: 'Prescriptions', href: '/prescriptions', icon: Pill, group: 'Records & Schedule', permission: 'prescriptions:view', translationKey: 'nav.prescriptions' },
+          { id: 'lab_tests', name: 'Laboratory Orders', href: '/lab-tests', icon: FlaskConical, group: 'Records & Schedule', permission: 'lab_tests:view', translationKey: 'nav.lab_tests' },
+          { id: 'radiology', name: 'Radiology & Imaging', href: '/radiology', icon: Scan, group: 'Records & Schedule', permission: 'radiology:view', translationKey: 'nav.radiology' },
+          { id: 'appointments', name: 'Appointments Schedule', href: '/appointments', icon: Calendar, group: 'Records & Schedule', permission: 'appointments:view', translationKey: 'nav.appointments' },
+          { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
+        ];
 
-      // ── CLINICAL PRACTICE ─────────────────────────────────────────────────
-      {
-        id: 'consultation',
-        name: 'Clinical Consultations',
-        href: '/consultation',
-        icon: Stethoscope,
-        group: 'CLINICAL PRACTICE',
-        translationKey: 'nav.consultations',
-      },
-      {
-        id: 'vitals',
-        name: 'Vital Signs & Triage',
-        href: '/vitals',
-        icon: Activity,
-        group: 'CLINICAL PRACTICE',
-        permission: 'vitals:view',
-        translationKey: 'nav.vitals',
-      },
-      {
-        id: 'prescriptions',
-        name: 'Prescriptions',
-        href: '/prescriptions',
-        icon: Pill,
-        group: 'CLINICAL PRACTICE',
-        permission: 'prescriptions:view',
-        translationKey: 'nav.prescriptions',
-      },
+      case 'lab_technician':
+        return [
+          { id: 'lab_dashboard', name: 'Laboratory Worklist', href: '/lab-dashboard', icon: FlaskConical, group: 'Daily Workbench', translationKey: 'nav.lab' },
+          { id: 'lab_tests', name: 'Laboratory Orders', href: '/lab-tests', icon: FlaskConical, group: 'Records & Schedule', permission: 'lab_tests:view', translationKey: 'nav.lab_tests' },
+          { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
+          { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
+        ];
 
-      // ── DIAGNOSTICS & LABS ────────────────────────────────────────────────
-      {
-        id: 'lab_tests',
-        name: 'Laboratory Orders',
-        href: '/lab-tests',
-        icon: FlaskConical,
-        group: 'DIAGNOSTICS & LABS',
-        permission: 'lab_tests:view',
-        translationKey: 'nav.lab_tests',
-      },
-      {
-        id: 'radiology',
-        name: 'Radiology & Imaging',
-        href: '/radiology',
-        icon: Scan,
-        group: 'DIAGNOSTICS & LABS',
-        permission: 'radiology:view',
-        translationKey: 'nav.radiology',
-      },
+      case 'pharmacist':
+        return [
+          { id: 'pharmacy_dashboard', name: 'Pharmacy & Dispensing', href: '/pharmacy', icon: Pill, group: 'Daily Workbench', translationKey: 'nav.pharmacy' },
+          { id: 'prescriptions', name: 'Prescriptions', href: '/prescriptions', icon: Pill, group: 'Records & Schedule', permission: 'prescriptions:view', translationKey: 'nav.prescriptions' },
+          { id: 'medicines', name: 'Pharmaceutical Catalog', href: '/medicines', icon: Pill, group: 'Records & Schedule', permission: 'medicines:view', translationKey: 'nav.medicines' },
+          { id: 'inventory', name: 'Stock & Inventory', href: '/inventory', icon: Package, group: 'Records & Schedule', permission: 'inventory:view', translationKey: 'nav.inventory' },
+          { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
+        ];
 
-      // ── PATIENT SERVICES ──────────────────────────────────────────────────
-      {
-        id: 'patients',
-        name: 'Patient Directory',
-        href: '/patients',
-        icon: Users,
-        group: 'PATIENT SERVICES',
-        permission: 'patients:view',
-        translationKey: 'nav.patients',
-      },
-      {
-        id: 'appointments',
-        name: 'Appointments Schedule',
-        href: '/appointments',
-        icon: Calendar,
-        group: 'PATIENT SERVICES',
-        permission: 'appointments:view',
-        translationKey: 'nav.appointments',
-      },
-      {
-        id: 'doctors',
-        name: 'Physicians Directory',
-        href: '/doctors',
-        icon: Stethoscope,
-        group: 'PATIENT SERVICES',
-        permission: 'doctors:view',
-        translationKey: 'nav.doctors',
-      },
+      case 'cashier':
+        return [
+          { id: 'cashier_pos', name: 'Cashier POS & Register', href: '/cashier-workflow', icon: Receipt, group: 'Daily Workbench', translationKey: 'nav.cashier' },
+          { id: 'invoices', name: 'Patient Invoices', href: '/invoices', icon: FileText, group: 'Records & Schedule', permission: 'invoices:view', translationKey: 'nav.invoices' },
+          { id: 'payments', name: 'Payment Transactions', href: '/payments', icon: CreditCard, group: 'Records & Schedule', permission: 'payments:view', translationKey: 'nav.payments' },
+          { id: 'finance_reports', name: 'Financial Reports', href: '/finance-reports', icon: BarChart2, group: 'Duty & Account', permission: 'finance_reports:view', translationKey: 'nav.finance_reports' }
+        ];
 
-      // ── INPATIENT & WARDS ─────────────────────────────────────────────────
-      {
-        id: 'admissions',
-        name: 'Inpatient Admissions',
-        href: '/admissions',
-        icon: Bed,
-        group: 'INPATIENT & WARDS',
-        permission: 'admissions:view',
-        translationKey: 'nav.admissions',
-      },
-      {
-        id: 'beds',
-        name: 'Ward & Bed Management',
-        href: '/beds',
-        icon: Bed,
-        group: 'INPATIENT & WARDS',
-        permission: 'beds:view',
-        translationKey: 'nav.beds',
-      },
+      case 'hospital_manager':
+        return [
+          { id: 'dashboard', name: 'Hospital Overview', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
+          { id: 'shifts', name: 'Staff Shifts & Rosters', href: '/shifts', icon: Clock, group: 'Records & Schedule', translationKey: 'nav.shifts' },
+          { id: 'departments_admin', name: 'Hospital Departments', href: '/departments-admin', icon: Building2, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.departments' },
+          { id: 'admissions', name: 'Inpatient Admissions', href: '/admissions', icon: Bed, group: 'Records & Schedule', permission: 'admissions:view', translationKey: 'nav.admissions' },
+          { id: 'beds', name: 'Ward & Bed Management', href: '/beds', icon: Bed, group: 'Records & Schedule', permission: 'beds:view', translationKey: 'nav.beds' },
+          { id: 'reports', name: 'Operational Analytics', href: '/reports', icon: BarChart2, group: 'Duty & Account', permission: 'reports:view', translationKey: 'nav.reports' },
+          { id: 'finance_reports', name: 'Financial Reports', href: '/finance-reports', icon: BarChart2, group: 'Duty & Account', permission: 'finance_reports:view', translationKey: 'nav.finance_reports' }
+        ];
 
-      // ── PHARMACEUTICAL CARE ───────────────────────────────────────────────
-      {
-        id: 'medicines',
-        name: 'Pharmaceutical Catalog',
-        href: '/medicines',
-        icon: Pill,
-        group: 'PHARMACEUTICAL CARE',
-        permission: 'medicines:view',
-        translationKey: 'nav.medicines',
-      },
-      {
-        id: 'inventory',
-        name: 'Stock & Inventory',
-        href: '/inventory',
-        icon: Package,
-        group: 'PHARMACEUTICAL CARE',
-        permission: 'inventory:view',
-        translationKey: 'nav.inventory',
-      },
+      case 'admin':
+        return [
+          { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
+          { id: 'admin', name: 'Admin Control Center', href: '/admin', icon: Settings, group: 'Daily Workbench', permission: 'admin:departments', translationKey: 'nav.admin' },
+          { id: 'shifts', name: 'Staff Shifts & Rosters', href: '/shifts', icon: Clock, group: 'Records & Schedule', translationKey: 'nav.shifts' },
+          { id: 'departments_admin', name: 'Hospital Departments', href: '/departments-admin', icon: Building2, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.departments' },
+          { id: 'services_admin', name: 'Clinical Services', href: '/services-admin', icon: Package, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.services' },
+          { id: 'reports', name: 'Operational Analytics', href: '/reports', icon: BarChart2, group: 'Duty & Account', permission: 'reports:view', translationKey: 'nav.reports' },
+          { id: 'finance_reports', name: 'Financial Reports', href: '/finance-reports', icon: BarChart2, group: 'Duty & Account', permission: 'finance_reports:view', translationKey: 'nav.finance_reports' }
+        ];
 
-      // ── BILLING & REVENUE ─────────────────────────────────────────────────
-      {
-        id: 'invoices',
-        name: 'Patient Invoices',
-        href: '/invoices',
-        icon: FileText,
-        group: 'BILLING & REVENUE',
-        permission: 'invoices:view',
-        translationKey: 'nav.invoices',
-      },
-      {
-        id: 'payments',
-        name: 'Payment Transactions',
-        href: '/payments',
-        icon: CreditCard,
-        group: 'BILLING & REVENUE',
-        permission: 'payments:view',
-        translationKey: 'nav.payments',
-      },
+      case 'super_admin':
+        return [
+          { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
+          { id: 'admin', name: 'Super Admin Center', href: '/admin', icon: Settings, group: 'Daily Workbench', permission: 'admin:departments', translationKey: 'nav.admin' },
+          { id: 'shifts', name: 'Staff Shifts & Rosters', href: '/shifts', icon: Clock, group: 'Records & Schedule', translationKey: 'nav.shifts' },
+          { id: 'departments_admin', name: 'Hospital Departments', href: '/departments-admin', icon: Building2, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.departments' },
+          { id: 'services_admin', name: 'Clinical Services', href: '/services-admin', icon: Package, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.services' },
+          { id: 'audit', name: 'Audit Trail & Security', href: '/audit', icon: Shield, group: 'Duty & Account', permission: 'audit:view', translationKey: 'nav.audit' },
+          { id: 'reports', name: 'Operational Analytics', href: '/reports', icon: BarChart2, group: 'Duty & Account', permission: 'reports:view', translationKey: 'nav.reports' },
+          { id: 'finance_reports', name: 'Financial Reports', href: '/finance-reports', icon: BarChart2, group: 'Duty & Account', permission: 'finance_reports:view', translationKey: 'nav.finance_reports' }
+        ];
 
-      // ── ADMINISTRATION ────────────────────────────────────────────────────
-      {
-        id: 'user_management',
-        name: 'Staff & User Accounts',
-        href: '/user-management',
-        icon: Users,
-        group: 'ADMINISTRATION',
-        permission: 'admin:users',
-        translationKey: 'nav.users',
-      },
-      {
-        id: 'departments_admin',
-        name: 'Hospital Departments',
-        href: '/departments-admin',
-        icon: Building2,
-        group: 'ADMINISTRATION',
-        permission: 'admin:departments',
-        translationKey: 'nav.departments',
-      },
-      {
-        id: 'services_admin',
-        name: 'Clinical Services',
-        href: '/services-admin',
-        icon: Package,
-        group: 'ADMINISTRATION',
-        permission: 'admin:departments',
-        translationKey: 'nav.services',
-      },
-      {
-        id: 'admin',
-        name: 'System Configuration',
-        href: '/admin',
-        icon: Settings,
-        group: 'ADMINISTRATION',
-        permission: 'admin:departments',
-        translationKey: 'nav.admin',
-      },
-
-      // ── GOVERNANCE & SECURITY ─────────────────────────────────────────────
-      {
-        id: 'audit',
-        name: 'Audit Trail & Security',
-        href: '/audit',
-        icon: Shield,
-        group: 'GOVERNANCE & SECURITY',
-        permission: 'audit:view',
-        translationKey: 'nav.audit',
-      },
-
-      // ── ANALYTICS & REPORTS ───────────────────────────────────────────────
-      {
-        id: 'finance_reports',
-        name: 'Financial Reports',
-        href: '/finance-reports',
-        icon: BarChart2,
-        group: 'ANALYTICS & REPORTS',
-        permission: 'finance_reports:view',
-        translationKey: 'nav.finance_reports',
-      },
-      {
-        id: 'reports',
-        name: 'Operational Analytics',
-        href: '/reports',
-        icon: BarChart2,
-        group: 'ANALYTICS & REPORTS',
-        permission: 'reports:view',
-        translationKey: 'nav.reports',
-      },
-    ];
-
-    const roleMap: Record<string, string[]> = {
-      super_admin: [
-        'dashboard',
-        'shifts',
-        'user_management',
-        'departments_admin',
-        'services_admin',
-        'admin',
-        'audit',
-        'finance_reports',
-        'reports',
-      ],
-      admin: [
-        'dashboard',
-        'shifts',
-        'user_management',
-        'departments_admin',
-        'services_admin',
-        'finance_reports',
-        'reports',
-      ],
-      hospital_manager: [
-        'dashboard',
-        'shifts',
-        'doctors',
-        'departments_admin',
-        'admissions',
-        'beds',
-        'finance_reports',
-        'reports',
-      ],
-      receptionist: [
-        'reception_workflow',
-        'patients',
-        'appointments',
-        'admissions',
-      ],
-      doctor: [
-        'dashboard',
-        'shifts',
-        'consultation',
-        'vitals',
-        'prescriptions',
-        'lab_tests',
-        'radiology',
-        'patients',
-        'appointments',
-        'admissions',
-      ],
-      nurse: [
-        'nurse_worklist',
-        'shifts',
-        'patients',
-        'appointments',
-        'vitals',
-        'admissions',
-        'beds',
-      ],
-      lab_technician: [
-        'lab_dashboard',
-        'shifts',
-        'lab_tests',
-        'patients',
-      ],
-      pharmacist: [
-        'pharmacy_dashboard',
-        'shifts',
-        'prescriptions',
-        'medicines',
-        'inventory',
-      ],
-      cashier: [
-        'cashier_pos',
-        'invoices',
-        'payments',
-        'finance_reports',
-      ],
-      patient: [
-        'patient_portal',
-        'appointments',
-        'prescriptions',
-        'invoices',
-      ],
-    };
-
-    const allowedIds = roleMap[role] || [];
-    return allowedIds
-      .map(id => allItems.find(item => item.id === id))
-      .filter((item): item is NavItem => Boolean(item));
+      case 'patient':
+      default:
+        return [
+          { id: 'patient_portal', name: 'My Health Portal', href: '/patient-portal', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.patient_portal' },
+          { id: 'appointments', name: 'Appointments Schedule', href: '/appointments', icon: Calendar, group: 'Records & Schedule', permission: 'appointments:view', translationKey: 'nav.appointments' },
+          { id: 'prescriptions', name: 'Prescriptions', href: '/prescriptions', icon: Pill, group: 'Records & Schedule', permission: 'prescriptions:view', translationKey: 'nav.prescriptions' },
+          { id: 'invoices', name: 'Patient Invoices', href: '/invoices', icon: FileText, group: 'Records & Schedule', permission: 'invoices:view', translationKey: 'nav.invoices' }
+        ];
+    }
   };
 
   const { can } = useRoleAccess();
@@ -578,39 +374,51 @@ const Layout: React.FC = () => {
     });
 
   const getGroupTitle = (groupName: string): string => {
-    const groupKeyMap: Record<string, string> = {
-      'OVERVIEW': 'nav.group.overview',
-      'WORKFORCE & ROSTER': 'nav.group.workforce',
-      'CLINICAL PRACTICE': 'nav.group.clinical',
-      'DIAGNOSTICS & LABS': 'nav.group.diagnostics',
-      'PATIENT SERVICES': 'nav.group.patients',
-      'INPATIENT & WARDS': 'nav.group.inpatient',
-      'PHARMACEUTICAL CARE': 'nav.group.pharmacy',
-      'BILLING & REVENUE': 'nav.group.billing',
-      'ADMINISTRATION': 'nav.group.administration',
-      'GOVERNANCE & SECURITY': 'nav.group.governance',
-      'ANALYTICS & REPORTS': 'nav.group.analytics',
-      'MY HEALTH': 'nav.group.my_health',
-    };
-    const key = groupKeyMap[groupName];
-    return key ? t(key, groupName) : groupName;
+    if (groupName === 'Daily Workbench') return language === 'am' ? 'ዕለታዊ የሥራ ጠረጴዛ' : 'Daily Workbench';
+    if (groupName === 'Records & Schedule') return language === 'am' ? 'መዛግብት እና መርሃ ግብር' : 'Records & Schedule';
+    if (groupName === 'Duty & Account') return language === 'am' ? 'ተረኝነት እና መለያ' : 'Duty & Account';
+    return groupName;
   };
 
   const groupedNav = React.useMemo(() => {
     const groups: { name: string; items: NavItem[] }[] = [];
-    navigation.forEach(item => {
-      const gName = (user?.role === 'patient' && item.group !== 'OVERVIEW') ? 'MY HEALTH' : item.group;
-      let g = groups.find(x => x.name === gName);
-      if (!g) {
-        g = { name: gName, items: [] };
-        groups.push(g);
-      }
-      g.items.push(item);
-    });
-    return groups;
-  }, [navigation, user?.role]);
+    const orderedGroups = ['Daily Workbench', 'Records & Schedule', 'Duty & Account'];
 
-  // isExpanded = full sidebar visible (either not collapsed, OR collapsed but mouse is hovering)
+    orderedGroups.forEach(gName => {
+      const matchingItems = navigation.filter(item => item.group === gName);
+      if (matchingItems.length > 0) {
+        groups.push({ name: gName, items: matchingItems });
+      }
+    });
+
+    return groups;
+  }, [navigation]);
+
+  // Live workload badge count helper
+  const getItemBadge = (itemId: string, href: string): number | null => {
+    const role = user?.role || '';
+    if (role === 'nurse' && (itemId === 'nurse_worklist' || href === '/nurse')) {
+      return workloadCounts.triage > 0 ? workloadCounts.triage : null;
+    }
+    if (role === 'doctor' && (itemId === 'consultation' || href === '/consultation')) {
+      return workloadCounts.doctorQueue > 0 ? workloadCounts.doctorQueue : null;
+    }
+    if (role === 'lab_technician' && (itemId === 'lab_dashboard' || href === '/lab-dashboard' || href === '/lab-tests')) {
+      return workloadCounts.labPending > 0 ? workloadCounts.labPending : null;
+    }
+    if (role === 'pharmacist' && (itemId === 'pharmacy_dashboard' || href === '/pharmacy' || href === '/prescriptions')) {
+      return workloadCounts.pharmacyPending > 0 ? workloadCounts.pharmacyPending : null;
+    }
+    if (role === 'cashier' && (itemId === 'cashier_pos' || href === '/cashier-workflow' || href === '/invoices')) {
+      return workloadCounts.cashierPending > 0 ? workloadCounts.cashierPending : null;
+    }
+    if ((role === 'hospital_manager' || role === 'admin') && href === '/admissions') {
+      return workloadCounts.activeAdmissions > 0 ? workloadCounts.activeAdmissions : null;
+    }
+    return null;
+  };
+
+  // isExpanded = full sidebar visible
   const isExpanded = !sidebarCollapsed || sidebarHovered;
 
   const getRoleColor = (role: string) => {
@@ -649,71 +457,61 @@ const Layout: React.FC = () => {
           ${sidebarCollapsed && sidebarHovered ? 'shadow-[4px_0_32px_rgba(0,0,0,0.45)]' : 'shadow-2xl'}`}
       >
         <div className="flex flex-col h-full">
-
-          {/* ── Logo + Collapse Toggle ─────────────────────────────── */}
-          <div className={`flex items-center h-16 border-b border-white/10 bg-secondary/95 px-3 flex-shrink-0
-            ${isExpanded ? 'justify-between' : 'justify-center'}`}>
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <img
-                src="/images/hospital.jpg.webp"
-                alt="Alem Ketema Enat Hospital"
-                className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
-              />
-              {isExpanded && (
-                <span className="text-sm font-bold text-white leading-tight truncate">
-                  {language === 'am' ? 'አለም ከተማ እናት ሆስፒታል' : 'Alem Ketema Enat'}
-                </span>
-              )}
-            </div>
-
-            {isExpanded && (
-              <div className="flex items-center gap-1 flex-shrink-0">
-                {/* Desktop collapse/expand toggle — only when not in hover-fly-out mode */}
-                {!sidebarHovered && (
-                  <button
-                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    className="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-                    title={sidebarCollapsed ? 'Pin Sidebar Open' : 'Collapse Sidebar'}
-                  >
-                    {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-                  </button>
-                )}
-                {sidebarHovered && (
-                  <button
-                    onClick={() => setSidebarCollapsed(false)}
-                    className="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
-                    title="Pin sidebar open"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                )}
-                {/* Mobile close */}
-                <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1.5 text-white/80 hover:text-white">
-                  <X className="w-5 h-5" />
-                </button>
+          {/* Logo / Brand Header */}
+          <div className="flex items-center justify-between h-14 px-3 border-b border-white/10 flex-shrink-0">
+            {isExpanded ? (
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center flex-shrink-0 shadow-inner">
+                  <Activity className="w-4 h-4 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-xs font-black tracking-tight leading-tight truncate text-white">
+                    {language === 'am' ? 'አለም ከተማ እናት' : 'ALEM KETEMA ENAT'}
+                  </h1>
+                  <p className="text-[10px] text-white/50 font-medium tracking-wider uppercase leading-none truncate">
+                    {language === 'am' ? 'ጠቅላላ ሆስፒታል' : 'GENERAL HOSPITAL'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full flex justify-center">
+                <div className="w-8 h-8 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shadow-inner">
+                  <Activity className="w-4 h-4 text-white" />
+                </div>
               </div>
             )}
+
+            {/* Collapse / Close toggle buttons */}
+            <div className="flex items-center">
+              {isExpanded && (
+                <>
+                  {!sidebarHovered && (
+                    <button
+                      onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                      className="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                      title={sidebarCollapsed ? 'Pin Sidebar Open' : 'Collapse Sidebar'}
+                    >
+                      {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                    </button>
+                  )}
+                  {sidebarHovered && (
+                    <button
+                      onClick={() => setSidebarCollapsed(false)}
+                      className="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                      title="Pin sidebar open"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  )}
+                </>
+              )}
+              <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1.5 text-white/80 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          {/* ── Role Identity Strip ────────────────────────────────── */}
-          {isExpanded ? (
-            <div className={`mx-3 mt-3 rounded-xl px-3 py-2 border flex-shrink-0 ${getRoleColor(user?.role || 'patient')}`}>
-              <div className="flex items-center justify-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70 flex-shrink-0" />
-                <span className="text-[11px] font-black uppercase tracking-widest truncate">
-                  {user?.role?.replace(/_/g, ' ')}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="flex justify-center mt-3 flex-shrink-0">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black border-2 ${getRoleColor(user?.role || 'patient')}`}>
-                {(user?.role || 'G')[0].toUpperCase()}
-              </div>
-            </div>
-          )}
-
-          {/* ── Navigation ────────────────────────────────────────── */}
+          {/* ── Navigation List (Grouped into exactly 3 Sections) ────────── */}
           <nav className={`flex-1 py-3 overflow-y-auto overflow-x-hidden ${isExpanded ? 'px-2' : 'px-1.5'}`}>
             {groupedNav.map((group, gIdx) => {
               const groupTitle = getGroupTitle(group.name);
@@ -733,6 +531,8 @@ const Layout: React.FC = () => {
                       const isActive = location.pathname === item.href ||
                         (item.href !== '/' && location.pathname.startsWith(item.href + '/'));
                       const translatedLabel = t(item.translationKey, item.name);
+                      const badgeCount = getItemBadge(item.id, item.href);
+
                       return (
                         <Link
                           key={item.id}
@@ -772,8 +572,18 @@ const Layout: React.FC = () => {
                             </span>
                           )}
 
-                          {/* Trailing dot for active item */}
-                          {isExpanded && isActive && (
+                          {/* Live Workload Counter Badge (Phase 3) */}
+                          {badgeCount !== null && (
+                            <span
+                              className={`${isExpanded ? 'ml-auto' : 'absolute -top-1 -right-1'} px-1.5 py-0.5 rounded-full text-[10px] font-black leading-none bg-amber-400 text-slate-950 shadow-sm animate-pulse`}
+                              title={`${badgeCount} pending`}
+                            >
+                              {badgeCount > 99 ? '99+' : badgeCount}
+                            </span>
+                          )}
+
+                          {/* Trailing dot for active item when no badge */}
+                          {isExpanded && isActive && badgeCount === null && (
                             <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0 shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
                           )}
                         </Link>
@@ -787,26 +597,78 @@ const Layout: React.FC = () => {
         </div>
       </div>
 
-      {/* Main content */}
+      {/* Main content wrapper */}
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'}`}>
-        {/* Top bar */}
+        {/* Top Navigation Bar (Phase 4 & Phase 5) */}
         <div className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm lg:px-8">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <div className="flex-1 lg:flex items-center hidden">
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {new Date().toLocaleDateString(language === 'am' ? 'am-ET' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Universal Patient Quick Search Trigger (Phase 5) */}
+            <button
+              onClick={() => setQuickSearchOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs transition-colors"
+              title="Search patients (Ctrl + K)"
+            >
+              <Search className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <span className="truncate max-w-[140px] sm:max-w-xs">
+                {language === 'am' ? 'ታካሚ ፈልግ... (Ctrl + K)' : 'Search patient... (Ctrl + K)'}
+              </span>
+              <kbd className="hidden sm:inline-block font-mono text-[10px] bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-400">
+                Ctrl+K
+              </kbd>
+            </button>
           </div>
+
           <div className="flex items-center gap-3 shrink-0">
+            {/* Authoritative Duty Status Pill (Phase 4.2) */}
+            {['doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier'].includes(user?.role || '') && (
+              <button
+                type="button"
+                onClick={() => setDutyModalOpen(true)}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer ${
+                  dutyStatus?.isOnDuty
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 hover:bg-emerald-100'
+                    : 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 hover:bg-slate-200'
+                }`}
+                title="Click to view duty details and clock in / out"
+              >
+                <span className={`w-2 h-2 rounded-full ${dutyStatus?.isOnDuty ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                <span className="hidden sm:inline">
+                  {dutyStatus?.isOnDuty
+                    ? (dutyStatus?.shiftLabel || 'On Duty')
+                    : (language === 'am' ? 'ተረኛ አይደለም' : 'Off Duty')}
+                </span>
+                <span className="sm:hidden">
+                  {dutyStatus?.isOnDuty ? 'On Duty' : 'Off Duty'}
+                </span>
+              </button>
+            )}
+
+            {/* Staff Full Name & Primary Role Badge (Phase 4.1) */}
+            <div className="hidden md:flex items-center gap-2 pl-2 pr-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+              <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0">
+                {(user?.firstName?.[0] || 'U').toUpperCase()}
+              </div>
+              <div className="text-left leading-tight min-w-0">
+                <span className="block text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[120px]">
+                  {user?.firstName} {user?.lastName}
+                </span>
+                <span className="block text-[9px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                  {user?.role?.replace(/_/g, ' ')}
+                </span>
+              </div>
+            </div>
+
             {/* Language Switcher */}
             <LanguageSwitcher variant="pill" />
 
-            {/* Theme Customizer Popover */}
+            {/* Theme Customizer */}
             <div className="relative" data-theme-panel>
               <button
                 onClick={() => setThemeOpen(!themeOpen)}
@@ -833,7 +695,6 @@ const Layout: React.FC = () => {
                   </div>
 
                   <div className="space-y-4">
-                    {/* Theme Presets */}
                     <div>
                       <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 block mb-2">Preset Themes</span>
                       <div className="grid grid-cols-3 gap-2">
@@ -857,7 +718,6 @@ const Layout: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Hue Adjustment Slider */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Custom Color Hue</span>
@@ -876,7 +736,6 @@ const Layout: React.FC = () => {
                       />
                     </div>
 
-                    {/* Saturation Adjustment Slider */}
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Color Saturation</span>
@@ -892,7 +751,6 @@ const Layout: React.FC = () => {
                       />
                     </div>
 
-                    {/* Dark/Light Mode */}
                     <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
                       <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Dark Appearance</span>
                       <button
@@ -947,7 +805,7 @@ const Layout: React.FC = () => {
               )}
             </div>
 
-            {/* User Account Settings Dropdown (Top Right - Prominent Gear Icon, NO "S" avatar) */}
+            {/* Account Settings Dropdown */}
             <div className="relative shrink-0" data-settings-panel>
               <button
                 type="button"
@@ -966,7 +824,6 @@ const Layout: React.FC = () => {
                 <Settings className={`w-5 h-5 transition-transform duration-200 ${settingsOpen ? 'rotate-90 text-emerald-500' : ''}`} />
               </button>
 
-              {/* Dropdown Menu */}
               {settingsOpen && (
                 <div
                   className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2 z-50 text-slate-800 dark:text-white"
@@ -1030,78 +887,168 @@ const Layout: React.FC = () => {
         </main>
       </div>
 
-      {/* ── User Profile Modal ────────────────────────────────────── */}
-      {profileModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 p-6 text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-black text-lg shadow-md">
-                  {user?.firstName?.[0]}{user?.lastName?.[0]}
-                </div>
-                <div>
-                  <h3 className="text-base font-black">{user?.firstName} {user?.lastName}</h3>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider inline-block mt-0.5 ${getRoleColor(user?.role || 'patient')}`}>
-                    {user?.role?.replace(/_/g, ' ')}
-                  </span>
-                </div>
+      {/* ── Universal Patient Quick-Search Modal (Phase 5) ──────────── */}
+      <PatientQuickSearchModal
+        isOpen={quickSearchOpen}
+        onClose={() => setQuickSearchOpen(false)}
+      />
+
+      {/* ── Duty Status Modal (Phase 4.3) ───────────────────────────── */}
+      {dutyModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm"
+          onClick={() => setDutyModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <h3 className="font-black text-sm text-slate-900 dark:text-white">
+                  {language === 'am' ? 'የተረኝነት ሁኔታ' : 'Authoritative Duty Status'}
+                </h3>
               </div>
               <button
-                type="button"
-                onClick={() => setProfileModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
-                aria-label="Close"
+                onClick={() => setDutyModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Profile Body */}
-            <div className="p-6 space-y-4">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 dark:text-slate-400">Current Status:</span>
+                <span className={`font-bold px-2.5 py-0.5 rounded-full ${
+                  dutyStatus?.isOnDuty
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                    : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                }`}>
+                  {dutyStatus?.isOnDuty ? '🟢 Active On Duty' : '⚪ Off Duty'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 dark:text-slate-400">Scheduled Shift:</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {dutyStatus?.shiftLabel || 'Standard Hospital Schedule'}
+                </span>
+              </div>
+
+              {dutyStatus?.startTime && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 dark:text-slate-400">Shift Hours:</span>
+                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
+                    {dutyStatus.startTime} - {dutyStatus.endTime}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 dark:text-slate-400">Department:</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {dutyStatus?.department || 'Alem Ketema Enat Hospital'}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-col gap-2">
+              <button
+                type="button"
+                disabled={dutyToggling}
+                onClick={handleToggleDuty}
+                className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  dutyStatus?.isOnDuty
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                }`}
+              >
+                {dutyToggling ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : dutyStatus?.isOnDuty ? (
+                  'Clock Out / Go Off Duty'
+                ) : (
+                  'Clock In / Go On Duty'
+                )}
+              </button>
+
+              <Link
+                to="/shifts"
+                onClick={() => setDutyModalOpen(false)}
+                className="text-center text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 py-1"
+              >
+                View Full Hospital Roster →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── User Profile Modal ────────────────────────────────────── */}
+      {profileModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 p-6 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-black text-lg shadow-md">
+                  {(user?.firstName?.[0] || 'U').toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base leading-tight">{user?.firstName} {user?.lastName}</h3>
+                  <p className="text-xs text-slate-400">{user?.email}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProfileModalOpen(false)}
+                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">First Name</p>
-                  <p className="text-sm font-black text-slate-800 dark:text-white mt-0.5 truncate">{user?.firstName || '—'}</p>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+                    {t('common.role', 'Assigned Role')}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${getRoleColor(user?.role || 'patient')}`}>
+                    {user?.role?.replace(/_/g, ' ')}
+                  </span>
                 </div>
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Last Name</p>
-                  <p className="text-sm font-black text-slate-800 dark:text-white mt-0.5 truncate">{user?.lastName || '—'}</p>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+                    {t('common.status', 'Account Status')}
+                  </span>
+                  <span className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Active
+                  </span>
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Email Address</p>
-                <p className="text-sm font-bold text-slate-800 dark:text-white mt-0.5 truncate">{user?.email || '—'}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Account Status</p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">Active</span>
-                  </div>
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2">
+                <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700/60">
+                  <span className="text-slate-500">Facility Location:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">Alem Ketema Enat Hospital</span>
                 </div>
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Facility</p>
-                  <p className="text-xs font-bold text-slate-800 dark:text-white mt-1 truncate">Alem Ketema Enat</p>
+                <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700/60">
+                  <span className="text-slate-500">Zone / Region:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">North Shewa, Amhara, Ethiopia</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-slate-500">User ID:</span>
+                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">USR-{String(user?.id || '').padStart(5, '0')}</span>
                 </div>
               </div>
 
-              <div className="pt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => { setProfileModalOpen(false); setChangePasswordModalOpen(true); }}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5"
-                >
-                  <Key className="w-3.5 h-3.5 text-amber-500" />
-                  {t('auth.change_password', 'Change Password')}
-                </button>
+              <div className="pt-2 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setProfileModalOpen(false)}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-md transition"
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition"
                 >
                   {t('common.close', 'Close')}
                 </button>
@@ -1111,68 +1058,62 @@ const Layout: React.FC = () => {
         </div>
       )}
 
-      {/* ── Change Password Modal ────────────────────────────── */}
+      {/* ── Change Password Modal ──────────────────────────────────── */}
       {changePasswordModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
-            {/* Modal Header */}
             <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-teal-950 p-6 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 shadow-md">
+                <div className="w-10 h-10 rounded-2xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-teal-400 font-bold shadow-md">
                   <Key className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black">{t('auth.change_password', 'Change Password')}</h3>
-                  <p className="text-xs text-slate-300">Update your account credentials</p>
+                  <h3 className="font-extrabold text-base leading-tight">
+                    {t('auth.change_password', 'Change Password')}
+                  </h3>
+                  <p className="text-xs text-slate-400">Update your system credentials</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  setChangePasswordModalOpen(false);
-                  setPasswordError('');
-                  setPasswordSuccess('');
-                }}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
-                aria-label="Close"
+                onClick={() => setChangePasswordModalOpen(false)}
+                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleChangePassword} className="p-6 space-y-4">
+              {passwordError && (
+                <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-2xl text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{passwordError}</span>
+                </div>
+              )}
               {passwordSuccess && (
-                <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-2xl">
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 rounded-2xl text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>{passwordSuccess}</span>
                 </div>
               )}
 
-              {passwordError && (
-                <div className="flex items-center gap-2 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold rounded-2xl">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{passwordError}</span>
-                </div>
-              )}
-
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Current Password
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {t('auth.current_password', 'Current Password')}
                 </label>
                 <div className="relative">
                   <input
                     type={showOldPass ? 'text' : 'password'}
                     required
                     value={oldPassword}
-                    onChange={e => setOldPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-2.5 pr-10 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium dark:bg-slate-800 dark:text-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 pr-10"
+                    placeholder="Enter current password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowOldPass(!showOldPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     {showOldPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -1180,22 +1121,22 @@ const Layout: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  New Password (min 6 chars)
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {t('auth.new_password', 'New Password')}
                 </label>
                 <div className="relative">
                   <input
                     type={showNewPass ? 'text' : 'password'}
                     required
                     value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-2.5 pr-10 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium dark:bg-slate-800 dark:text-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 pr-10"
+                    placeholder="Minimum 6 characters"
                   />
                   <button
                     type="button"
                     onClick={() => setShowNewPass(!showNewPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -1203,38 +1144,33 @@ const Layout: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Confirm New Password
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {t('auth.confirm_password', 'Confirm New Password')}
                 </label>
                 <div className="relative">
                   <input
                     type={showConfirmPass ? 'text' : 'password'}
                     required
                     value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-2.5 pr-10 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-medium dark:bg-slate-800 dark:text-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 pr-10"
+                    placeholder="Re-type new password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPass(!showConfirmPass)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
-              <div className="pt-2 flex gap-3">
+              <div className="pt-2 flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  disabled={passwordLoading}
-                  onClick={() => {
-                    setChangePasswordModalOpen(false);
-                    setPasswordError('');
-                    setPasswordSuccess('');
-                  }}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-xl transition"
+                  onClick={() => setChangePasswordModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                 >
                   {t('common.cancel', 'Cancel')}
                 </button>
