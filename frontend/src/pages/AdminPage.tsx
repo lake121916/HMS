@@ -4,7 +4,8 @@ import api from '../services/api';
 import {
   Users, Plus, Search, Trash2, X, Shield,
   CheckCircle, XCircle, RefreshCw, Building2, Key, Edit,
-  Activity, Server, Database, Lock, AlertCircle, ChevronLeft, ChevronRight
+  Activity, Server, Database, Lock, AlertCircle, ChevronLeft, ChevronRight,
+  Bell, Send, Smartphone
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -67,7 +68,16 @@ const ROLE_COLORS: Record<string, string> = {
 
 const AdminPage: React.FC = () => {
   const { user: currentUser } = useAuth();
-  const [tab, setTab] = useState<'users' | 'staff' | 'departments' | 'audit' | 'system'>('users');
+  const [tab, setTab] = useState<'users' | 'staff' | 'departments' | 'audit' | 'notifications' | 'system'>('users');
+
+  // Priority 3: Notifications Outbox State
+  const [notificationQueue, setNotificationQueue] = useState<any[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifStatusFilter, setNotifStatusFilter] = useState('');
+  const [notifProcessing, setNotifProcessing] = useState(false);
+  const [showTelegramModal, setShowTelegramModal] = useState(false);
+  const [telegramPatientId, setTelegramPatientId] = useState('');
+  const [generatedTgCode, setGeneratedTgCode] = useState<{ code: string; instructions: string } | null>(null);
   
   // Data States
   const [users, setUsers] = useState<User[]>([]);
@@ -120,7 +130,51 @@ const AdminPage: React.FC = () => {
 
   useEffect(() => {
     fetchAll();
-  }, [tab, roleFilter, auditPage]);
+  }, [tab, roleFilter, auditPage, notifStatusFilter]);
+
+
+  const fetchNotificationQueue = async () => {
+    setNotifLoading(true);
+    try {
+      const res = await api.get(`/notifications/queue${notifStatusFilter ? `?status=${notifStatusFilter}` : ''}`);
+      if (res.data?.success) {
+        setNotificationQueue(res.data.data?.queue || []);
+      }
+    } catch (err) {
+      console.error('Error fetching notification queue:', err);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+
+  const handleProcessQueue = async () => {
+    setNotifProcessing(true);
+    try {
+      const res = await api.post('/notifications/queue/process');
+      showSuccess(res.data?.message || 'Outbox queue processed successfully.');
+      fetchNotificationQueue();
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Failed to process outbox queue');
+    } finally {
+      setNotifProcessing(false);
+    }
+  };
+
+  const handleGenerateTelegramCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await api.post('/notifications/telegram/start', { patient_id: parseInt(telegramPatientId) });
+      if (res.data?.success) {
+        setGeneratedTgCode({
+          code: res.data.data.verification_code,
+          instructions: res.data.data.instructions,
+        });
+        showSuccess('Telegram verification code generated successfully!');
+      }
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Failed to generate Telegram code');
+    }
+  };
 
   const fetchAll = async () => {
     setLoading(true);
@@ -141,6 +195,9 @@ const AdminPage: React.FC = () => {
         setDoctorsList(rawDocs.map((d: any) => ({ id: d.id, name: `${d.first_name} ${d.last_name}` })));
       }
 
+      if (tab === 'notifications') {
+        fetchNotificationQueue();
+      }
       if (tab === 'audit') {
         const offset = (auditPage - 1) * 15;
         const auditRes = await api.get(`/admin/audit-logs?limit=15&offset=${offset}`);
@@ -414,7 +471,8 @@ const AdminPage: React.FC = () => {
           { id: 'staff', label: '2. Staff Onboarding', icon: Plus },
           { id: 'departments', label: '3. Departments', icon: Building2 },
           { id: 'audit', label: '4. Security Audit Logs', icon: Lock },
-          { id: 'system', label: '5. System Health', icon: Server },
+          { id: 'notifications', label: '5. Patient Notifications Outbox', icon: Bell },
+          { id: 'system', label: '6. System Health', icon: Server },
         ].map(t => (
           <button
             key={t.id}
@@ -785,7 +843,167 @@ const AdminPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── TAB 5: SYSTEM HEALTH ── */}
+            {/* ── TAB 5: PATIENT NOTIFICATIONS OUTBOX (PRIORITY 3) ── */}
+      {tab === 'notifications' && (
+        <div className="space-y-4">
+          {/* Outbox Header / Toolbar */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
+            <div>
+              <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Bell className="w-5 h-5 text-blue-600" /> Patient Notification Outbox & Dispatcher
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Asynchronous durable outbox with Ethiopian phone normalization (+251), multi-provider SMS (Twilio / Africa's Talking) and Telegram Bot support.
+              </p>
+            </div>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <button
+                onClick={() => {
+                  setTelegramPatientId('');
+                  setGeneratedTgCode(null);
+                  setShowTelegramModal(true);
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 rounded-xl text-xs font-bold border border-indigo-200 hover:bg-indigo-100 transition-all"
+              >
+                <Send className="w-3.5 h-3.5" /> Link Telegram
+              </button>
+              <button
+                onClick={handleProcessQueue}
+                disabled={notifProcessing}
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${notifProcessing ? 'animate-spin' : ''}`} />
+                {notifProcessing ? 'Processing Queue...' : 'Process Outbox Now'}
+              </button>
+              <button
+                onClick={fetchNotificationQueue}
+                disabled={notifLoading}
+                className="p-2 text-gray-400 hover:text-gray-600 border border-gray-200 dark:border-gray-700 rounded-xl"
+              >
+                <RefreshCw className={`w-4 h-4 ${notifLoading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+              <span className="text-[11px] font-bold text-gray-400 uppercase">Total Queued / Processed</span>
+              <p className="text-xl font-extrabold text-gray-900 dark:text-white mt-1">{notificationQueue.length}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+              <span className="text-[11px] font-bold text-amber-500 uppercase">Pending In Outbox</span>
+              <p className="text-xl font-extrabold text-amber-600 mt-1">
+                {notificationQueue.filter(q => q.status === 'queued').length}
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+              <span className="text-[11px] font-bold text-emerald-500 uppercase">Delivered / Sent</span>
+              <p className="text-xl font-extrabold text-emerald-600 mt-1">
+                {notificationQueue.filter(q => q.status === 'sent' || q.status === 'delivered').length}
+              </p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+              <span className="text-[11px] font-bold text-red-500 uppercase">Failed Deliveries</span>
+              <p className="text-xl font-extrabold text-red-600 mt-1">
+                {notificationQueue.filter(q => q.status === 'failed').length}
+              </p>
+            </div>
+          </div>
+
+          {/* Outbox Table */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-wrap gap-2 items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Filter Status:</span>
+                <select
+                  value={notifStatusFilter}
+                  onChange={e => setNotifStatusFilter(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg text-xs dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="queued">Queued (Pending)</option>
+                  <option value="sent">Sent</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </div>
+              <span className="text-xs text-gray-400">Provider: Default Mock / Configured SMS Gateway</span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-gray-50 dark:bg-gray-750 text-gray-500 uppercase tracking-wider font-semibold border-b border-gray-100 dark:border-gray-700">
+                  <tr>
+                    <th className="px-4 py-3">ID</th>
+                    <th className="px-4 py-3">Channel</th>
+                    <th className="px-4 py-3">Recipient</th>
+                    <th className="px-4 py-3">Patient</th>
+                    <th className="px-4 py-3">Event Template</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Attempts</th>
+                    <th className="px-4 py-3">Message Preview (Privacy-Safe)</th>
+                    <th className="px-4 py-3">Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {notifLoading ? (
+                    <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading notification queue...</td></tr>
+                  ) : notificationQueue.length === 0 ? (
+                    <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No notification entries in queue</td></tr>
+                  ) : notificationQueue.map(item => (
+                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
+                      <td className="px-4 py-3 font-mono text-gray-400">#{item.id}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-bold text-[10px] ${
+                          item.channel === 'telegram'
+                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                            : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                        }`}>
+                          {item.channel === 'telegram' ? <Send className="w-3 h-3" /> : <Smartphone className="w-3 h-3" />}
+                          {item.channel.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-mono font-medium text-gray-700 dark:text-gray-300">{item.recipient_phone || item.recipient_telegram_id || item.recipient}</td>
+                      <td className="px-4 py-3">
+                        {item.patient_name ? (
+                          <span className="font-semibold text-gray-900 dark:text-white">{item.patient_name}</span>
+                        ) : (
+                          <span className="text-gray-400">Patient #{item.patient_id}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-xs bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-800 dark:text-slate-200">
+                          {item.template_key}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                          item.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' :
+                          item.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                          item.status === 'queued' ? 'bg-amber-100 text-amber-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-gray-500">{item.attempts}/{item.max_attempts || 3}</td>
+                      <td className="px-4 py-3 max-w-xs truncate text-gray-600 dark:text-gray-300 font-sans" title={item.message_content || JSON.stringify(item.metadata)}>
+                        {item.payload?.body || (item.template_key ? `Template: ${item.template_key}` : '-')}
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
+                        {new Date(item.created_at).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 6: SYSTEM HEALTH ── */}
       {tab === 'system' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-xs">
@@ -962,6 +1180,48 @@ const AdminPage: React.FC = () => {
             <button onClick={() => setSelectedAuditLog(null)} className="w-full mt-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold text-xs rounded-xl">
               Close
             </button>
+          </div>
+        </div>
+      )}
+      {/* Telegram Link Modal */}
+      {showTelegramModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+              <h3 className="font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
+                <Send className="w-5 h-5 text-blue-500" /> Generate Telegram Link Code
+              </h3>
+              <button onClick={() => setShowTelegramModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleGenerateTelegramCode} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Patient ID *</label>
+                <input
+                  type="number"
+                  required
+                  placeholder="Enter patient database ID (e.g. 1)"
+                  value={telegramPatientId}
+                  onChange={e => setTelegramPatientId(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all"
+              >
+                Generate 6-Digit Telegram Link Code
+              </button>
+            </form>
+
+            {generatedTgCode && (
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl">
+                <p className="text-xs font-bold text-blue-900 dark:text-blue-200">Verification Code:</p>
+                <p className="text-3xl font-black font-mono tracking-widest text-blue-600 dark:text-blue-400 my-2">
+                  {generatedTgCode.code}
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">{generatedTgCode.instructions}</p>
+              </div>
+            )}
           </div>
         </div>
       )}

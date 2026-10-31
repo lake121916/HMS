@@ -51,7 +51,8 @@ export const DocumentVerificationPage: React.FC = () => {
   const documentTypeLabels: Record<string, { en: string; am: string }> = {
     prescription: { en: 'Official Medical Prescription', am: 'የህክምና ማዘዣ ወረቀት' },
     lab_result: { en: 'Laboratory Diagnostic Certificate', am: 'የላብራቶሪ ምርመራ የምስክር ወረቀት' },
-    discharge_summary: { en: 'Inpatient Clinical Discharge Summary', am: 'የታካሚ ሆስፒታል መልቀቂያ ማጠቃለያ' }
+    discharge_summary: { en: 'Inpatient Clinical Discharge Summary', am: 'የታካሚ ሆስፒታል መልቀቂያ ማጠቃለያ' },
+    medical_certificate: { en: 'Official Medical Certificate & Sick Leave', am: 'ኦፊሴላዊ የህክምና የምስክር ወረቀት እና የእረፍት ፈቃድ' }
   };
 
   return (

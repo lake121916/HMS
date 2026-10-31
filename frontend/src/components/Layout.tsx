@@ -10,7 +10,7 @@ import OfflineStatusBanner from './OfflineStatusBanner';
 import {
   LayoutDashboard, Users, Stethoscope, Calendar, Clock, LogOut, Menu, X,
   Activity, Pill, FlaskConical, Bed, FileText, Shield,
-  BarChart2, CreditCard, Settings, Bell, MapPin,
+  BarChart2, CreditCard, Settings, Bell,
   Palette, Sun, Moon, RefreshCw, ClipboardCheck,
   UserCheck, Building2, Receipt, Package, Scan,
   ChevronLeft, ChevronRight, User, Key, Eye, EyeOff,
@@ -18,10 +18,13 @@ import {
 } from 'lucide-react';
 
 interface NavItem {
+  id: string;
   name: string;
   href: string;
   icon: React.ElementType;
-  group?: string;
+  group: string;
+  permission?: string;
+  translationKey: string;
 }
 
 interface Notification {
@@ -191,7 +194,7 @@ const Layout: React.FC = () => {
       admin:            '/dashboard',
       hospital_manager: '/dashboard',
       receptionist:     '/reception-workflow',
-      doctor:           '/consultation',
+      doctor:           '/dashboard',
       nurse:            '/nurse',
       lab_technician:   '/lab-dashboard',
       pharmacist:       '/pharmacy',
@@ -201,130 +204,411 @@ const Layout: React.FC = () => {
     const dashboardHref = dashboardHrefMap[role] || '/dashboard';
 
     const allItems: NavItem[] = [
-      // ── Home / Role Entry Points (no group — always at top) ────────
-      { name: 'Dashboard',          href: dashboardHref,         icon: LayoutDashboard },
-      { name: 'Patient Portal',     href: '/patient-portal',     icon: LayoutDashboard },
-      { name: 'Reception Workflow', href: '/reception-workflow',  icon: UserCheck       },
-      { name: 'Triage Worklist',    href: '/nurse',              icon: ClipboardCheck  },
-      { name: 'Assign Queue',       href: '/assignment',         icon: Building2       },
-      { name: 'My Consultations',   href: '/consultation',       icon: Stethoscope     },
-      { name: 'Lab Dashboard',      href: '/lab-dashboard',      icon: FlaskConical    },
-      { name: 'Pharmacy',           href: '/pharmacy',           icon: Pill            },
-      { name: 'Cashier POS',        href: '/cashier-workflow',   icon: Receipt         },
-      // ── PATIENTS group ─────────────────────────────────────────────
-      { name: 'Patients',           href: '/patients',           icon: Users,          group: 'PATIENTS'  },
-      { name: 'Staff Shifts',       href: '/shifts',             icon: Clock,          group: 'CLINICAL'  },
-      { name: 'Doctors',            href: '/doctors',            icon: Stethoscope,    group: 'PATIENTS'  },
-      { name: 'Appointments',       href: '/appointments',       icon: Calendar,       group: 'PATIENTS'  },
-      { name: 'Admissions',         href: '/admissions',         icon: Bed,            group: 'PATIENTS'  },
-      // ── CLINICAL group ─────────────────────────────────────────────
-      { name: 'Vitals',             href: '/vitals',             icon: Activity,       group: 'CLINICAL'  },
-      { name: 'Prescriptions',      href: '/prescriptions',      icon: Pill,           group: 'CLINICAL'  },
-      { name: 'Lab Tests',          href: '/lab-tests',          icon: FlaskConical,   group: 'CLINICAL'  },
-      { name: 'Radiology',          href: '/radiology',          icon: Scan,           group: 'CLINICAL'  },
-      { name: 'Beds',               href: '/beds',               icon: Bed,            group: 'CLINICAL'  },
-      { name: 'Blood Bank',         href: '/blood-bank',         icon: MapPin,         group: 'CLINICAL'  },
-      { name: 'Medicines',          href: '/medicines',          icon: Pill,           group: 'CLINICAL'  },
-      { name: 'Inventory',          href: '/inventory',          icon: Package,        group: 'CLINICAL'  },
-      // ── FINANCIALS group ───────────────────────────────────────────
-      { name: 'Invoices',           href: '/invoices',           icon: FileText,       group: 'FINANCIALS' },
-      { name: 'Payments',           href: '/payments',           icon: CreditCard,     group: 'FINANCIALS' },
-      { name: 'Insurance',          href: '/insurance',          icon: Shield,         group: 'FINANCIALS' },
-      { name: 'Finance Reports',    href: '/finance-reports',    icon: BarChart2,      group: 'FINANCIALS' },
-      { name: 'Reports',            href: '/reports',            icon: BarChart2,      group: 'FINANCIALS' },
-      // ── ADMINISTRATION & GOVERNANCE group ───────────────────────────
-      { name: 'Users',              href: '/user-management',    icon: Users,          group: 'ADMINISTRATION' },
-      { name: 'Departments',        href: '/departments-admin',  icon: Building2,      group: 'ADMINISTRATION' },
-      { name: 'Services',           href: '/services-admin',     icon: Package,        group: 'ADMINISTRATION' },
-      { name: 'Audit Logs',         href: '/audit',              icon: Shield,         group: 'SECURITY'       },
-      { name: 'System Admin',       href: '/admin',              icon: Settings,       group: 'ADMINISTRATION' },
+      // ── OVERVIEW ──────────────────────────────────────────────────────────
+      {
+        id: 'dashboard',
+        name: 'Dashboard',
+        href: dashboardHref,
+        icon: LayoutDashboard,
+        group: 'OVERVIEW',
+        translationKey: 'nav.dashboard',
+      },
+      {
+        id: 'patient_portal',
+        name: 'Patient Health Portal',
+        href: '/patient-portal',
+        icon: LayoutDashboard,
+        group: 'OVERVIEW',
+        translationKey: 'nav.patient_portal',
+      },
+      {
+        id: 'reception_workflow',
+        name: 'Reception & Intake Desk',
+        href: '/reception-workflow',
+        icon: UserCheck,
+        group: 'OVERVIEW',
+        translationKey: 'nav.reception',
+      },
+      {
+        id: 'nurse_worklist',
+        name: 'Triage & Nursing Worklist',
+        href: '/nurse',
+        icon: ClipboardCheck,
+        group: 'OVERVIEW',
+        translationKey: 'nav.triage',
+      },
+      {
+        id: 'lab_dashboard',
+        name: 'Laboratory Worklist',
+        href: '/lab-dashboard',
+        icon: FlaskConical,
+        group: 'OVERVIEW',
+        translationKey: 'nav.lab',
+      },
+      {
+        id: 'pharmacy_dashboard',
+        name: 'Pharmacy & Dispensing',
+        href: '/pharmacy',
+        icon: Pill,
+        group: 'OVERVIEW',
+        translationKey: 'nav.pharmacy',
+      },
+      {
+        id: 'cashier_pos',
+        name: 'Cashier & POS Register',
+        href: '/cashier-workflow',
+        icon: Receipt,
+        group: 'OVERVIEW',
+        translationKey: 'nav.cashier',
+      },
+
+      // ── WORKFORCE & ROSTER ────────────────────────────────────────────────
+      {
+        id: 'shifts',
+        name: 'Staff Shifts & Rosters',
+        href: '/shifts',
+        icon: Clock,
+        group: 'WORKFORCE & ROSTER',
+        translationKey: 'nav.shifts',
+      },
+
+      // ── CLINICAL PRACTICE ─────────────────────────────────────────────────
+      {
+        id: 'consultation',
+        name: 'Clinical Consultations',
+        href: '/consultation',
+        icon: Stethoscope,
+        group: 'CLINICAL PRACTICE',
+        translationKey: 'nav.consultations',
+      },
+      {
+        id: 'vitals',
+        name: 'Vital Signs & Triage',
+        href: '/vitals',
+        icon: Activity,
+        group: 'CLINICAL PRACTICE',
+        permission: 'vitals:view',
+        translationKey: 'nav.vitals',
+      },
+      {
+        id: 'prescriptions',
+        name: 'Prescriptions',
+        href: '/prescriptions',
+        icon: Pill,
+        group: 'CLINICAL PRACTICE',
+        permission: 'prescriptions:view',
+        translationKey: 'nav.prescriptions',
+      },
+
+      // ── DIAGNOSTICS & LABS ────────────────────────────────────────────────
+      {
+        id: 'lab_tests',
+        name: 'Laboratory Orders',
+        href: '/lab-tests',
+        icon: FlaskConical,
+        group: 'DIAGNOSTICS & LABS',
+        permission: 'lab_tests:view',
+        translationKey: 'nav.lab_tests',
+      },
+      {
+        id: 'radiology',
+        name: 'Radiology & Imaging',
+        href: '/radiology',
+        icon: Scan,
+        group: 'DIAGNOSTICS & LABS',
+        permission: 'radiology:view',
+        translationKey: 'nav.radiology',
+      },
+
+      // ── PATIENT SERVICES ──────────────────────────────────────────────────
+      {
+        id: 'patients',
+        name: 'Patient Directory',
+        href: '/patients',
+        icon: Users,
+        group: 'PATIENT SERVICES',
+        permission: 'patients:view',
+        translationKey: 'nav.patients',
+      },
+      {
+        id: 'appointments',
+        name: 'Appointments Schedule',
+        href: '/appointments',
+        icon: Calendar,
+        group: 'PATIENT SERVICES',
+        permission: 'appointments:view',
+        translationKey: 'nav.appointments',
+      },
+      {
+        id: 'doctors',
+        name: 'Physicians Directory',
+        href: '/doctors',
+        icon: Stethoscope,
+        group: 'PATIENT SERVICES',
+        permission: 'doctors:view',
+        translationKey: 'nav.doctors',
+      },
+
+      // ── INPATIENT & WARDS ─────────────────────────────────────────────────
+      {
+        id: 'admissions',
+        name: 'Inpatient Admissions',
+        href: '/admissions',
+        icon: Bed,
+        group: 'INPATIENT & WARDS',
+        permission: 'admissions:view',
+        translationKey: 'nav.admissions',
+      },
+      {
+        id: 'beds',
+        name: 'Ward & Bed Management',
+        href: '/beds',
+        icon: Bed,
+        group: 'INPATIENT & WARDS',
+        permission: 'beds:view',
+        translationKey: 'nav.beds',
+      },
+
+      // ── PHARMACEUTICAL CARE ───────────────────────────────────────────────
+      {
+        id: 'medicines',
+        name: 'Pharmaceutical Catalog',
+        href: '/medicines',
+        icon: Pill,
+        group: 'PHARMACEUTICAL CARE',
+        permission: 'medicines:view',
+        translationKey: 'nav.medicines',
+      },
+      {
+        id: 'inventory',
+        name: 'Stock & Inventory',
+        href: '/inventory',
+        icon: Package,
+        group: 'PHARMACEUTICAL CARE',
+        permission: 'inventory:view',
+        translationKey: 'nav.inventory',
+      },
+
+      // ── BILLING & REVENUE ─────────────────────────────────────────────────
+      {
+        id: 'invoices',
+        name: 'Patient Invoices',
+        href: '/invoices',
+        icon: FileText,
+        group: 'BILLING & REVENUE',
+        permission: 'invoices:view',
+        translationKey: 'nav.invoices',
+      },
+      {
+        id: 'payments',
+        name: 'Payment Transactions',
+        href: '/payments',
+        icon: CreditCard,
+        group: 'BILLING & REVENUE',
+        permission: 'payments:view',
+        translationKey: 'nav.payments',
+      },
+
+      // ── ADMINISTRATION ────────────────────────────────────────────────────
+      {
+        id: 'user_management',
+        name: 'Staff & User Accounts',
+        href: '/user-management',
+        icon: Users,
+        group: 'ADMINISTRATION',
+        permission: 'admin:users',
+        translationKey: 'nav.users',
+      },
+      {
+        id: 'departments_admin',
+        name: 'Hospital Departments',
+        href: '/departments-admin',
+        icon: Building2,
+        group: 'ADMINISTRATION',
+        permission: 'admin:departments',
+        translationKey: 'nav.departments',
+      },
+      {
+        id: 'services_admin',
+        name: 'Clinical Services',
+        href: '/services-admin',
+        icon: Package,
+        group: 'ADMINISTRATION',
+        permission: 'admin:departments',
+        translationKey: 'nav.services',
+      },
+      {
+        id: 'admin',
+        name: 'System Configuration',
+        href: '/admin',
+        icon: Settings,
+        group: 'ADMINISTRATION',
+        permission: 'admin:departments',
+        translationKey: 'nav.admin',
+      },
+
+      // ── GOVERNANCE & SECURITY ─────────────────────────────────────────────
+      {
+        id: 'audit',
+        name: 'Audit Trail & Security',
+        href: '/audit',
+        icon: Shield,
+        group: 'GOVERNANCE & SECURITY',
+        permission: 'audit:view',
+        translationKey: 'nav.audit',
+      },
+
+      // ── ANALYTICS & REPORTS ───────────────────────────────────────────────
+      {
+        id: 'finance_reports',
+        name: 'Financial Reports',
+        href: '/finance-reports',
+        icon: BarChart2,
+        group: 'ANALYTICS & REPORTS',
+        permission: 'finance_reports:view',
+        translationKey: 'nav.finance_reports',
+      },
+      {
+        id: 'reports',
+        name: 'Operational Analytics',
+        href: '/reports',
+        icon: BarChart2,
+        group: 'ANALYTICS & REPORTS',
+        permission: 'reports:view',
+        translationKey: 'nav.reports',
+      },
     ];
 
     const roleMap: Record<string, string[]> = {
-      super_admin:      ['Dashboard', 'System Admin', 'Staff Shifts', 'Users', 'Audit Logs', 'Departments', 'Services', 'Finance Reports', 'Reports'],
-      admin:            ['Dashboard', 'Staff Shifts', 'Users', 'Departments', 'Services', 'Finance Reports', 'Reports'],
-      hospital_manager: ['Dashboard', 'Staff Shifts', 'Departments', 'Doctors', 'Admissions', 'Beds', 'Finance Reports', 'Reports'],
-      receptionist:     ['Reception Workflow','Patients','Appointments','Admissions'],
-      doctor:           ['Dashboard', 'Staff Shifts','My Consultations','Patients','Appointments','Vitals','Prescriptions','Lab Tests','Radiology','Admissions'],
-      nurse:            ['Triage Worklist','Staff Shifts','Patients','Appointments','Vitals','Admissions','Beds'],
-      lab_technician:   ['Lab Dashboard','Staff Shifts','Lab Tests','Patients'],
-      pharmacist:       ['Pharmacy','Staff Shifts','Prescriptions','Medicines','Inventory'],
-      cashier:          ['Cashier POS','Invoices','Payments','Finance Reports'],
-      patient:          ['Patient Portal','Appointments','Invoices','Prescriptions'],
+      super_admin: [
+        'dashboard',
+        'shifts',
+        'user_management',
+        'departments_admin',
+        'services_admin',
+        'admin',
+        'audit',
+        'finance_reports',
+        'reports',
+      ],
+      admin: [
+        'dashboard',
+        'shifts',
+        'user_management',
+        'departments_admin',
+        'services_admin',
+        'finance_reports',
+        'reports',
+      ],
+      hospital_manager: [
+        'dashboard',
+        'shifts',
+        'doctors',
+        'departments_admin',
+        'admissions',
+        'beds',
+        'finance_reports',
+        'reports',
+      ],
+      receptionist: [
+        'reception_workflow',
+        'patients',
+        'appointments',
+        'admissions',
+      ],
+      doctor: [
+        'dashboard',
+        'shifts',
+        'consultation',
+        'vitals',
+        'prescriptions',
+        'lab_tests',
+        'radiology',
+        'patients',
+        'appointments',
+        'admissions',
+      ],
+      nurse: [
+        'nurse_worklist',
+        'shifts',
+        'patients',
+        'appointments',
+        'vitals',
+        'admissions',
+        'beds',
+      ],
+      lab_technician: [
+        'lab_dashboard',
+        'shifts',
+        'lab_tests',
+        'patients',
+      ],
+      pharmacist: [
+        'pharmacy_dashboard',
+        'shifts',
+        'prescriptions',
+        'medicines',
+        'inventory',
+      ],
+      cashier: [
+        'cashier_pos',
+        'invoices',
+        'payments',
+        'finance_reports',
+      ],
+      patient: [
+        'patient_portal',
+        'appointments',
+        'prescriptions',
+        'invoices',
+      ],
     };
 
-    const allowedItems = roleMap[role] || [];
-    return allowedItems
-      .map(name => allItems.find(item => item.name === name))
+    const allowedIds = roleMap[role] || [];
+    return allowedIds
+      .map(id => allItems.find(item => item.id === id))
       .filter((item): item is NavItem => Boolean(item));
   };
 
   const { can } = useRoleAccess();
   const navigation = getNavigationByRole(user?.role || 'patient')
     .filter(item => {
-      // map nav item name to a permission check where applicable
-      const nameToPermission: Record<string, string | null> = {
-        'Patients':        'patients:view',
-        'Doctors':         'doctors:view',
-        'Appointments':    'appointments:view',
-        'Vitals':          'vitals:view',
-        'Prescriptions':   'prescriptions:view',
-        'Lab Tests':       'lab_tests:view',
-        'Radiology':       'radiology:view',
-        'Admissions':      'admissions:view',
-        'Beds':            'beds:view',
-        'Invoices':        'invoices:view',
-        'Payments':        'payments:view',
-        'Insurance':       'insurance:view',
-        'Blood Bank':      'blood_bank:view',
-        'Medicines':       'medicines:view',
-        'Inventory':       'inventory:view',
-        'Finance Reports': 'finance_reports:view',
-        'Reports':         'reports:view',
-        'Audit Logs':      'audit:view',
-        'System Admin':    'admin:departments',
-        'Users':           'admin:users',
-        'Departments':     'admin:departments',
-        'Services':        'admin:departments',
-      };
-      const perm = nameToPermission[item.name] || null;
-      if (!perm) return true; // no guard for workflow/role entry items
-      return can(perm);
+      if (!item.permission) return true;
+      return can(item.permission);
     });
 
-  const navTranslationMap: Record<string, string> = {
-    'Dashboard':          'nav.dashboard',
-    'Patient Portal':     'nav.patient_portal',
-    'Patients':           'nav.patients',
-    'Doctors':            'nav.doctors',
-    'Appointments':       'nav.appointments',
-    'Reception Workflow': 'nav.reception',
-    'Triage Worklist':    'nav.triage',
-    'Assign Queue':       'nav.assign_queue',
-    'My Consultations':   'nav.consultations',
-    'Lab Dashboard':      'nav.lab',
-    'Pharmacy':           'nav.pharmacy',
-    'Cashier POS':        'nav.cashier',
-    'Vitals':             'nav.vitals',
-    'Prescriptions':      'nav.prescriptions',
-    'Lab Tests':          'nav.lab_tests',
-    'Radiology':          'nav.radiology',
-    'Admissions':         'nav.admissions',
-    'Beds':               'nav.beds',
-    'Invoices':           'nav.invoices',
-    'Payments':           'nav.payments',
-    'Insurance':          'cashier.insurance',
-    'Blood Bank':         'nav.blood_bank',
-    'Medicines':          'nav.medicines',
-    'Inventory':          'nav.inventory',
-    'Finance Reports':    'nav.finance_reports',
-    'Reports':            'nav.reports',
-    'Audit Logs':         'nav.audit',
-    'System Admin':       'nav.admin',
-    'Users':              'nav.users',
-    'Departments':        'nav.departments',
-    'Services':           'nav.services',
+  const getGroupTitle = (groupName: string): string => {
+    const groupKeyMap: Record<string, string> = {
+      'OVERVIEW': 'nav.group.overview',
+      'WORKFORCE & ROSTER': 'nav.group.workforce',
+      'CLINICAL PRACTICE': 'nav.group.clinical',
+      'DIAGNOSTICS & LABS': 'nav.group.diagnostics',
+      'PATIENT SERVICES': 'nav.group.patients',
+      'INPATIENT & WARDS': 'nav.group.inpatient',
+      'PHARMACEUTICAL CARE': 'nav.group.pharmacy',
+      'BILLING & REVENUE': 'nav.group.billing',
+      'ADMINISTRATION': 'nav.group.administration',
+      'GOVERNANCE & SECURITY': 'nav.group.governance',
+      'ANALYTICS & REPORTS': 'nav.group.analytics',
+      'MY HEALTH': 'nav.group.my_health',
+    };
+    const key = groupKeyMap[groupName];
+    return key ? t(key, groupName) : groupName;
   };
+
+  const groupedNav = React.useMemo(() => {
+    const groups: { name: string; items: NavItem[] }[] = [];
+    navigation.forEach(item => {
+      const gName = (user?.role === 'patient' && item.group !== 'OVERVIEW') ? 'MY HEALTH' : item.group;
+      let g = groups.find(x => x.name === gName);
+      if (!g) {
+        g = { name: gName, items: [] };
+        groups.push(g);
+      }
+      g.items.push(item);
+    });
+    return groups;
+  }, [navigation, user?.role]);
 
   // isExpanded = full sidebar visible (either not collapsed, OR collapsed but mouse is hovering)
   const isExpanded = !sidebarCollapsed || sidebarHovered;
@@ -430,55 +714,73 @@ const Layout: React.FC = () => {
           )}
 
           {/* ── Navigation ────────────────────────────────────────── */}
-          <nav className={`flex-1 py-3 overflow-y-auto overflow-x-hidden space-y-0.5 ${isExpanded ? 'px-2' : 'px-1.5'}`}>
-            {navigation.map(item => {
-              const isActive = location.pathname === item.href ||
-                (item.href !== '/' && location.pathname.startsWith(item.href + '/'));
-              const translatedLabel = t(navTranslationMap[item.name] || item.name, item.name);
+          <nav className={`flex-1 py-3 overflow-y-auto overflow-x-hidden ${isExpanded ? 'px-2' : 'px-1.5'}`}>
+            {groupedNav.map((group, gIdx) => {
+              const groupTitle = getGroupTitle(group.name);
               return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  title={!isExpanded ? translatedLabel : undefined}
-                  onClick={() => { setSidebarOpen(false); setSidebarHovered(false); }}
-                  className={`relative flex items-center rounded-xl transition-all duration-200 group
-                    ${isExpanded ? 'px-3 py-2.5 gap-3' : 'justify-center p-2.5'}
-                    ${
-                      isActive
-                        ? 'bg-gradient-to-r from-white/[0.18] to-white/[0.08] text-white ring-1 ring-inset ring-white/[0.15] shadow-[0_2px_12px_rgba(0,0,0,0.15)]'
-                        : 'text-white/60 hover:text-white hover:bg-white/[0.07]'
-                    }`}
-                >
-                  {/* Active left accent bar */}
-                  {isActive && isExpanded && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-white/80 rounded-r-full" />
-                  )}
-                  {/* Active icon glow dot for collapsed */}
-                  {isActive && !isExpanded && (
-                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-white/90" />
+                <div key={group.name} className={gIdx > 0 ? 'mt-3.5 pt-2.5 border-t border-white/[0.08]' : ''}>
+                  {isExpanded ? (
+                    <div className="px-3 pb-1.5 pt-0.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-white/40 select-none">
+                      <span>{groupTitle}</span>
+                      <span className="text-[9px] font-mono text-white/30">{group.items.length}</span>
+                    </div>
+                  ) : (
+                    gIdx > 0 && <div className="h-[1px] bg-white/10 my-2 mx-1" />
                   )}
 
-                  <item.icon
-                    className={`flex-shrink-0 transition-all duration-200
-                      ${isExpanded ? 'w-4 h-4' : 'w-5 h-5'}
-                      ${isActive
-                        ? 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]'
-                        : 'text-white/50 group-hover:text-white/90'
-                      }`}
-                  />
+                  <div className="space-y-0.5">
+                    {group.items.map(item => {
+                      const isActive = location.pathname === item.href ||
+                        (item.href !== '/' && location.pathname.startsWith(item.href + '/'));
+                      const translatedLabel = t(item.translationKey, item.name);
+                      return (
+                        <Link
+                          key={item.id}
+                          to={item.href}
+                          title={!isExpanded ? `${groupTitle}: ${translatedLabel}` : undefined}
+                          onClick={() => { setSidebarOpen(false); setSidebarHovered(false); }}
+                          className={`relative flex items-center rounded-xl transition-all duration-200 group
+                            ${isExpanded ? 'px-3 py-2.5 gap-3' : 'justify-center p-2.5'}
+                            ${
+                              isActive
+                                ? 'bg-gradient-to-r from-white/[0.18] to-white/[0.08] text-white ring-1 ring-inset ring-white/[0.15] shadow-[0_2px_12px_rgba(0,0,0,0.15)]'
+                                : 'text-white/60 hover:text-white hover:bg-white/[0.07]'
+                            }`}
+                        >
+                          {/* Active left accent bar */}
+                          {isActive && isExpanded && (
+                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-white/80 rounded-r-full" />
+                          )}
+                          {/* Active icon glow dot for collapsed */}
+                          {isActive && !isExpanded && (
+                            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-white/90" />
+                          )}
 
-                  {isExpanded && (
-                    <span className={`truncate text-sm flex-1 transition-colors duration-200
-                      ${isActive ? 'font-semibold' : 'font-medium'}`}>
-                      {translatedLabel}
-                    </span>
-                  )}
+                          <item.icon
+                            className={`flex-shrink-0 transition-all duration-200
+                              ${isExpanded ? 'w-4 h-4' : 'w-5 h-5'}
+                              ${isActive
+                                ? 'text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]'
+                                : 'text-white/50 group-hover:text-white/90'
+                              }`}
+                          />
 
-                  {/* Trailing dot for active item */}
-                  {isExpanded && isActive && (
-                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0 shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
-                  )}
-                </Link>
+                          {isExpanded && (
+                            <span className={`truncate text-sm flex-1 transition-colors duration-200
+                              ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                              {translatedLabel}
+                            </span>
+                          )}
+
+                          {/* Trailing dot for active item */}
+                          {isExpanded && isActive && (
+                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0 shadow-[0_0_4px_rgba(255,255,255,0.6)]" />
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </nav>

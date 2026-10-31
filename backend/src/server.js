@@ -134,7 +134,7 @@ app.use(errorHandler);
 
 const http = require('http');
 const socketService = require('./services/socketService');
-const { sendAppointmentReminders } = require('./services/notificationService');
+const { sendAppointmentReminders, startTelegramPolling } = require('./services/notificationService');
 
 const server = http.createServer(app);
 
@@ -148,6 +148,7 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV}`);
     sendAppointmentReminders().catch(error => console.error('Reminder worker error:', error.message));
+    startTelegramPolling().catch(error => console.error('Telegram bot error:', error.message));
     setInterval(() => {
       sendAppointmentReminders().catch(error => console.error('Reminder worker error:', error.message));
     }, 60 * 60 * 1000);

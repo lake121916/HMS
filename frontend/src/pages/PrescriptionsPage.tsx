@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
 import {
   usePrescriptions, useCreatePrescription,
   useUpdatePrescription, useDispensePrescription, useDeletePrescription,
 } from '../hooks/useApi';
-import { Plus, Search, Edit, Trash2, X, CheckCircle, Pill } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, CheckCircle, Pill, AlertOctagon, AlertTriangle } from 'lucide-react';
 
 interface Prescription {
   id: number; patient_id: number; doctor_id: number; patient_name: string; doctor_name: string;
@@ -24,6 +25,17 @@ const PrescriptionsPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Prescription | null>(null);
   const [form, setForm] = useState({ patient_id:'', diagnosis_id:'', medication_name:'', dosage:'', frequency:'', duration:'', instructions:'' });
+  
+  // Allergy validation state
+  const [allergyModal, setAllergyModal] = useState<{
+    alerts: any[];
+    drugInteractions?: any[];
+    uncertaintyNote?: string | null;
+    hardBlocked: boolean;
+    requiresOverride?: boolean;
+  } | null>(null);
+  const [overrideAck, setOverrideAck] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
 
   // ── TanStack Query ──────────────────────────────────────────────────────
   const dispensedParam = filterDispensed === '' ? undefined : filterDispensed === 'true';
@@ -44,23 +56,70 @@ const PrescriptionsPage: React.FC = () => {
   const openAdd = () => {
     setEditing(null);
     setForm({ patient_id:'', diagnosis_id:'', medication_name:'', dosage:'', frequency:'', duration:'', instructions:'' });
+    setAllergyModal(null);
+    setOverrideAck(false);
+    setOverrideReason('');
     setShowModal(true);
   };
 
   const openEdit = (p: Prescription) => {
     setEditing(p);
     setForm({ patient_id:String(p.patient_id), diagnosis_id:'', medication_name:p.medication_name, dosage:p.dosage, frequency:p.frequency, duration:p.duration, instructions:p.instructions||'' });
+    setAllergyModal(null);
+    setOverrideAck(false);
+    setOverrideReason('');
     setShowModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload = { ...form, patient_id: parseInt(form.patient_id), diagnosis_id: form.diagnosis_id ? parseInt(form.diagnosis_id) : undefined };
-      if (editing) { await updatePrescription.mutateAsync(payload as Record<string, unknown>); }
-      else { await createPrescription.mutateAsync(payload as Record<string, unknown>); }
-      setShowModal(false);
+      if (!editing && form.patient_id && form.medication_name) {
+        // Pre-check clinical allergy safety
+        const valRes = await api.post('/prescriptions/validate', {
+          patient_id: parseInt(form.patient_id),
+          medication_name: form.medication_name
+        });
+        const check = valRes.data.data;
+        if (check.hasConflict) {
+          setAllergyModal({
+            alerts: check.alerts || [],
+            drugInteractions: check.drugInteractions || [],
+            uncertaintyNote: check.uncertaintyNote || null,
+            hardBlocked: check.hardBlocked,
+            requiresOverride: check.requiresOverride
+          });
+          return;
+        }
+      }
+
+      await submitPrescriptionPayload();
     } catch (e: any) { alert(e.response?.data?.message || 'Failed'); }
+  };
+
+  const submitPrescriptionPayload = async (override?: string) => {
+    const payload = {
+      ...form,
+      patient_id: parseInt(form.patient_id),
+      diagnosis_id: form.diagnosis_id ? parseInt(form.diagnosis_id) : undefined,
+      override_reason: override || null,
+      override_acknowledged: Boolean(override)
+    };
+    if (editing) { await updatePrescription.mutateAsync(payload as Record<string, unknown>); }
+    else { await createPrescription.mutateAsync(payload as Record<string, unknown>); }
+    setShowModal(false);
+    setAllergyModal(null);
+    setOverrideAck(false);
+    setOverrideReason('');
+  };
+
+  const handleConfirmPrescriptionOverride = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!overrideReason || overrideReason.trim().length < 5) {
+      alert('Mandatory clinical override justification is required (minimum 5 characters).');
+      return;
+    }
+    submitPrescriptionPayload(overrideReason.trim());
   };
 
   const handleDispense = async (id: number) => {
@@ -192,9 +251,140 @@ const PrescriptionsPage: React.FC = () => {
               <div><label className={lbl}>Instructions</label><textarea value={form.instructions} onChange={e=>setForm({...form,instructions:e.target.value})} rows={3} className={inp} placeholder="Take with food, avoid alcohol..." /></div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-300">Cancel</button>
-                <button type="submit" className="px-5 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700">{editing ? 'Update' : 'Create'}</button>
+                <button type="submit" className="px-5 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700">{editing ? 'Update' : 'Check Safety & Prescribe'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Allergy Warning & Clinical Override Modal ───────────────── */}
+      {allergyModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-lg p-6 border-2 border-red-500 animate-shake">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-red-100 dark:bg-red-950 text-red-600 rounded-2xl flex-shrink-0">
+                <AlertOctagon className="w-8 h-8" />
+              </div>
+              <div className="flex-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-red-600 bg-red-100 dark:bg-red-950 px-2.5 py-0.5 rounded-full">
+                  CLINICAL SAFETY ALERT
+                </span>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mt-1">
+                  Medication Allergy & Interaction Warning
+                </h3>
+              </div>
+            </div>
+
+            {/* Exact Required Patient Allergy Warning Banner */}
+            <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-2xl flex items-start gap-2.5">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                PATIENT ALLERGY ALERT: Potential cross-reactivity detected. Review the patient's allergy history and clinical risk before prescribing.
+              </p>
+            </div>
+
+            {/* Hard Stop Banner */}
+            {allergyModal.hardBlocked && (
+              <div className="mt-3 p-3 bg-red-100 dark:bg-red-950 border-2 border-red-600 rounded-2xl text-xs font-black text-red-900 dark:text-red-200 flex items-start gap-2">
+                <AlertOctagon className="w-5 h-5 text-red-600 flex-shrink-0" />
+                <div>
+                  HARD STOP CONTRAINDICATION: Severe allergy (Anaphylaxis) recorded. Prescribing this medication is strictly blocked by hospital policy.
+                </div>
+              </div>
+            )}
+
+            {/* Uncertainty Note */}
+            {allergyModal.uncertaintyNote && (
+              <div className="mt-2.5 p-2.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl text-xs text-blue-800 dark:text-blue-300">
+                ℹ️ {allergyModal.uncertaintyNote}
+              </div>
+            )}
+
+            {/* Conflict List */}
+            <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+              {allergyModal.alerts.map((alt, idx) => (
+                <div key={idx} className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-xl text-xs space-y-1">
+                  <div className="flex justify-between font-bold text-red-900 dark:text-red-300">
+                    <span>Proposed: {alt.proposedMedication}</span>
+                    <span className="uppercase text-[10px] px-2 py-0.5 bg-red-200 dark:bg-red-800 rounded-full">{alt.severity}</span>
+                  </div>
+                  <div>Recorded Allergen: <span className="font-semibold">{alt.recordedAllergen}</span></div>
+                  <div className="text-slate-600 dark:text-slate-400 italic">⚠️ {alt.reason}</div>
+                </div>
+              ))}
+
+              {allergyModal.drugInteractions?.map((ddi, idx) => (
+                <div key={`ddi-${idx}`} className="p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900 rounded-xl text-xs space-y-1">
+                  <div className="flex justify-between font-bold text-purple-900 dark:text-purple-300">
+                    <span>Interaction: {ddi.interactingMedication}</span>
+                    <span className="uppercase text-[10px] px-2 py-0.5 bg-purple-200 dark:bg-purple-800 rounded-full">{ddi.severity}</span>
+                  </div>
+                  <div>Risk: {ddi.risk}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Override Section */}
+            {!allergyModal.hardBlocked ? (
+              <form onSubmit={handleConfirmPrescriptionOverride} className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Mandatory Prescriber Override Justification * (Min 5 chars)
+                  </label>
+                  <textarea
+                    required
+                    minLength={5}
+                    rows={2}
+                    value={overrideReason}
+                    onChange={e => setOverrideReason(e.target.value)}
+                    placeholder="e.g. Benefits outweigh cross-reactivity risk; observed dose"
+                    className={inp}
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="ack-check"
+                    required
+                    checked={overrideAck}
+                    onChange={e => setOverrideAck(e.target.checked)}
+                    className="rounded text-red-600 focus:ring-red-500"
+                  />
+                  <label htmlFor="ack-check" className="text-xs text-gray-700 dark:text-gray-300 font-medium">
+                    I acknowledge the clinical risk and assume prescribing responsibility.
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setAllergyModal(null)}
+                    className="px-4 py-2 border rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!overrideAck || overrideReason.trim().length < 5}
+                    className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold disabled:opacity-50"
+                  >
+                    Authorize Override & Prescribe
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setAllergyModal(null)}
+                  className="px-5 py-2 bg-gray-800 text-white rounded-xl text-xs font-bold hover:bg-gray-900"
+                >
+                  Close & Change Medication
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

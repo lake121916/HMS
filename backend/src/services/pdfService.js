@@ -335,8 +335,117 @@ async function generateDischargeSummaryPdf(dischargeData, verificationToken) {
   });
 }
 
+// ── 4. Generate Official Medical Certificate PDF ──────────────────────────────
+async function generateMedicalCertificatePdf(certData, verificationToken) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: 'A4', margin: 45 });
+      const buffers = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+
+      setupFonts(doc);
+
+      const verifyUrl = `${process.env.APP_URL || 'https://alemketema-hms.et'}/verify/${verificationToken}`;
+      const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1 });
+
+      const docNumber = certData.certificate_number || `MC-${new Date().getFullYear()}-${String(certData.id || 1).padStart(5, '0')}`;
+      let y = await drawHospitalHeader(doc, 'Official Medical Certificate & Sick Leave', 'ኦፊሴላዊ የህክምና የምስክር ወረቀት እና የእረፍት ፈቃድ', docNumber, qrDataUrl);
+
+      y = drawPatientIdentityBox(doc, certData.patient, y);
+
+      // Examination Details Box
+      doc.rect(45, y, 505, 30).fill('#f1f5f9');
+      const examDate = certData.examination_date ? new Date(certData.examination_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString('en-GB');
+      const issueDate = certData.issue_date ? new Date(certData.issue_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : examDate;
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#1e293b')
+        .text(`Date of Clinical Examination: ${examDate}  ·  Certificate Issue Date: ${issueDate}  ·  Status: ${certData.status ? certData.status.toUpperCase() : 'ACTIVE'}`, 55, y + 10);
+      y += 38;
+
+      // Clinical Medical Statement
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('#1e3a8a').text('CLINICAL FINDINGS & MEDICAL STATEMENT / የህክምና ማረጋገጫ');
+      y += 14;
+      doc.rect(45, y, 505, 75).fillAndStroke('#ffffff', '#cbd5e1');
+      const statement = certData.medical_statement || 'This is to certify that the patient named above was medically examined at Alem Ketema Enat Hospital and found to require medical care and temporary rest.';
+      doc.font('Helvetica').fontSize(9).fillColor('#0f172a')
+        .text(statement, 55, y + 10, { width: 485, lineGap: 3 });
+      y += 85;
+
+      // Clinical Diagnosis Summary (if provided / authorized)
+      if (certData.diagnosis_summary) {
+        doc.font('Helvetica-Bold').fontSize(9).fillColor('#1e3a8a').text('DIAGNOSTIC SUMMARY / የበሽታው ሁኔታ');
+        y += 14;
+        doc.rect(45, y, 505, 36).fillAndStroke('#ffffff', '#cbd5e1');
+        doc.font('Helvetica').fontSize(8.5).fillColor('#0f172a')
+          .text(certData.diagnosis_summary, 55, y + 9, { width: 485 });
+        y += 46;
+      }
+
+      // Sick Leave Recommendation & Fitness for Work Box
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('#1e3a8a').text('SICK LEAVE RECOMMENDATION & FITNESS FOR DUTY / የእረፍት ፈቃድ ምክረ-ሀሳብ');
+      y += 14;
+      doc.rect(45, y, 505, 70).fillAndStroke('#f8fafc', '#94a3b8');
+
+      const sickLeaveRecommended = certData.sick_leave_recommended ? 'YES / ይመከራል' : 'NO / አያስፈልግም';
+      const days = certData.sick_leave_days || (certData.sick_leave_recommended ? 3 : 0);
+      const startDate = certData.sick_leave_start_date ? new Date(certData.sick_leave_start_date).toLocaleDateString('en-GB') : examDate;
+      const endDate = certData.sick_leave_end_date ? new Date(certData.sick_leave_end_date).toLocaleDateString('en-GB') : '-';
+      const fitForWork = certData.fit_for_work ? 'Fit for normal duties upon expiry of recommended sick leave.' : 'Currently unfit for normal occupational duties; requires medical follow-up.';
+
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#334155').text('Sick Leave Recommended:', 55, y + 10);
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(certData.sick_leave_recommended ? '#047857' : '#64748b').text(sickLeaveRecommended, 185, y + 10);
+
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#334155').text('Authorized Leave Duration:', 55, y + 26);
+      doc.font('Helvetica').fontSize(8.5).fillColor('#0f172a').text(`${days} Day(s)  (From: ${startDate}  To: ${endDate})`, 185, y + 26);
+
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#334155').text('Clinical Fitness Evaluation:', 55, y + 42);
+      doc.font('Helvetica').fontSize(8.5).fillColor('#0f172a').text(fitForWork, 185, y + 42, { width: 350 });
+
+      y += 82;
+
+      // Legal & Verification Warning
+      doc.rect(45, y, 505, 34).fill('#fef2f2');
+      doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#991b1b')
+        .text('NOTICE: This certificate is an official medical document issued by Alem Ketema Enat Hospital under the laws of Ethiopia. Any unauthorized alteration or falsification constitutes a criminal offense. The authenticity of this document can be verified in real time by scanning the QR code above.', 55, y + 7, { width: 485, lineGap: 1.5 });
+      y += 44;
+
+      // Signatures and Official Stamp Box
+      y = Math.max(y, 620);
+      doc.rect(45, y, 505, 100).fillAndStroke('#ffffff', '#cbd5e1');
+
+      // Left: Doctor Info & Signature line
+      doc.font('Helvetica-Bold').fontSize(8).fillColor('#475569').text('ATTENDING LICENSED CLINICIAN:', 60, y + 10);
+      doc.moveTo(60, y + 55).lineTo(250, y + 55).strokeColor('#94a3b8').stroke();
+      const docName = `Dr. ${certData.doctor?.first_name || 'Authorized'} ${certData.doctor?.last_name || 'Clinician'}`;
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#0f172a').text(docName, 60, y + 60);
+      doc.font('Helvetica').fontSize(7.5).fillColor('#64748b')
+        .text(`Specialization: ${certData.doctor?.specialization || 'General Medical Practice'}`, 60, y + 72);
+      doc.font('Helvetica').fontSize(7.5).fillColor('#64748b')
+        .text(`License No: ${certData.doctor?.license_number || 'ET-MOH-' + String(certData.doctor?.id || '4821')}`, 60, y + 84);
+
+      // Right: Hospital Official Stamp & Seal Area
+      doc.font('Helvetica-Bold').fontSize(8).fillColor('#475569').text('HOSPITAL MEDICAL BOARD OFFICIAL STAMP & SEAL:', 290, y + 10);
+      doc.rect(290, y + 24, 245, 68).dash(3, { space: 3 }).strokeColor('#cbd5e1').stroke();
+      doc.undash();
+      doc.font('Ethiopic-Bold').fontSize(8).fillColor('#94a3b8')
+        .text('ዓለም ከተማ እናት ሆስፒታል', 290, y + 42, { width: 245, align: 'center' });
+      doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#94a3b8')
+        .text('OFFICIAL CLINICAL STAMP / ማህተም', 290, y + 55, { width: 245, align: 'center' });
+
+      // Bottom Document Footer
+      doc.font('Helvetica').fontSize(7.5).fillColor('#94a3b8')
+        .text('Alem Ketema Enat Hospital · Outpatient Clinical Records Department · Verified Digital Health Record · A4 Standard', 45, 780, { width: 505, align: 'center' });
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 module.exports = {
   generatePrescriptionPdf,
   generateLabResultPdf,
   generateDischargeSummaryPdf,
+  generateMedicalCertificatePdf,
 };

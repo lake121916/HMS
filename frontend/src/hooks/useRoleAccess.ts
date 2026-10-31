@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 // Centralised role-permission matrix
 const PERMISSIONS: Record<string, string[]> = {
   // Patients
-  'patients:view':   ['super_admin','admin','hospital_manager','receptionist','doctor','nurse'],
+  'patients:view':   ['super_admin','admin','hospital_manager','receptionist','doctor','nurse','lab_technician'],
   'patients:create': ['receptionist'],
   'patients:edit':   ['super_admin','admin','receptionist','doctor','nurse'],
   'patients:delete': ['super_admin','admin'],

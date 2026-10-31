@@ -64,6 +64,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 const allergySafetyService = require('../services/allergySafetyService');
+const notificationService = require('../services/notificationService');
 
 // POST validate medication against patient allergies (Pre-check)
 router.post('/validate', authenticate, async (req, res) => {
@@ -137,18 +138,32 @@ router.post('/patient/:patientId/allergies', authenticate, authorize('doctor', '
 router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), prescriptionCreateRules, validate, async (req, res) => {
   try {
     const { patient_id, diagnosis_id, medication_name, dosage, frequency, duration, instructions,
-            encounter_id, quantity = 1, override_reason } = req.body;
+            encounter_id, quantity = 1, override_reason, override_acknowledged } = req.body;
 
-    // ── 1. Clinical Allergy Safety Check ────────────────────
+    // ── 1. Clinical Allergy & Drug-Interaction Safety Check ──
     const allergyCheck = await allergySafetyService.checkMedicationAllergy(patient_id, medication_name);
+
+    if (allergyCheck.hardBlocked) {
+      return res.status(403).json({
+        success: false,
+        hardBlocked: true,
+        alerts: allergyCheck.alerts,
+        message: 'CLINICAL HARD STOP: This medication is strictly contraindicated due to a recorded life-threatening anaphylactic reaction.'
+      });
+    }
+
     if (allergyCheck.hasConflict) {
-      if (!override_reason || override_reason.trim().length === 0) {
+      const isAcknowledged = override_acknowledged === true || override_acknowledged === 'true';
+      if (!isAcknowledged || !override_reason || override_reason.trim().length < 5) {
+        const primaryAlert = allergyCheck.alerts[0];
         return res.status(400).json({
           success: false,
           requiresOverride: true,
           hardBlocked: allergyCheck.hardBlocked,
           allergyAlerts: allergyCheck.alerts,
-          message: `Clinical Allergy Warning: Conflict detected with patient allergy record. Prescriber must review and provide an authorized clinical override reason.`
+          drugInteractions: allergyCheck.drugInteractions,
+          ruleVersion: allergyCheck.ruleVersion,
+          message: primaryAlert?.alertMessage || "PATIENT ALLERGY ALERT: Potential cross-reactivity detected. Review the patient's allergy history and clinical risk before prescribing."
         });
       }
     }
@@ -156,7 +171,15 @@ router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), pres
     let doctorId = req.body.doctor_id;
     if (req.user.role === 'doctor') {
       const doc = await pool.query('SELECT id FROM doctors WHERE user_id=$1', [req.user.id]);
-      if (doc.rows.length) doctorId = doc.rows[0].id;
+      if (doc.rows.length) {
+        doctorId = doc.rows[0].id;
+      } else {
+        const anyDoc = await pool.query('SELECT id FROM doctors ORDER BY id ASC LIMIT 1');
+        if (anyDoc.rows.length) doctorId = anyDoc.rows[0].id;
+      }
+    } else if (!doctorId) {
+      const anyDoc = await pool.query('SELECT id FROM doctors ORDER BY id ASC LIMIT 1');
+      if (anyDoc.rows.length) doctorId = anyDoc.rows[0].id;
     }
 
     // ── 2. Create Prescription Record ────────────────────────
@@ -168,9 +191,12 @@ router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), pres
     );
     const prescription = result.rows[0];
 
-    // ── 3. Record Allergy Override Audit if Conflict Existed ─
+    // ── 3. Record Allergy / DDI Override Audit if Conflict Existed ─
     if (allergyCheck.hasConflict && override_reason) {
       const primaryAlert = allergyCheck.alerts[0];
+      const allergenName = primaryAlert ? primaryAlert.recordedAllergen : (allergyCheck.drugInteractions[0]?.interactingMedication || 'Drug Interaction');
+      const severity = primaryAlert ? primaryAlert.severity : (allergyCheck.drugInteractions[0]?.severity || 'moderate');
+
       await pool.query(`
         INSERT INTO prescription_allergy_overrides
           (prescription_id, patient_id, medication_name, allergen_name, allergy_severity, prescriber_id, override_reason)
@@ -179,8 +205,8 @@ router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), pres
         prescription.id,
         patient_id,
         medication_name,
-        primaryAlert.recordedAllergen,
-        primaryAlert.severity,
+        allergenName,
+        severity,
         req.user.id,
         override_reason.trim()
       ]);
@@ -193,8 +219,16 @@ router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), pres
         patient_id,
         prescription.id,
         req.user.id,
-        `Allergy warning overridden by prescriber: ${override_reason}`,
-        JSON.stringify({ medication_name, allergen: primaryAlert.recordedAllergen, severity: primaryAlert.severity })
+        `Clinical safety warning overridden by prescriber: ${override_reason}`,
+        JSON.stringify({
+          medication_name,
+          allergen: allergenName,
+          severity,
+          alerts: allergyCheck.alerts,
+          drugInteractions: allergyCheck.drugInteractions,
+          ruleVersion: allergyCheck.ruleVersion,
+          timestamp: new Date().toISOString()
+        })
       ]);
     }
 
@@ -243,6 +277,7 @@ router.put('/:id', authenticate, authorize('doctor', 'pharmacist', 'super_admin'
       );
       await pool.query(`INSERT INTO workflow_status_history (entity_type, entity_id, from_status, to_status, changed_by) VALUES ('prescription',$1,$2,'dispensed',$3)`, [req.params.id, existing.rows[0].workflow_status, req.user.id]);
       await pool.query(`INSERT INTO notifications (user_id, patient_id, type, title, message, channel) SELECT p.user_id, p.id, 'prescription', 'Prescription ready', 'Your prescription is ready for collection.', 'in_app' FROM patients p WHERE p.id = $1 AND p.user_id IS NOT NULL`, [existing.rows[0].patient_id]);
+      notificationService.sendPrescriptionReadyNotification(result.rows[0]).catch(e => console.error('Prescription ready notification error:', e.message));
       return res.json({ success: true, data: { prescription: result.rows[0] } });
     }
     const workflowStatus = is_dispensed === true ? 'dispensed' : 'verified';
@@ -256,6 +291,9 @@ router.put('/:id', authenticate, authorize('doctor', 'pharmacist', 'super_admin'
        instructions||null, is_dispensed!==undefined?is_dispensed:null, workflowStatus, req.params.id]
     );
     await pool.query(`INSERT INTO workflow_status_history (entity_type, entity_id, from_status, to_status, changed_by) VALUES ('prescription',$1,$2,$3,$4)`, [req.params.id, existing.rows[0].workflow_status, workflowStatus, req.user.id]);
+    if (workflowStatus === 'dispensed' || workflowStatus === 'verified') {
+      notificationService.sendPrescriptionReadyNotification(result.rows[0]).catch(e => console.error('Prescription notification error:', e.message));
+    }
     res.json({ success: true, data: { prescription: result.rows[0] } });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });

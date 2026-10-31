@@ -239,3 +239,57 @@ body.font-amharic {
   }
 }
 
+
+
+/* ============================================================================
+   A4 Clinical Document Print Styles (Medical Certificates, Discharge, Rx)
+   ============================================================================ */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
+  /* Universal hide for non-printable navigation, buttons, and app controls */
+  nav,
+  aside,
+  header,
+  footer,
+  .no-print,
+  button,
+  .btn,
+  .sidebar,
+  [data-no-print="true"],
+  .fixed:not(.print-visible) {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-page-break {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .print-avoid-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}

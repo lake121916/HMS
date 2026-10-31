@@ -15,7 +15,7 @@ import {
   Stethoscope, FlaskConical, Scan, Pill, Syringe,
   CheckSquare, RefreshCw, AlertTriangle, ChevronRight,
   User, DollarSign, Lock, PlusCircle, Volume2,
-  CheckCircle2, AlertOctagon, History, FileText, Sparkles, Printer, QrCode
+  CheckCircle2, AlertOctagon, History, FileText, Sparkles, Printer, QrCode, X
 } from 'lucide-react';
 
 interface EncounterSummary {
@@ -140,7 +140,10 @@ const DoctorConsultationPage: React.FC = () => {
   const [patientAllergies, setPatientAllergies] = useState<PatientAllergy[]>([]);
   const [allergyConflictModal, setAllergyConflictModal] = useState<{
     alerts: any[];
+    drugInteractions?: any[];
+    uncertaintyNote?: string | null;
     hardBlocked: boolean;
+    requiresOverride?: boolean;
     medicationName: string;
   } | null>(null);
   const [overrideReason, setOverrideReason] = useState('');
@@ -151,6 +154,18 @@ const DoctorConsultationPage: React.FC = () => {
     allergen_category: 'drug',
     reaction_description: '',
     severity: 'moderate'
+  });
+
+  // Priority 2: Medical Certificate & Discharge State
+  const [showMedicalCertModal, setShowMedicalCertModal] = useState(false);
+  const [medCertForm, setMedCertForm] = useState({
+    medical_statement: '',
+    diagnosis_summary: '',
+    sick_leave_recommended: false,
+    sick_leave_start_date: new Date().toISOString().split('T')[0],
+    sick_leave_end_date: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
+    sick_leave_days: 3,
+    fit_for_work: true,
   });
 
   // Clinical Addenda & Finalized Consultation State
@@ -402,8 +417,11 @@ const DoctorConsultationPage: React.FC = () => {
       if (check.hasConflict) {
         // Conflict detected! Open Allergy Warning Modal
         setAllergyConflictModal({
-          alerts: check.alerts,
+          alerts: check.alerts || [],
+          drugInteractions: check.drugInteractions || [],
+          uncertaintyNote: check.uncertaintyNote || null,
           hardBlocked: check.hardBlocked,
+          requiresOverride: check.requiresOverride,
           medicationName: rxForm.medication_name
         });
         setSubmitting(false);
@@ -431,7 +449,8 @@ const DoctorConsultationPage: React.FC = () => {
         encounter_id: activeEncounter.id,
         quantity: parseInt(rxForm.quantity) || 1,
         unit_price: price,
-        override_reason: override || null
+        override_reason: override || null,
+        override_acknowledged: Boolean(override)
       });
 
       // Clinical billing item
@@ -460,12 +479,52 @@ const DoctorConsultationPage: React.FC = () => {
 
   const handleConfirmOverride = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!overrideReason || overrideReason.trim().length === 0) {
-      showToast('error', 'Mandatory clinical justification is required for allergy override.');
+    if (!overrideReason || overrideReason.trim().length < 5) {
+      showToast('error', 'Mandatory clinical justification is required for allergy override (min 5 characters).');
       return;
     }
     setSubmitting(true);
     executePrescriptionCreation(overrideReason.trim());
+  };
+
+  // ── Priority 2: Medical Certificate & Discharge Handlers ─────────
+  const handleOpenMedicalCertModal = () => {
+    if (!activeEncounter) return;
+    setMedCertForm({
+      medical_statement: `This is to certify that ${activeEncounter.first_name} ${activeEncounter.last_name} was examined at Alem Ketema Enat Hospital on ${new Date().toLocaleDateString('en-GB')}. Clinical evaluation indicates medical management and temporary rest are recommended.`,
+      diagnosis_summary: consultForm.diagnosis ? `${consultForm.diagnosis} (ICD-10: ${consultForm.icd_code || 'N/A'})` : 'Acute Clinical Examination',
+      sick_leave_recommended: true,
+      sick_leave_start_date: new Date().toISOString().split('T')[0],
+      sick_leave_end_date: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
+      sick_leave_days: 3,
+      fit_for_work: false,
+    });
+    setShowMedicalCertModal(true);
+  };
+
+  const handleIssueAndPrintCertificate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeEncounter) return;
+    setSubmitting(true);
+    try {
+      const res = await api.post('/documents/medical-certificate', {
+        ...medCertForm,
+        patient_id: activeEncounter.patient_id,
+        encounter_id: activeEncounter.id,
+      });
+      showToast('success', `Medical Certificate ${res.data?.data?.certificate_number} issued! Opening PDF...`);
+      setShowMedicalCertModal(false);
+      window.open(`/api/documents/medical-certificate/${res.data.data.id}/pdf`, '_blank');
+    } catch (err: any) {
+      showToast('error', err.response?.data?.message || 'Failed to issue medical certificate');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePrintDischargeSummary = () => {
+    if (!activeEncounter) return;
+    window.open(`/api/documents/discharge/encounter/${activeEncounter.id}/pdf`, '_blank');
   };
 
   const orderLabTest = async (e: React.FormEvent) => {
@@ -694,6 +753,26 @@ const DoctorConsultationPage: React.FC = () => {
                   )}
                   {activeEncounter.oxygen_saturation && <span>O₂ {activeEncounter.oxygen_saturation}%</span>}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenMedicalCertModal}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 text-xs font-bold rounded-xl border border-blue-200 dark:border-blue-800 transition shadow-sm"
+                  title="Issue Official Medical Certificate & Sick Leave with QR Code"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Medical Certificate
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePrintDischargeSummary}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition shadow-sm"
+                  title="Print Official Certified Discharge Summary with QR Code"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  Discharge Summary
+                </button>
 
                 {!isFinalized ? (
                   <button
@@ -1306,7 +1385,7 @@ const DoctorConsultationPage: React.FC = () => {
                   CLINICAL SAFETY ALERT
                 </span>
                 <h2 className="text-lg font-black text-slate-900 dark:text-white mt-1">
-                  Medication Allergy Conflict Detected
+                  Medication Allergy & Interaction Warning
                 </h2>
                 <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
                   Proposed medication conflict for patient{' '}
@@ -1315,13 +1394,38 @@ const DoctorConsultationPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Mandatory Exact Patient Allergy Alert Banner */}
+            <div className="mt-4 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-2xl flex items-start gap-2.5">
+              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                PATIENT ALLERGY ALERT: Potential cross-reactivity detected. Review the patient's allergy history and clinical risk before prescribing.
+              </div>
+            </div>
+
+            {/* Hard-Stop Blocking Banner if Anaphylaxis Direct Match */}
+            {allergyConflictModal.hardBlocked && (
+              <div className="mt-3 p-3.5 bg-red-100 dark:bg-red-950 border-2 border-red-600 rounded-2xl text-xs font-black text-red-900 dark:text-red-200 flex items-start gap-2">
+                <AlertOctagon className="h-5 w-5 text-red-600 flex-shrink-0" />
+                <div>
+                  HARD STOP CONTRAINDICATION: Severe life-threatening allergy (Anaphylaxis) recorded. Prescribing this medication is strictly blocked by hospital clinical safety policy. Overrides are not permitted.
+                </div>
+              </div>
+            )}
+
+            {/* Uncertainty Note if Allergy Records Unreviewed */}
+            {allergyConflictModal.uncertaintyNote && (
+              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl text-xs text-blue-800 dark:text-blue-300">
+                ℹ️ {allergyConflictModal.uncertaintyNote}
+              </div>
+            )}
+
             {/* Alert Conflict Details */}
-            <div className="mt-4 space-y-2.5">
+            <div className="mt-4 space-y-2.5 max-h-60 overflow-y-auto">
               {allergyConflictModal.alerts.map((alt, idx) => (
-                <div key={idx} className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-2xl text-xs space-y-1">
+                <div key={idx} className="p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-2xl text-xs space-y-1">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-red-900 dark:text-red-200">
-                      Proposed: {alt.proposedMedication}
+                      {alt.alertType === 'DIRECT_ALLERGY' ? 'Direct Allergen Match' : 'Potential Cross-Reactivity'}: {alt.proposedMedication}
                     </span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${allergySeverityColors[alt.severity] || 'bg-red-600 text-white'}`}>
                       {alt.severity} Severity
@@ -1339,52 +1443,224 @@ const DoctorConsultationPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+
+              {/* Drug-Drug Interactions */}
+              {allergyConflictModal.drugInteractions?.map((ddi: any, idx: number) => (
+                <div key={`ddi-${idx}`} className="p-3.5 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900 rounded-2xl text-xs space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-purple-900 dark:text-purple-200">
+                      Drug-Drug Interaction: {ddi.interactingMedication}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-purple-600 text-white">
+                      {ddi.severity} Risk
+                    </span>
+                  </div>
+                  <div className="text-purple-800 dark:text-purple-300">
+                    Clinical Risk: {ddi.risk}
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-400 italic text-[11px]">
+                    Rule Source: {ddi.source} (Version: {ddi.ruleVersion})
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* Override Form */}
-            <form onSubmit={handleConfirmOverride} className="mt-5 space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+            {/* Override Form (Disabled if Hard Blocked) */}
+            {!allergyConflictModal.hardBlocked ? (
+              <form onSubmit={handleConfirmOverride} className="mt-5 space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <div>
+                  <label className="block text-xs font-bold text-slate-900 dark:text-white mb-1">
+                    Document Mandatory Clinical Override Justification * (Min 5 characters)
+                  </label>
+                  <textarea
+                    required
+                    minLength={5}
+                    rows={2}
+                    value={overrideReason}
+                    onChange={e => setOverrideReason(e.target.value)}
+                    placeholder="e.g. Clinical benefits outweigh cross-reactivity risk; patient tolerated in past under observation"
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="override-ack"
+                    required
+                    checked={overrideAcknowledged}
+                    onChange={e => setOverrideAcknowledged(e.target.checked)}
+                    className="rounded border-slate-300 text-red-600 focus:ring-red-500"
+                  />
+                  <label htmlFor="override-ack" className="text-xs text-slate-700 dark:text-slate-300 font-medium">
+                    I acknowledge the clinical risk and assume prescribing responsibility. An immutable audit record will be logged.
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setAllergyConflictModal(null)}
+                    className="px-4 py-2 border rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  >
+                    Cancel Prescription
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!overrideAcknowledged || overrideReason.trim().length < 5}
+                    className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md disabled:opacity-50"
+                  >
+                    Authorize Clinical Override & Prescribe
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="mt-5 pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setAllergyConflictModal(null)}
+                  className="px-5 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold hover:bg-slate-900"
+                >
+                  Close & Select Safe Alternative
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: ISSUE MEDICAL CERTIFICATE ────────────────────────── */}
+      {showMedicalCertModal && activeEncounter && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl max-w-xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-blue-600" />
+                <h2 className="text-base font-black text-slate-900 dark:text-white">
+                  Issue Official Medical Certificate & Sick Leave
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMedicalCertModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleIssueAndPrintCertificate} className="mt-4 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-900 dark:text-white mb-1">
-                  Document Mandatory Clinical Override Justification *
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Patient Identity
+                </label>
+                <div className="px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs font-medium text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700">
+                  {activeEncounter.first_name} {activeEncounter.last_name} (MRN: ETH-MRN-{activeEncounter.patient_id})
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Clinical Findings & Medical Statement *
                 </label>
                 <textarea
                   required
-                  rows={2}
-                  value={overrideReason}
-                  onChange={e => setOverrideReason(e.target.value)}
-                  placeholder="e.g. Benefits outweigh cross-reactivity risk; patient tolerated in past under observation"
-                  className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-red-500"
+                  minLength={5}
+                  rows={3}
+                  value={medCertForm.medical_statement}
+                  onChange={e => setMedCertForm(f => ({ ...f, medical_statement: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-xl text-xs bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-blue-500"
+                  placeholder="Official medical statement..."
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="override-ack"
-                  required
-                  checked={overrideAcknowledged}
-                  onChange={e => setOverrideAcknowledged(e.target.checked)}
-                  className="rounded border-slate-300 text-red-600 focus:ring-red-500"
-                />
-                <label htmlFor="override-ack" className="text-xs text-slate-700 dark:text-slate-300 font-medium">
-                  I acknowledge the clinical risk and assume prescribing responsibility. An audit record will be logged.
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Diagnosis Summary
                 </label>
+                <input
+                  value={medCertForm.diagnosis_summary}
+                  onChange={e => setMedCertForm(f => ({ ...f, diagnosis_summary: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-xl text-xs bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. Acute Lumbar Muscular Strain"
+                />
+              </div>
+
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">
+                    Sick Leave Recommended
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={medCertForm.sick_leave_recommended}
+                    onChange={e => setMedCertForm(f => ({ ...f, sick_leave_recommended: e.target.checked }))}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </div>
+
+                {medCertForm.sick_leave_recommended && (
+                  <div className="grid grid-cols-3 gap-3 pt-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Duration (Days)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={60}
+                        value={medCertForm.sick_leave_days}
+                        onChange={e => setMedCertForm(f => ({ ...f, sick_leave_days: parseInt(e.target.value) || 1 }))}
+                        className="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">Start Date</label>
+                      <input
+                        type="date"
+                        value={medCertForm.sick_leave_start_date}
+                        onChange={e => setMedCertForm(f => ({ ...f, sick_leave_start_date: e.target.value }))}
+                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">End Date</label>
+                      <input
+                        type="date"
+                        value={medCertForm.sick_leave_end_date}
+                        onChange={e => setMedCertForm(f => ({ ...f, sick_leave_end_date: e.target.value }))}
+                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-700">
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Fit for Normal Work Duties
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={medCertForm.fit_for_work}
+                    onChange={e => setMedCertForm(f => ({ ...f, fit_for_work: e.target.checked }))}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setAllergyConflictModal(null)}
+                  onClick={() => setShowMedicalCertModal(false)}
                   className="px-4 py-2 border rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
                 >
-                  Cancel Prescription
+                  Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={!overrideAcknowledged || !overrideReason}
-                  className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md disabled:opacity-50"
+                  disabled={submitting}
+                  className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition disabled:opacity-50"
                 >
-                  Authorize Clinical Override & Prescribe
+                  <Printer className="h-4 w-4" />
+                  Issue & Print Certificate
                 </button>
               </div>
             </form>

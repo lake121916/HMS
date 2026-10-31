@@ -1,5 +1,6 @@
 const pool = require('../config/database');
 const { sendSuccess, sendError, handleAsync } = require('../utils/response');
+const notificationService = require('../services/notificationService');
 
 const getPatientIdForUser = async (userId) => {
   const result = await pool.query('SELECT id FROM patients WHERE user_id = $1', [userId]);
@@ -141,6 +142,7 @@ const bookAppointment = handleAsync(async (req, res) => {
   );
 
   await notifyAppointmentPatient(result.rows[0], 'Appointment booked', `Your appointment is scheduled for ${new Date(appointmentDate).toLocaleString()}.`);
+  notificationService.sendAppointmentNotification(result.rows[0], 'appointment_booked').catch(e => console.error('Notification dispatch error:', e.message));
 
   sendSuccess(res, result.rows[0], 'Appointment booked successfully', 201);
 });
@@ -176,6 +178,7 @@ const rescheduleAppointment = handleAsync(async (req, res) => {
   );
 
   await notifyAppointmentPatient(result.rows[0], 'Appointment rescheduled', `Your appointment has been moved to ${new Date(newDate).toLocaleString()}.`);
+  notificationService.sendAppointmentNotification(result.rows[0], 'appointment_rescheduled').catch(e => console.error('Notification dispatch error:', e.message));
 
   sendSuccess(res, result.rows[0], 'Appointment rescheduled successfully');
 });
@@ -209,6 +212,7 @@ const cancelAppointment = handleAsync(async (req, res) => {
   );
 
   await notifyAppointmentPatient(result.rows[0], 'Appointment cancelled', 'Your appointment has been cancelled. Please contact reception if you need a new time.');
+  notificationService.sendAppointmentNotification(result.rows[0], 'appointment_cancelled').catch(e => console.error('Notification dispatch error:', e.message));
 
   sendSuccess(res, result.rows[0], 'Appointment cancelled successfully');
 });

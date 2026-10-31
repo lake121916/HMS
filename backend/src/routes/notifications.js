@@ -125,4 +125,127 @@ router.delete('/:id', authenticate, async (req, res) => {
   }
 });
 
+// ── Notification Outbox & Telegram Integration (Priority 3) ───────────────────
+const notificationService = require('../services/notificationService');
+
+// GET /api/notifications/queue (Audit & Outbox Monitoring)
+router.get('/queue', authenticate, authorize('super_admin', 'admin', 'hospital_manager'), async (req, res) => {
+  try {
+    const { status, limit = 50, offset = 0 } = req.query;
+    let query = `
+      SELECT nq.*, p.first_name || ' ' || p.last_name AS patient_name
+      FROM notification_queue nq
+      LEFT JOIN patients p ON p.id = nq.patient_id
+      WHERE 1=1
+    `;
+    const params = [];
+    let idx = 1;
+
+    if (status) {
+      query += ` AND nq.status = $${idx++}`;
+      params.push(status);
+    }
+
+    query += ` ORDER BY nq.created_at DESC LIMIT $${idx++} OFFSET $${idx++}`;
+    params.push(parseInt(limit), parseInt(offset));
+
+    const result = await pool.query(query, params);
+    const countRes = await pool.query(
+      `SELECT COUNT(*) FROM notification_queue ${status ? 'WHERE status = $1' : ''}`,
+      status ? [status] : []
+    );
+
+    res.json({
+      success: true,
+      data: {
+        queue: result.rows,
+        total: parseInt(countRes.rows[0].count)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching notification queue:', error);
+    res.status(500).json({ success: false, message: 'Server error fetching notification queue' });
+  }
+});
+
+// POST /api/notifications/queue/process (Trigger queue worker)
+router.post('/queue/process', authenticate, authorize('super_admin', 'admin'), async (req, res) => {
+  try {
+    await notificationService.processNotificationQueue({ batchSize: 20 });
+    res.json({ success: true, message: 'Notification queue processed successfully' });
+  } catch (error) {
+    console.error('Error processing notification queue:', error);
+    res.status(500).json({ success: false, message: 'Failed to process notification queue' });
+  }
+});
+
+// POST /api/notifications/telegram/start (Initiate Telegram Verification Code)
+router.post('/telegram/start', authenticate, async (req, res) => {
+  try {
+    const { patient_id } = req.body;
+    if (!patient_id) {
+      return res.status(400).json({ success: false, message: 'patient_id is required' });
+    }
+
+    // Generate random 6-digit numeric verification code
+    const verificationCode = String(Math.floor(100000 + Math.random() * 900000));
+
+    // Remove any older unverified codes for this patient
+    await pool.query('DELETE FROM patient_telegram_verifications WHERE patient_id = $1 AND is_verified = false', [patient_id]);
+
+    const result = await pool.query(`
+      INSERT INTO patient_telegram_verifications (patient_id, verification_code, is_verified)
+      VALUES ($1, $2, false)
+      RETURNING id, patient_id, verification_code, created_at
+    `, [patient_id, verificationCode]);
+
+    res.status(201).json({
+      success: true,
+      message: 'Telegram verification code generated',
+      data: {
+        patient_id,
+        verification_code: verificationCode,
+        bot_username: process.env.TELEGRAM_BOT_USERNAME || 'AlemKetemaHospitalBot',
+        instructions: `Send this 6-digit code to @${process.env.TELEGRAM_BOT_USERNAME || 'AlemKetemaHospitalBot'} to enable Telegram hospital notifications.`
+      }
+    });
+  } catch (error) {
+    console.error('Error starting telegram verification:', error);
+    res.status(500).json({ success: false, message: 'Server error starting Telegram verification' });
+  }
+});
+
+// POST /api/notifications/telegram/verify (Confirm code and link chat ID)
+router.post('/telegram/verify', async (req, res) => {
+  try {
+    const { patient_id, verification_code, telegram_chat_id, telegram_username } = req.body;
+
+    if (!patient_id || !verification_code || !telegram_chat_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'patient_id, verification_code, and telegram_chat_id are required'
+      });
+    }
+
+    const verifyResult = await notificationService.verifyTelegramChat(
+      patient_id,
+      verification_code,
+      telegram_chat_id,
+      telegram_username
+    );
+
+    if (!verifyResult.success) {
+      return res.status(400).json(verifyResult);
+    }
+
+    res.json({
+      success: true,
+      message: verifyResult.message
+    });
+  } catch (error) {
+    console.error('Error verifying telegram chat:', error);
+    res.status(500).json({ success: false, message: 'Server error verifying Telegram chat' });
+  }
+});
+
 module.exports = router;
