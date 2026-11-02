@@ -70,7 +70,7 @@ const ALL_PAGES = [
   'user-management', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
   'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
   'assignment', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-  'services-admin', 'shifts', 'shifts'
+  'services-admin', 'shifts'
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {

@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+*/node_modules/
+*/*/node_modules/
+
+# Environment and Secrets
+.env
+.env.local
+.env.*.local
+*.env
+backend/.env
+ml-service/.env
+image-analysis-service/.env
+
+# Production Builds
+dist/
+build/
+*/dist/
+*/build/
+
+# Python Virtual Environments & Bytecode
+.venv/
+*/.venv/
+env/
+*/env/
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs and Debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing & Coverage
+coverage/
+*/coverage/
+.nyc_output/
+
+# OS and Editor Artifacts
+.DS_Store
+Thumbs.db
+.idea/
+.system_generated/

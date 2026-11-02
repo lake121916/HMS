@@ -19,14 +19,14 @@ describe('Priority 2: Official Clinical PDF Documents & Verification', () => {
 
   beforeAll(async () => {
     try {
-      // Find existing sample records for testing
-      const rxRes = await pool.query('SELECT id FROM prescriptions ORDER BY id DESC LIMIT 1');
+      // Find existing sample records for testing that have linked patients
+      const rxRes = await pool.query('SELECT pr.id FROM prescriptions pr JOIN patients p ON p.id = pr.patient_id ORDER BY pr.id DESC LIMIT 1');
       if (rxRes.rows.length > 0) sampleRxId = rxRes.rows[0].id;
 
-      const labRes = await pool.query("SELECT id FROM lab_tests WHERE status = 'completed' ORDER BY id DESC LIMIT 1");
+      const labRes = await pool.query("SELECT lt.id FROM lab_tests lt JOIN patients p ON p.id = lt.patient_id WHERE lt.status = 'completed' ORDER BY lt.id DESC LIMIT 1");
       if (labRes.rows.length > 0) sampleLabId = labRes.rows[0].id;
 
-      const admRes = await pool.query('SELECT id FROM admissions ORDER BY id DESC LIMIT 1');
+      const admRes = await pool.query('SELECT a.id FROM admissions a JOIN patients p ON p.id = a.patient_id ORDER BY a.id DESC LIMIT 1');
       if (admRes.rows.length > 0) sampleAdmissionId = admRes.rows[0].id;
 
       const docRes = await pool.query('SELECT verification_token FROM document_verifications LIMIT 1');

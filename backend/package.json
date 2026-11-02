@@ -10,6 +10,8 @@
     "migrate:test": "node scripts/run-test-migration.js",
     "db:migrate": "node-pg-migrate up",
     "db:down": "node-pg-migrate down",
+    "db:seed": "node scripts/seed-all-actors.js",
+    "seed": "node scripts/seed-all-actors.js",
     "test": "jest --forceExit"
   },
   "keywords": [

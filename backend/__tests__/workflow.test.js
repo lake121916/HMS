@@ -146,7 +146,7 @@ describe('End-to-End Clinical Workflow Integration', () => {
 
   describe('Step 4: Billing Invoice Generation', () => {
     it('should generate an invoice for the consultation & prescribed treatments', async () => {
-      const receptionistToken = generateTestToken('receptionist', 201);
+      const cashierToken = generateTestToken('cashier', 301);
 
       const mockInvoice = {
         id: 901,
@@ -164,7 +164,7 @@ describe('End-to-End Clinical Workflow Integration', () => {
 
       const response = await request(app)
         .post('/api/invoices')
-        .set('Authorization', `Bearer ${receptionistToken}`)
+        .set('Authorization', `Bearer ${cashierToken}`)
         .send({
           patient_id: 42,
           subtotal: 150.00,

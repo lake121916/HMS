@@ -6,11 +6,12 @@ const jwt = require('jsonwebtoken');
 describe('Patient Registration Workflow', () => {
   let receptionistToken;
   let adminToken;
+  let cashierToken;
   let createdPatientIds = [];
   let createdUserIds = [];
 
   beforeAll(async () => {
-    // Look up real receptionist and admin user IDs from database
+    // Look up real receptionist, admin, and cashier user IDs from database
     const recUser = await pool.query("SELECT id, email FROM users WHERE role = 'receptionist' LIMIT 1");
     const recId = recUser.rows.length > 0 ? recUser.rows[0].id : 5;
     const recEmail = recUser.rows.length > 0 ? recUser.rows[0].email : 'reception@hospital.com';
@@ -19,6 +20,10 @@ describe('Patient Registration Workflow', () => {
     const admId = admUser.rows.length > 0 ? admUser.rows[0].id : 1;
     const admEmail = admUser.rows.length > 0 ? admUser.rows[0].email : 'admin@hospital.com';
 
+    const cashUser = await pool.query("SELECT id, email FROM users WHERE role = 'cashier' LIMIT 1");
+    const cashId = cashUser.rows.length > 0 ? cashUser.rows[0].id : 6;
+    const cashEmail = cashUser.rows.length > 0 ? cashUser.rows[0].email : 'cashier@hospital.com';
+
     // Generate valid tokens
     receptionistToken = jwt.sign(
       { id: recId, email: recEmail, role: 'receptionist' },
@@ -26,6 +31,10 @@ describe('Patient Registration Workflow', () => {
     );
     adminToken = jwt.sign(
       { id: admId, email: admEmail, role: 'admin' },
+      process.env.JWT_SECRET || 'your_jwt_secret_key_change_this_in_production'
+    );
+    cashierToken = jwt.sign(
+      { id: cashId, email: cashEmail, role: 'cashier' },
       process.env.JWT_SECRET || 'your_jwt_secret_key_change_this_in_production'
     );
   });
@@ -112,7 +121,7 @@ describe('Patient Registration Workflow', () => {
     const patientId = createdPatientIds[0];
     const res = await request(app)
       .post('/api/invoices')
-      .set('Authorization', `Bearer ${receptionistToken}`)
+      .set('Authorization', `Bearer ${cashierToken}`)
       .send({
         patient_id: patientId,
         subtotal: 50,
