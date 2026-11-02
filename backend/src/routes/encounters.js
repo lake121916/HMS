@@ -402,9 +402,9 @@ router.post('/:id/triage', authenticate, authorize('nurse', 'admin', 'super_admi
 });
 
 // ══════════════════════════════════════════════════════════════
-// 5. ASSIGNMENT QUEUE  (Admin, Nurse, Receptionist)
+// 5. ASSIGNMENT QUEUE  (Admin, Nurse / Clinical Triage Coordinator)
 // ══════════════════════════════════════════════════════════════
-router.get('/assignment-queue', authenticate, authorize('admin', 'super_admin', 'nurse', 'receptionist'), async (req, res) => {
+router.get('/assignment-queue', authenticate, authorize('admin', 'super_admin', 'nurse'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT pe.*,
@@ -429,9 +429,9 @@ router.get('/assignment-queue', authenticate, authorize('admin', 'super_admin', 
 });
 
 // ══════════════════════════════════════════════════════════════
-// 6. ASSIGN DEPARTMENT + DOCTOR  (Admin, Nurse, Receptionist)
+// 6. ASSIGN DEPARTMENT + DOCTOR  (Admin, Nurse / Clinical Triage Coordinator)
 // ══════════════════════════════════════════════════════════════
-router.post('/:id/assign', authenticate, authorize('admin', 'super_admin', 'nurse', 'receptionist'), async (req, res) => {
+router.post('/:id/assign', authenticate, authorize('admin', 'super_admin', 'nurse'), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

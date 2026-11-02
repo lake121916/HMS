@@ -1,6 +1,7 @@
 const LabTestModel = require('../models/LabTestModel');
 const pool = require('../config/database');
 const billingService = require('../services/billingService');
+const socketService = require('../services/socketService');
 
 exports.getLabTests = async (req, res) => {
   try {
@@ -129,6 +130,59 @@ exports.uploadLabResult = async (req, res) => {
       notes
     });
 
+    // Notify ordering doctor & clinical team
+    try {
+      const testInfo = await pool.query(`
+        SELECT lt.test_name, lt.doctor_id, lt.patient_id,
+               p.first_name || ' ' || p.last_name AS patient_name,
+               d.user_id AS doctor_user_id
+        FROM lab_tests lt
+        JOIN patients p ON p.id = lt.patient_id
+        LEFT JOIN doctors d ON d.id = lt.doctor_id
+        WHERE lt.id = $1
+      `, [req.params.id]);
+
+      if (testInfo.rows.length) {
+        const info = testInfo.rows[0];
+        const isAbn = Boolean(is_abnormal);
+        const title = isAbn ? 'ABNORMAL Lab Result Available' : 'Lab Result Available';
+        const msg = isAbn
+          ? `CRITICAL/ABNORMAL result recorded for ${info.test_name} (Patient: ${info.patient_name}). Immediate clinical review advised.`
+          : `Lab result for ${info.test_name} (Patient: ${info.patient_name}) is now ready for review.`;
+
+        if (info.doctor_user_id) {
+          await pool.query(
+            `INSERT INTO notifications (user_id, patient_id, type, title, message, channel)
+             VALUES ($1, $2, 'lab_result', $3, $4, 'in_app')`,
+            [info.doctor_user_id, info.patient_id, title, msg]
+          );
+
+          socketService.emitToUser(info.doctor_user_id, 'lab-result-ready', {
+            labTestId: req.params.id,
+            testName: info.test_name,
+            patientName: info.patient_name,
+            isAbnormal: isAbn,
+            results,
+            message: msg
+          });
+        }
+
+        if (isAbn) {
+          socketService.emitToRole('doctor', 'critical-alert', {
+            type: 'abnormal_lab_result',
+            patientId: info.patient_id,
+            patientName: info.patient_name,
+            testName: info.test_name,
+            severity: 'critical',
+            message: msg,
+            timestamp: new Date().toISOString()
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.warn('Doctor lab result notification warning:', notifErr.message);
+    }
+
     res.status(201).json({ success: true, data: { result } });
   } catch (err) {
     console.error('Error uploading lab result:', err);
@@ -180,25 +234,12 @@ exports.analyzeRadiologyScan = async (req, res) => {
         recommendations = result.recommendations;
         heatmapData = result.heatmap_data;
         serviceUsed = "cnn_microservice_active";
+      } else {
+        return sendError(res, 'Medical Image Analysis Microservice returned an error. Manual radiology evaluation required.', 503);
       }
     } catch (err) {
-      console.log('FastAPI offline, using simulated prediction:', err.message);
-      if (analysisType === 'pneumonia_detection') {
-        prediction = "Pneumonia Indication Detected";
-        confidence = 0.78;
-        findings = ["Opacity in lower lung lobes", "Bronchial wall thickening", "Mild pleural effusion"];
-        recommendations = ["Immediate clinical isolation", "Prescribe broad-spectrum antibiotics", "Follow-up scan in 48 hours"];
-      } else if (analysisType === 'fracture_detection') {
-        prediction = "Transverse Fracture Detected";
-        confidence = 0.86;
-        findings = ["Discontinuity in the distal radius", "Associated periosteal reaction", "Surrounding soft tissue swelling"];
-        recommendations = ["Splint immobilization and orthopedic referral", "Pain management", "Post-reduction check films"];
-      } else if (analysisType === 'tumor_detection') {
-        prediction = "Suspicious Dense Mass Detected";
-        confidence = 0.69;
-        findings = ["Irregular nodular opacity", "Spiculated margins of size 1.8cm", "Local pleural indentation"];
-        recommendations = ["Contrast-enhanced CT/MRI scan", "Pulmonary biopsy correlation", "Oncology review"];
-      }
+      console.warn('Medical Image Analysis Service offline:', err.message);
+      return sendError(res, 'Medical Image Analysis Service is currently offline. Please ensure the microservice is running or conduct manual evaluation.', 503);
     }
 
     const resultText = `AI Analysis Result: ${prediction}\nConfidence: ${(confidence * 100).toFixed(1)}%\nFindings:\n- ${findings.join('\n- ')}\nRecommendations:\n- ${recommendations.join('\n- ')}`;

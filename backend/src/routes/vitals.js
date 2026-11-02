@@ -4,6 +4,44 @@ const pool = require('../config/database');
 const { body, param, query: qv } = require('express-validator');
 const validate = require('../middleware/validation');
 const { authenticate, authorize } = require('../middleware/auth');
+const socketService = require('../services/socketService');
+
+function evaluateVitalAbnormalities(v) {
+  const alerts = [];
+  const temp = Number(v.temperature);
+  const sys = Number(v.blood_pressure_systolic);
+  const hr = Number(v.heart_rate);
+  const rr = Number(v.respiratory_rate);
+  const spo2 = Number(v.oxygen_saturation);
+
+  if (v.temperature !== null && !isNaN(temp)) {
+    if (temp >= 39.5) alerts.push({ type: 'temperature', value: temp, severity: 'critical', message: `Hyperpyrexia (${temp}°C)` });
+    else if (temp >= 38.3) alerts.push({ type: 'temperature', value: temp, severity: 'urgent', message: `High Fever (${temp}°C)` });
+    else if (temp < 35.0) alerts.push({ type: 'temperature', value: temp, severity: 'critical', message: `Hypothermia (${temp}°C)` });
+  }
+
+  if (v.blood_pressure_systolic !== null && !isNaN(sys)) {
+    if (sys >= 180) alerts.push({ type: 'blood_pressure', value: sys, severity: 'critical', message: `Hypertensive Crisis (${sys} mmHg)` });
+    else if (sys < 90) alerts.push({ type: 'blood_pressure', value: sys, severity: 'urgent', message: `Hypotension (${sys} mmHg)` });
+  }
+
+  if (v.heart_rate !== null && !isNaN(hr)) {
+    if (hr > 130) alerts.push({ type: 'heart_rate', value: hr, severity: 'critical', message: `Severe Tachycardia (${hr} bpm)` });
+    else if (hr < 50) alerts.push({ type: 'heart_rate', value: hr, severity: 'critical', message: `Severe Bradycardia (${hr} bpm)` });
+  }
+
+  if (v.oxygen_saturation !== null && !isNaN(spo2)) {
+    if (spo2 < 90) alerts.push({ type: 'oxygen_saturation', value: spo2, severity: 'critical', message: `Severe Hypoxemia (SpO₂: ${spo2}%)` });
+    else if (spo2 < 94) alerts.push({ type: 'oxygen_saturation', value: spo2, severity: 'urgent', message: `Low SpO₂ (${spo2}%)` });
+  }
+
+  if (v.respiratory_rate !== null && !isNaN(rr)) {
+    if (rr > 30) alerts.push({ type: 'respiratory_rate', value: rr, severity: 'urgent', message: `Tachypnea (${rr}/min)` });
+    else if (rr < 8) alerts.push({ type: 'respiratory_rate', value: rr, severity: 'critical', message: `Bradypnea / Respiratory Depression (${rr}/min)` });
+  }
+
+  return alerts;
+}
 
 // ── Reusable vital field validators ────────────────────────────────────────
 const vitalFields = [
@@ -85,7 +123,36 @@ router.post('/', authenticate, authorize('nurse', 'doctor', 'super_admin', 'admi
       [patient_id, nurseId, temperature||null, blood_pressure_systolic||null, blood_pressure_diastolic||null,
        heart_rate||null, respiratory_rate||null, oxygen_saturation||null, weight||null, height||null, blood_glucose||null, notes||null]
     );
-    res.status(201).json({ success: true, data: { vital: result.rows[0] } });
+    const vitalRow = result.rows[0];
+    const alerts = evaluateVitalAbnormalities(vitalRow);
+
+    if (alerts.length > 0) {
+      try {
+        const patientRes = await pool.query('SELECT first_name, last_name FROM patients WHERE id = $1', [patient_id]);
+        const pName = patientRes.rows[0] ? `${patientRes.rows[0].first_name} ${patientRes.rows[0].last_name}` : `Patient #${patient_id}`;
+        const primary = alerts.find(a => a.severity === 'critical') || alerts[0];
+
+        const alertPayload = {
+          type: 'critical_vitals',
+          patientId: patient_id,
+          patientName: pName,
+          vitalType: primary.type,
+          vitalValue: primary.value,
+          severity: primary.severity,
+          alerts,
+          timestamp: new Date().toISOString(),
+          message: `ABNORMAL VITALS ALERT: ${pName} - ${alerts.map(a => a.message).join(', ')}`
+        };
+
+        socketService.emitToRole('doctor', 'critical-alert', alertPayload);
+        socketService.emitToRole('nurse', 'critical-alert', alertPayload);
+        socketService.emitToRole('admin', 'critical-alert', alertPayload);
+      } catch (alertErr) {
+        console.error('Non-fatal vital alert notification error:', alertErr.message);
+      }
+    }
+
+    res.status(201).json({ success: true, data: { vital: vitalRow, alerts } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Server error' });

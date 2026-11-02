@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, User as AuthUser } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import api from '../services/api';
 import {
   Stethoscope, Eye, EyeOff, AlertCircle, Shield, Building2, User,
-  HeartPulse, Receipt, DollarSign, FlaskConical, Pill, Zap, ArrowRight
+  HeartPulse, Receipt, DollarSign, FlaskConical, Pill, Zap, ArrowRight,
+  KeyRound, Lock
 } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, logout, setUser } = useAuth();
   const { t, language } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +21,16 @@ const LoginPage: React.FC = () => {
   const [loadingRole, setLoadingRole] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [imgError, setImgError] = useState(false);
+
+  // Forced password change state
+  const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
+  const [pendingUser, setPendingUser] = useState<AuthUser | null>(null);
+  const [tempPassword, setTempPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [changePasswordLoading, setChangePasswordLoading] = useState(false);
 
   const roleRouteMap: Record<string, string> = {
     super_admin: '/dashboard',
@@ -38,6 +50,15 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       const user = await login(loginEmail, loginPass);
+      if (user?.mustChangePassword) {
+        setPendingUser(user);
+        setTempPassword(loginPass);
+        setNewPassword('');
+        setConfirmPassword('');
+        setChangePasswordError('');
+        setShowPasswordChangeModal(true);
+        return;
+      }
       const target = (user && roleRouteMap[user.role]) ? roleRouteMap[user.role] : '/dashboard';
       navigate(target);
     } catch (err: any) {
@@ -49,6 +70,48 @@ const LoginPage: React.FC = () => {
       setLoading(false);
       setLoadingRole(null);
     }
+  };
+
+  const handlePasswordChangeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 6) {
+      setChangePasswordError('New password must be at least 6 characters long.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setChangePasswordError('Passwords do not match.');
+      return;
+    }
+    setChangePasswordLoading(true);
+    setChangePasswordError('');
+    try {
+      await api.post('/auth/change-password', {
+        oldPassword: tempPassword,
+        newPassword: newPassword,
+      });
+
+      if (pendingUser) {
+        const updatedUser = { ...pendingUser, mustChangePassword: false };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        setShowPasswordChangeModal(false);
+        const target = roleRouteMap[updatedUser.role] || '/dashboard';
+        navigate(target);
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to change password. Please check your credentials.';
+      setChangePasswordError(msg);
+    } finally {
+      setChangePasswordLoading(false);
+    }
+  };
+
+  const handleCancelPasswordChange = () => {
+    logout();
+    setShowPasswordChangeModal(false);
+    setPendingUser(null);
+    setTempPassword('');
+    setError('Password change is required before accessing your account.');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -282,6 +345,96 @@ const LoginPage: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Force Password Change Modal */}
+      {showPasswordChangeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <KeyRound className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                  {t('auth.change_password_required', 'Set New Secure Password')}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {t('auth.first_login_policy', 'Temporary credentials detected. Hospital security policy requires updating your password before proceeding.')}
+                </p>
+              </div>
+            </div>
+
+            {changePasswordError && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl flex items-center gap-2 text-xs font-semibold text-red-600 dark:text-red-300">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{changePasswordError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  {t('auth.new_password', 'New Password')} (min. 6 characters)
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new strong password"
+                    className="w-full px-4 py-2.5 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium dark:bg-slate-800 dark:text-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  {t('auth.confirm_new_password', 'Confirm New Password')}
+                </label>
+                <input
+                  type={showNewPassword ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-type new password"
+                  className="w-full px-4 py-2.5 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium dark:bg-slate-800 dark:text-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleCancelPasswordChange}
+                  disabled={changePasswordLoading}
+                  className="px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
+                >
+                  {t('common.cancel', 'Cancel & Sign Out')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={changePasswordLoading}
+                  className="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white text-xs font-extrabold rounded-xl shadow-lg transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  {changePasswordLoading ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Lock className="w-3.5 h-3.5" />
+                  )}
+                  {t('auth.save_and_continue', 'Update & Enter Workbench')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

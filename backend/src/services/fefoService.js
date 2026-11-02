@@ -135,14 +135,18 @@ async function allocateAndDispenseFEFO({
       const newAvailable = parseInt(batch.quantity_available, 10) - takeQty;
       const newStatus = newAvailable === 0 ? 'depleted' : 'active';
 
-      // Update batch quantity
-      await client.query(`
+      // Atomic batch quantity decrement with strict non-negative check
+      const updRes = await client.query(`
         UPDATE medication_batches
-        SET quantity_available = $1,
-            status = $2,
+        SET quantity_available = quantity_available - $1,
+            status = CASE WHEN (quantity_available - $1) = 0 THEN 'depleted' ELSE 'active' END,
             updated_at = NOW()
-        WHERE id = $3
-      `, [newAvailable, newStatus, batch.id]);
+        WHERE id = $2 AND quantity_available >= $1
+        RETURNING quantity_available
+      `, [takeQty, batch.id]);
+      if (!updRes.rowCount) {
+        throw new Error(`Insufficient stock in batch ${batch.batch_number} to dispense ${takeQty} units.`);
+      }
 
       // Record batch dispensation record
       const dispRes = await client.query(`

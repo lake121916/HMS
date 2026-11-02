@@ -53,6 +53,7 @@ const methodLabel: Record<string, string> = {
 export const ThermalReceiptPrint: React.FC = () => {
   const [query, setQuery] = useState('');
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [paperWidth, setPaperWidth] = useState<'80mm' | '58mm'>('80mm');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reprinting, setReprinting] = useState(false);
@@ -80,7 +81,8 @@ export const ThermalReceiptPrint: React.FC = () => {
   const handlePrint = () => {
     const content = thermalRef.current?.innerHTML;
     if (!content || !receipt) return;
-    const w = window.open('', '_blank', 'width=320,height=700');
+    const printWidthPx = paperWidth === '58mm' ? 240 : 320;
+    const w = window.open('', '_blank', `width=${printWidthPx},height=700`);
     if (!w) return;
     w.document.write(`
       <html><head><title>Receipt ${receipt.receipt.receipt_number}</title>
@@ -88,28 +90,28 @@ export const ThermalReceiptPrint: React.FC = () => {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: 'Courier New', Courier, monospace;
-          font-size: 11px;
-          width: 80mm;
+          font-size: ${paperWidth === '58mm' ? '9px' : '11px'};
+          width: ${paperWidth};
           margin: 0 auto;
-          padding: 4mm;
+          padding: ${paperWidth === '58mm' ? '2mm' : '4mm'};
           color: #000;
           background: #fff;
         }
         .center { text-align: center; }
         .bold { font-weight: bold; }
-        .large { font-size: 14px; }
-        .xlarge { font-size: 18px; }
+        .large { font-size: ${paperWidth === '58mm' ? '12px' : '14px'}; }
+        .xlarge { font-size: ${paperWidth === '58mm' ? '14px' : '18px'}; }
         .divider { border-top: 1px dashed #555; margin: 4px 0; }
         .row { display: flex; justify-content: space-between; padding: 1px 0; }
         .items-table { width: 100%; margin-top: 4px; }
-        .items-table th { text-align: left; font-size: 9px; border-bottom: 1px solid #000; padding-bottom: 2px; }
-        .items-table td { font-size: 10px; padding: 1px 0; vertical-align: top; }
+        .items-table th { text-align: left; font-size: 8px; border-bottom: 1px solid #000; padding-bottom: 2px; }
+        .items-table td { font-size: ${paperWidth === '58mm' ? '8px' : '10px'}; padding: 1px 0; vertical-align: top; }
         .amount-col { text-align: right; }
         .total-row { border-top: 1px solid #000; padding-top: 3px; font-weight: bold; }
-        .reprint-note { background: #fef3c7; padding: 3px; font-size: 9px; text-align: center; margin-top: 4px; }
+        .reprint-note { background: #fef3c7; padding: 3px; font-size: 8px; text-align: center; margin-top: 4px; }
         @media print {
-          @page { size: 80mm auto; margin: 0; }
-          body { width: 80mm; }
+          @page { size: ${paperWidth} auto; margin: 0; }
+          body { width: ${paperWidth}; }
         }
       </style></head><body>${content}</body></html>`);
     w.document.close();
@@ -207,14 +209,37 @@ export const ThermalReceiptPrint: React.FC = () => {
 
       {receipt && r && h && (
         <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
-          {/* ── 80mm Thermal Preview ─────────────────── */}
+          {/* ── Thermal Preview (80mm / 58mm) ─────────────────── */}
           <div>
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">80mm Thermal Preview</div>
-            <div className="bg-white border-2 border-slate-200 rounded-xl shadow-inner overflow-hidden" style={{ width: '100%', maxWidth: 320 }}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{paperWidth} Preview</span>
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 p-0.5 rounded-lg text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setPaperWidth('80mm')}
+                  className={`px-2 py-0.5 rounded-md transition ${paperWidth === '80mm' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}
+                >
+                  80mm
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaperWidth('58mm')}
+                  className={`px-2 py-0.5 rounded-md transition ${paperWidth === '58mm' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}
+                >
+                  58mm
+                </button>
+              </div>
+            </div>
+            <div className="bg-white border-2 border-slate-200 rounded-xl shadow-inner overflow-hidden transition-all duration-300" style={{ width: '100%', maxWidth: paperWidth === '58mm' ? 240 : 320 }}>
               <div
                 ref={thermalRef}
-                className="px-4 py-4"
-                style={{ fontFamily: "'Courier New', Courier, monospace", fontSize: 11, lineHeight: 1.5, color: '#111' }}
+                className={paperWidth === '58mm' ? 'px-2 py-3' : 'px-4 py-4'}
+                style={{
+                  fontFamily: "'Courier New', Courier, monospace",
+                  fontSize: paperWidth === '58mm' ? 9.5 : 11,
+                  lineHeight: 1.4,
+                  color: '#111'
+                }}
               >
                 {/* Reprint banner */}
                 {isReprint && (

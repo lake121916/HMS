@@ -50,6 +50,20 @@ router.post('/', authenticate, authorize('receptionist', 'cashier', 'admin', 'su
       return res.status(400).json({ success: false, message: 'invoice_id, a positive amount, and a valid payment method are required' });
     }
 
+    // Exclusive row lock on invoice to prevent concurrent double-settlement
+    const invLock = await client.query(
+      'SELECT id, total_amount, status FROM invoices WHERE id = $1 FOR UPDATE',
+      [invoice_id]
+    );
+    if (!invLock.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Invoice not found' });
+    }
+    if (invLock.rows[0].status === 'paid') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: 'This invoice has already been fully settled.' });
+    }
+
     const invoiceRes = await client.query(
       `SELECT i.total_amount, COALESCE(SUM(p.amount), 0) AS amount_paid
        FROM invoices i LEFT JOIN payments p ON p.invoice_id = i.id

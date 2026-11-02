@@ -79,7 +79,7 @@ const createStaff = handleAsync(async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const userRes = await client.query(
-      'INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3) RETURNING id, email, role',
+      'INSERT INTO users (email, password_hash, role, must_change_password) VALUES ($1, $2, $3, true) RETURNING id, email, role',
       [email.toLowerCase().trim(), hashedPassword, role]
     );
     const user = userRes.rows[0];
@@ -101,10 +101,7 @@ const createStaff = handleAsync(async (req, res) => {
     }
 
     await client.query('COMMIT');
-
-    sendSuccess(res, {
-      user: { id: user.id, email: user.email, role, firstName, lastName }
-    }, 'Staff account created successfully', 201);
+    sendSuccess(res, { user: { id: user.id, email: user.email, role: user.role } }, 'Staff account created successfully', 201);
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
@@ -121,7 +118,8 @@ const login = handleAsync(async (req, res) => {
     return sendError(res, 'Email and password are required', 400);
   }
 
-  const result = await pool.query('SELECT * FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+  const cleanEmail = email.toLowerCase().trim();
+  const result = await pool.query('SELECT * FROM users WHERE email = $1', [cleanEmail]);
 
   if (result.rows.length === 0) {
     return sendError(res, 'Invalid email or password', 401);
@@ -133,12 +131,35 @@ const login = handleAsync(async (req, res) => {
     return sendError(res, 'Your account has been deactivated. Please contact the administrator.', 401);
   }
 
-  const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-  if (!isPasswordValid) {
-    return sendError(res, 'Invalid email or password', 401);
+  // Account lockout check
+  if (user.locked_until && new Date() < new Date(user.locked_until)) {
+    const remainingMins = Math.ceil((new Date(user.locked_until).getTime() - Date.now()) / (60 * 1000));
+    return sendError(res, `Account is temporarily locked due to multiple failed login attempts. Please try again in ${remainingMins} minute(s).`, 423);
   }
 
-  await pool.query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
+  const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+  if (!isPasswordValid) {
+    const attempts = (user.failed_login_attempts || 0) + 1;
+    if (attempts >= 5) {
+      await pool.query(
+        "UPDATE users SET failed_login_attempts = $1, locked_until = NOW() + INTERVAL '15 minutes' WHERE id = $2",
+        [attempts, user.id]
+      );
+      return sendError(res, 'Account locked for 15 minutes due to 5 consecutive failed login attempts.', 423);
+    } else {
+      await pool.query(
+        "UPDATE users SET failed_login_attempts = $1 WHERE id = $2",
+        [attempts, user.id]
+      );
+      return sendError(res, 'Invalid email or password', 401);
+    }
+  }
+
+  // Reset failed login counter on success
+  await pool.query(
+    'UPDATE users SET last_login = CURRENT_TIMESTAMP, failed_login_attempts = 0, locked_until = NULL WHERE id = $1',
+    [user.id]
+  );
 
   const { token, refreshToken } = generateTokens(user);
 
@@ -165,8 +186,17 @@ const login = handleAsync(async (req, res) => {
     firstName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
   }
 
-  const userData = { id: user.id, email: user.email, role: user.role, firstName, lastName };
-  sendSuccess(res, { token, refreshToken, user: userData }, 'Login successful');
+  const mustChangePassword = Boolean(user.must_change_password);
+  const userData = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    firstName,
+    lastName,
+    mustChangePassword
+  };
+
+  sendSuccess(res, { token, refreshToken, user: userData, mustChangePassword }, 'Login successful');
 });
 
 // ── Logout ────────────────────────────────────────────────────────────────────
@@ -201,6 +231,10 @@ const resetPassword = handleAsync(async (req, res) => {
 // ── Change password (self) ─────────────────────────────────────────────────────
 const changePassword = handleAsync(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
+  if (!newPassword || newPassword.length < 6) {
+    return sendError(res, 'New password must be at least 6 characters long', 400);
+  }
+
   const result = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
   if (!result.rows.length) return sendError(res, 'User not found', 404);
 
@@ -209,7 +243,10 @@ const changePassword = handleAsync(async (req, res) => {
   if (!valid) return sendError(res, 'Current password is incorrect', 400);
 
   const hash = await bcrypt.hash(newPassword, 10);
-  await pool.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [hash, req.user.id]);
+  await pool.query(
+    'UPDATE users SET password_hash = $1, must_change_password = false, updated_at = NOW() WHERE id = $2',
+    [hash, req.user.id]
+  );
   sendSuccess(res, null, 'Password changed successfully');
 });
 
