@@ -59,7 +59,6 @@ import CashierWorkflow from './pages/CashierWorkflow';
 import ServicesAdminPage from './pages/ServicesAdminPage';
 import DepartmentsAdminPage from './pages/DepartmentsAdminPage';
 import OPDQueueDisplay from './pages/OPDQueueDisplay';
-import DrittechQueueDashboard from './pages/DrittechQueueDashboard';
 import DocumentVerificationPage from './pages/DocumentVerificationPage';
 import DoctorShiftManagementPage from './pages/DoctorShiftManagementPage';
 import InactivityLock from './components/security/InactivityLock';
@@ -82,7 +81,7 @@ const ALL_PAGES = [
   'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
   'services-admin', 'shifts',
   'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
-  'training', 'board-members', 'board-meetings', 'board-reports', 'queue'
+  'training', 'board-members', 'board-meetings', 'board-reports'
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -96,7 +95,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
     'services-admin', 'shifts',
   'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
-  'training', 'board-members', 'board-meetings', 'board-reports', 'queue'
+  'training', 'board-members', 'board-meetings', 'board-reports'
   ],
   hospital_manager: [
     'dashboard',
@@ -111,11 +110,11 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'services-admin',
     'shifts',
     'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
-    'training', 'board-members', 'board-meetings', 'board-reports', 'queue'
+    'training', 'board-members', 'board-meetings', 'board-reports'
   ],
-  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'reception', 'reception-workflow', 'vitals', 'queue'],
-  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines', 'queue'],
-  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse', 'assignment', 'opd-coordinator', 'queue'],
+  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'reception', 'reception-workflow', 'vitals'],
+  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
+  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse', 'assignment', 'opd-coordinator'],
   lab_technician:   ['dashboard', 'shifts', 'lab-tests', 'lab-dashboard', 'patients'],
   pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
   cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow'],
@@ -195,12 +194,9 @@ function App() {
           {/* ── Public Document Verification ── */}
           <Route path="/verify/:token" element={<DocumentVerificationPage />} />
 
-          {/* ── Public OPD Waiting Room TV Display & Drittech Queue Dashboard ── */}
+          {/* ── Public OPD Waiting Room TV Display ── */}
           <Route path="/queue-display" element={<OPDQueueDisplay />} />
           <Route path="/opd-display" element={<OPDQueueDisplay />} />
-          <Route path="/queue" element={<DrittechQueueDashboard />} />
-          <Route path="/drittech-queue" element={<DrittechQueueDashboard />} />
-          <Route path="/queue-dashboard" element={<DrittechQueueDashboard />} />
 
           {/* ── Auth ── */}
           <Route path="/login" element={<LoginPage />} />
@@ -349,12 +345,6 @@ function App() {
             } />
             <Route path="services-admin" element={
               <ProtectedRoute page="services-admin"><ServicesAdminPage /></ProtectedRoute>
-            } />
-            <Route path="queue" element={
-              <ProtectedRoute page="queue"><DrittechQueueDashboard /></ProtectedRoute>
-            } />
-            <Route path="drittech-queue" element={
-              <ProtectedRoute page="queue"><DrittechQueueDashboard /></ProtectedRoute>
             } />
 
             {/* ── Board & Administrative Services Routes ────────── */}
