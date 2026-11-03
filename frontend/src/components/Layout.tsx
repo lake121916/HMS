@@ -270,8 +270,7 @@ const Layout: React.FC = () => {
         return [
           { id: 'reception_workflow', name: 'Reception & Intake Desk', href: '/reception-workflow', icon: UserCheck, group: 'Daily Workbench', translationKey: 'nav.reception' },
           { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
-          { id: 'appointments', name: 'Appointments Schedule', href: '/appointments', icon: Calendar, group: 'Records & Schedule', permission: 'appointments:view', translationKey: 'nav.appointments' },
-          { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
+          { id: 'appointments', name: 'Appointments Schedule', href: '/appointments', icon: Calendar, group: 'Records & Schedule', permission: 'appointments:view', translationKey: 'nav.appointments' }
         ];
 
       case 'nurse':
@@ -974,13 +973,15 @@ const Layout: React.FC = () => {
                 )}
               </button>
 
-              <Link
-                to="/shifts"
-                onClick={() => setDutyModalOpen(false)}
-                className="text-center text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 py-1"
-              >
-                View Full Hospital Roster →
-              </Link>
+              {user?.role !== 'receptionist' && (
+                <Link
+                  to="/shifts"
+                  onClick={() => setDutyModalOpen(false)}
+                  className="text-center text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 py-1"
+                >
+                  View Full Hospital Roster →
+                </Link>
+              )}
             </div>
           </div>
         </div>
