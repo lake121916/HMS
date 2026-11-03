@@ -34,7 +34,7 @@ router.get('/summary', authenticate, async (req, res) => {
           `SELECT COUNT(*)::int AS count
            FROM patient_encounters pe
            JOIN encounter_assignments ea ON ea.encounter_id = pe.id
-           WHERE pe.status IN ('waiting_for_doctor', 'in_consultation')
+           WHERE UPPER(pe.status) IN ('WAITING_FOR_DOCTOR', 'WAITING_FOR_CONSULTATION', 'IN_CONSULTATION')
              AND ea.doctor_id = $1`,
           [doctorId]
         );
@@ -43,13 +43,13 @@ router.get('/summary', authenticate, async (req, res) => {
       if (doctorQueueCount === 0) {
         // Fallback to unassigned/general waiting doctor queue
         const generalRes = await pool.query(
-          `SELECT COUNT(*)::int AS count FROM patient_encounters WHERE status IN ('waiting_for_doctor', 'in_consultation')`
+          `SELECT COUNT(*)::int AS count FROM patient_encounters WHERE UPPER(status) IN ('WAITING_FOR_DOCTOR', 'WAITING_FOR_CONSULTATION', 'IN_CONSULTATION')`
         );
         doctorQueueCount = generalRes.rows[0]?.count || 0;
       }
     } else {
       const generalRes = await pool.query(
-        `SELECT COUNT(*)::int AS count FROM patient_encounters WHERE status IN ('waiting_for_doctor', 'in_consultation')`
+        `SELECT COUNT(*)::int AS count FROM patient_encounters WHERE UPPER(status) IN ('WAITING_FOR_DOCTOR', 'WAITING_FOR_CONSULTATION', 'IN_CONSULTATION')`
       );
       doctorQueueCount = generalRes.rows[0]?.count || 0;
     }

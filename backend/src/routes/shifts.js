@@ -111,7 +111,7 @@ router.get('/', authenticate, async (req, res) => {
           FROM encounter_assignments ea
           JOIN patient_encounters pe ON pe.id = ea.encounter_id
           WHERE ea.doctor_id = ds.doctor_id 
-            AND pe.status IN ('waiting_for_doctor', 'in_consultation')
+            AND UPPER(pe.status) IN ('WAITING_FOR_DOCTOR', 'WAITING_FOR_CONSULTATION', 'IN_CONSULTATION')
         )::integer AS active_patient_load
       FROM doctor_shifts ds
       LEFT JOIN doctors d ON d.id = ds.doctor_id

@@ -45,6 +45,7 @@ export const am = {
   'nav.shifts': 'የሰራተኞች ተረኛ ሰንጠረዥ',
   'nav.reception': 'የመስተንግዶና ምዝገባ ዴስክ',
   'nav.triage': 'የትሪያጅና የነርስ ስራዎች',
+  'nav.opd_coordinator': 'የኦፒዲ አስተባባሪ ጠረጴዛ',
   'nav.consultations': 'የሀኪም ምርመራዎች',
   'nav.lab': 'የላቦራቶሪ ምርመራ ክፍለ-ስራ',
   'nav.pharmacy': 'የመድኃኒት ቤትና ማከፋፈያ',

@@ -712,73 +712,94 @@ const TriageDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Direct Department & Doctor Assignment */}
-                <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-750 rounded-2xl border border-gray-100 dark:border-gray-700">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Assign Department</label>
-                    <select
-                      value={vitals.department_id}
-                      onChange={e => {
-                        const newDeptId = e.target.value;
-                        const docMatches = doctors.find(doc => String(doc.id) === vitals.doctor_id && String(doc.department_id) === newDeptId);
-                        setVitals({
-                          ...vitals,
-                          department_id: newDeptId,
-                          doctor_id: docMatches ? vitals.doctor_id : ''
-                        });
-                      }}
-                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-xs dark:bg-gray-700 dark:text-white cursor-pointer"
-                    >
-                      <option value="">-- Select Department --</option>
-                      {departments.map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                {/* Clinical Routing: Routine vs Emergency Protocol */}
+                {vitals.priority === 'emergency' ? (
+                  <div className="p-4 bg-red-50 dark:bg-red-950/40 rounded-2xl border border-red-200 dark:border-red-800 space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-bold text-red-700 dark:text-red-300">
+                      <AlertOctagon className="w-4 h-4" />
+                      <span>🚨 Emergency Bypass Protocol — Immediate Clinical Routing</span>
+                    </div>
+                    <p className="text-[11px] text-red-600 dark:text-red-400">
+                      Critical/emergency patients bypass routine vitals and coordinator queues for immediate resuscitation or emergency doctor consultation.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Emergency Department</label>
+                        <select
+                          value={vitals.department_id}
+                          onChange={e => {
+                            const newDeptId = e.target.value;
+                            const docMatches = doctors.find(doc => String(doc.id) === vitals.doctor_id && String(doc.department_id) === newDeptId);
+                            setVitals({
+                              ...vitals,
+                              department_id: newDeptId,
+                              doctor_id: docMatches ? vitals.doctor_id : ''
+                            });
+                          }}
+                          className="w-full px-3 py-2 border border-red-200 dark:border-red-700 rounded-xl text-xs dark:bg-gray-750 dark:text-white cursor-pointer"
+                        >
+                          <option value="">-- Select Department --</option>
+                          {departments.map(d => (
+                            <option key={d.id} value={d.id}>{d.name}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                      Assign Doctor {vitals.department_id ? `(${doctors.filter(d => String(d.department_id) === String(vitals.department_id)).length} in dept)` : ''}
-                    </label>
-                    <select
-                      value={vitals.doctor_id}
-                      onChange={e => {
-                        const newDocId = e.target.value;
-                        const docObj = doctors.find(d => String(d.id) === newDocId);
-                        setVitals({
-                          ...vitals,
-                          doctor_id: newDocId,
-                          department_id: docObj?.department_id ? String(docObj.department_id) : vitals.department_id
-                        });
-                      }}
-                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-xs dark:bg-gray-700 dark:text-white cursor-pointer"
-                    >
-                      <option value="">
-                        {vitals.department_id
-                          ? (doctors.some(d => String(d.department_id) === String(vitals.department_id))
-                              ? '-- Select Doctor in Department --'
-                              : '-- No Doctors Registered in this Department --')
-                          : '-- Select Department First --'}
-                      </option>
-                      {(vitals.department_id
-                        ? doctors.filter(d => String(d.department_id) === String(vitals.department_id))
-                        : doctors
-                      ).map(d => (
-                        <option key={d.id} value={d.id}>
-                          Dr. {d.first_name} {d.last_name} ({d.specialization})
-                        </option>
-                      ))}
-                    </select>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                          Emergency Doctor
+                        </label>
+                        <select
+                          value={vitals.doctor_id}
+                          onChange={e => {
+                            const newDocId = e.target.value;
+                            const docObj = doctors.find(d => String(d.id) === newDocId);
+                            setVitals({
+                              ...vitals,
+                              doctor_id: newDocId,
+                              department_id: docObj?.department_id ? String(docObj.department_id) : vitals.department_id
+                            });
+                          }}
+                          className="w-full px-3 py-2 border border-red-200 dark:border-red-700 rounded-xl text-xs dark:bg-gray-750 dark:text-white cursor-pointer"
+                        >
+                          <option value="">-- Select Emergency Doctor --</option>
+                          {(vitals.department_id
+                            ? doctors.filter(d => String(d.department_id) === String(vitals.department_id))
+                            : doctors
+                          ).map(d => (
+                            <option key={d.id} value={d.id}>
+                              Dr. {d.first_name} {d.last_name} ({d.specialization})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="p-3.5 bg-blue-50/70 dark:bg-blue-950/30 rounded-2xl border border-blue-200 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2.5">
+                    <Activity className="w-4 h-4 shrink-0 text-blue-600 mt-0.5" />
+                    <div>
+                      <strong className="font-bold">Next OPD Workflow Stage:</strong> Vitals Nurse Assessment
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                        Following hospital policy, routine and urgent patients proceed to the <strong>Vitals Station</strong>. Routine doctor assignment is handled exclusively by the <strong>OPD Coordinator</strong> once full vitals and pain score are recorded.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className={`w-full py-3.5 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    vitals.priority === 'emergency' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
                 >
                   <CheckCircle2 className={`w-4 h-4 ${submitting ? 'animate-spin' : ''}`} />
-                  {submitting ? 'Saving Assessment...' : 'Complete Triage Assessment'}
+                  {submitting
+                    ? 'Submitting Triage...'
+                    : vitals.priority === 'emergency'
+                      ? '🚨 Complete Emergency Triage & Dispatch Immediately'
+                      : '✓ Complete Triage Assessment & Send to Vitals Queue'}
                 </button>
               </form>
             ) : (

@@ -45,6 +45,7 @@ export const en = {
   'nav.shifts': 'Staff Shifts & Rosters',
   'nav.reception': 'Reception & Intake Desk',
   'nav.triage': 'Triage & Nursing Worklist',
+  'nav.opd_coordinator': 'OPD Coordinator Desk',
   'nav.consultations': 'Clinical Consultations',
   'nav.lab': 'Laboratory Worklist',
   'nav.pharmacy': 'Pharmacy & Dispensing',

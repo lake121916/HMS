@@ -58,7 +58,7 @@ async function getOnDutyDoctors(departmentId = null, dbClient = null) {
         COUNT(pe.id) AS active_patient_count
       FROM encounter_assignments ea
       JOIN patient_encounters pe ON pe.id = ea.encounter_id
-      WHERE pe.status IN ('waiting_for_doctor', 'in_consultation')
+      WHERE UPPER(pe.status) IN ('WAITING_FOR_DOCTOR', 'WAITING_FOR_CONSULTATION', 'IN_CONSULTATION')
       GROUP BY ea.doctor_id
     )
     SELECT 

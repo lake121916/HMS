@@ -51,7 +51,7 @@ import PatientPortalPage from './pages/PatientPortalPage';
 // ── New workflow pages ───────────────────────────────────────────────────────
 import ReceptionistWorkflow from './pages/ReceptionistWorkflow';
 import TriageDashboard from './pages/TriageDashboard';
-import AssignmentDashboard from './pages/AssignmentDashboard';
+import OPDCoordinatorDashboard from './pages/OPDCoordinatorDashboard';
 import DoctorConsultationPage from './pages/DoctorConsultationPage';
 import LabTechDashboard from './pages/LabTechDashboard';
 import PharmacyDashboard from './pages/PharmacyDashboard';
@@ -78,7 +78,7 @@ const ALL_PAGES = [
   'reception', 'medicines', 'inventory', 'beds', 'reports', 'admin',
   'user-management', 'admin', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
   'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
-  'assignment', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
+  'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
   'services-admin', 'shifts',
   'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
   'training', 'board-members', 'board-meetings', 'board-reports'
@@ -92,13 +92,15 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'reception', 'medicines', 'inventory', 'beds', 'reports',
     'user-management', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'radiology',
     'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
-    'assignment', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
+    'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
     'services-admin', 'shifts',
   'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
   'training', 'board-members', 'board-meetings', 'board-reports'
   ],
   hospital_manager: [
     'dashboard',
+    'assignment',
+    'opd-coordinator',
     'departments-admin',
     'doctors',
     'admissions',
@@ -112,7 +114,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'reception', 'reception-workflow', 'vitals'],
   doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
-  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse'],
+  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse', 'assignment', 'opd-coordinator'],
   lab_technician:   ['dashboard', 'shifts', 'lab-tests', 'lab-dashboard', 'patients'],
   pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
   cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow'],
@@ -321,7 +323,10 @@ function App() {
               <ProtectedRoute page="triage"><TriageDashboard /></ProtectedRoute>
             } />
             <Route path="assignment" element={
-              <ProtectedRoute page="assignment"><AssignmentDashboard /></ProtectedRoute>
+              <ProtectedRoute page="assignment"><OPDCoordinatorDashboard /></ProtectedRoute>
+            } />
+            <Route path="opd-coordinator" element={
+              <ProtectedRoute page="opd-coordinator"><OPDCoordinatorDashboard /></ProtectedRoute>
             } />
             <Route path="consultation" element={
               <ProtectedRoute page="consultation"><DoctorConsultationPage /></ProtectedRoute>

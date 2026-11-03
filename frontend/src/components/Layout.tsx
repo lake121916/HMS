@@ -16,7 +16,7 @@ import {
   UserCheck, Building2, Receipt, Package, Scan,
   ChevronLeft, ChevronRight, ChevronDown, User, Key, Eye, EyeOff,
   CheckCircle2, AlertCircle, Search, Loader2,
-  Baby, GraduationCap, BookOpen, BarChart3
+  Baby, GraduationCap, BookOpen, BarChart3, GitBranch
 } from 'lucide-react';
 
 interface NavItem {
@@ -336,6 +336,7 @@ const Layout: React.FC = () => {
         return [
           { id: 'nurse_worklist', name: 'Triage & Nursing Worklist', href: '/nurse', icon: ClipboardCheck, group: 'Daily Workbench', translationKey: 'nav.triage' },
           { id: 'vitals', name: 'Vital Signs & Triage', href: '/vitals', icon: Activity, group: 'Daily Workbench', permission: 'vitals:view', translationKey: 'nav.vitals' },
+          { id: 'opd_coordinator', name: 'OPD Coordinator Desk', href: '/opd-coordinator', icon: GitBranch, group: 'Daily Workbench', translationKey: 'nav.opd_coordinator' },
           { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
           { id: 'beds', name: 'Ward & Bed Management', href: '/beds', icon: Bed, group: 'Records & Schedule', permission: 'beds:view', translationKey: 'nav.beds' },
           { id: 'admissions', name: 'Inpatient Admissions', href: '/admissions', icon: Bed, group: 'Records & Schedule', permission: 'admissions:view', translationKey: 'nav.admissions' },
@@ -382,6 +383,7 @@ const Layout: React.FC = () => {
       case 'hospital_manager':
         return [
           { id: 'dashboard', name: 'Hospital Overview', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
+          { id: 'opd_coordinator', name: 'OPD Coordinator Desk', href: '/opd-coordinator', icon: GitBranch, group: 'Daily Workbench', translationKey: 'nav.opd_coordinator' },
           { id: 'shifts', name: 'Staff Shifts & Rosters', href: '/shifts', icon: Clock, group: 'Records & Schedule', translationKey: 'nav.shifts' },
           { id: 'departments_admin', name: 'Hospital Departments', href: '/departments-admin', icon: Building2, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.departments' },
           { id: 'admissions', name: 'Inpatient Admissions', href: '/admissions', icon: Bed, group: 'Records & Schedule', permission: 'admissions:view', translationKey: 'nav.admissions' },
@@ -394,6 +396,7 @@ const Layout: React.FC = () => {
       case 'admin':
         return [
           { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
+          { id: 'opd_coordinator', name: 'OPD Coordinator Desk', href: '/opd-coordinator', icon: GitBranch, group: 'Daily Workbench', translationKey: 'nav.opd_coordinator' },
           ...allUserMgmtItems,
           { id: 'shifts', name: 'Staff Shifts & Rosters', href: '/shifts', icon: Clock, group: 'Records & Schedule', translationKey: 'nav.shifts' },
           { id: 'departments_admin', name: 'Hospital Departments', href: '/departments-admin', icon: Building2, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.departments' },
@@ -406,6 +409,7 @@ const Layout: React.FC = () => {
       case 'super_admin':
         return [
           { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
+          { id: 'opd_coordinator', name: 'OPD Coordinator Desk', href: '/opd-coordinator', icon: GitBranch, group: 'Daily Workbench', translationKey: 'nav.opd_coordinator' },
           ...allUserMgmtItems,
           { id: 'shifts', name: 'Staff Shifts & Rosters', href: '/shifts', icon: Clock, group: 'Records & Schedule', translationKey: 'nav.shifts' },
           { id: 'departments_admin', name: 'Hospital Departments', href: '/departments-admin', icon: Building2, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.departments' },
