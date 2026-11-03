@@ -31,8 +31,9 @@ pool.on('connect', () => {
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
+  // Cloud serverless databases (like Neon) routinely terminate idle TCP sockets (ECONNRESET/ETIMEDOUT).
+  // pg.Pool discards closed connections and establishes new ones on demand.
+  console.warn('PostgreSQL idle client notice (pool will reconnect on demand):', err.message);
 });
 
 module.exports = pool;
