@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import RoleDescriptionsPage from './admin/RoleDescriptionsPage';
 import api from '../services/api';
 import {
-  Users, Plus, Search, Trash2, X, Shield, ShieldCheck,
+  Users, UserPlus, Search, Trash2, X, Shield, ShieldCheck, Eye, EyeOff, Copy, Check,
   CheckCircle, XCircle, RefreshCw, Building2, Key, Edit,
   Activity, Server, Database, Lock, AlertCircle, ChevronLeft, ChevronRight,
   Bell, Send, Smartphone
@@ -70,7 +70,7 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 interface AdminPageProps {
-  initialTab?: 'users' | 'staff' | 'departments' | 'audit' | 'notifications' | 'system' | 'roles';
+  initialTab?: 'users' | 'add_user' | 'staff' | 'roles' | 'audit' | 'notifications' | 'system';
 }
 
 const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
@@ -79,8 +79,8 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
   const queryTab = searchParams.get('tab') as any;
   const queryRole = searchParams.get('role');
 
-  const [tab, setTab] = useState<'users' | 'staff' | 'departments' | 'audit' | 'notifications' | 'system' | 'roles'>(
-    initialTab || (queryTab && ['users', 'staff', 'departments', 'audit', 'notifications', 'system', 'roles'].includes(queryTab) ? queryTab : 'users')
+  const [tab, setTab] = useState<'users' | 'add_user' | 'staff' | 'roles' | 'audit' | 'notifications' | 'system'>(
+    initialTab || (queryTab && ['users', 'add_user', 'staff', 'roles', 'audit', 'notifications', 'system'].includes(queryTab) ? (queryTab === 'staff' ? 'add_user' : queryTab) : 'users')
   );
 
   // Priority 3: Notifications Outbox State
@@ -99,8 +99,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditTotal, setAuditTotal] = useState(0);
   const [auditPage, setAuditPage] = useState(1);
-  const [doctorsList, setDoctorsList] = useState<{ id: number; name: string }[]>([]);
-
+  
   // UI States
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -123,23 +122,109 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState('');
 
-  const [showDeptModal, setShowDeptModal] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
-  const [deptForm, setDeptForm] = useState({ name: '', description: '', headDoctorId: '' });
-
+  
   const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLog | null>(null);
 
-  const [staffForm, setStaffForm] = useState({
+    // Full Requirement User Form State
+  const [fullUserForm, setFullUserForm] = useState({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
-    role: 'receptionist',
+    role: 'doctor',
     phone: '',
-    specialization: '',
+    gender: 'male',
+    address: '',
+    emergencyContact: '',
+    departmentId: '',
+    qualification: 'MD',
     licenseNumber: '',
-    departmentId: ''
+    specialization: 'General Physician',
+    experienceYears: '3',
+    consultationFee: '250',
+    isActive: true
   });
+  const [showFormPassword, setShowFormPassword] = useState(false);
+  const [copiedCreds, setCopiedCreds] = useState(false);
+  const [createdUserCreds, setCreatedUserCreds] = useState<{ email: string; pass: string; role: string; name: string } | null>(null);
+  const [submittingUser, setSubmittingUser] = useState(false);
+
+  const generateStrongPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+    const randPart = Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    const genPass = `Enat@${randPart}`;
+    setFullUserForm(prev => ({ ...prev, password: genPass }));
+  };
+
+  const generateLicenseNumber = (role: string) => {
+    const prefix = role === 'doctor' ? 'DOC' :
+                   role === 'nurse' ? 'NUR' :
+                   role === 'pharmacist' ? 'PHM' :
+                   role === 'lab_technician' ? 'LAB' : 'STF';
+    const genLic = `ETH-${prefix}-${Date.now().toString().slice(-5)}`;
+    setFullUserForm(prev => ({ ...prev, licenseNumber: genLic }));
+  };
+
+  const handleCreateFullUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    setSubmittingUser(true);
+    try {
+      const payload = {
+        email: fullUserForm.email.trim().toLowerCase(),
+        password: fullUserForm.password,
+        role: fullUserForm.role,
+        is_active: fullUserForm.isActive,
+        firstName: fullUserForm.firstName.trim(),
+        lastName: fullUserForm.lastName.trim(),
+        phone: fullUserForm.phone || undefined,
+        gender: fullUserForm.gender,
+        address: fullUserForm.address || undefined,
+        emergencyContact: fullUserForm.emergencyContact || undefined,
+        departmentId: fullUserForm.departmentId ? parseInt(fullUserForm.departmentId) : undefined,
+        specialization: fullUserForm.specialization || undefined,
+        qualification: fullUserForm.qualification || undefined,
+        licenseNumber: fullUserForm.licenseNumber || undefined,
+        experienceYears: fullUserForm.experienceYears ? parseInt(fullUserForm.experienceYears) : undefined,
+        consultationFee: fullUserForm.consultationFee ? parseFloat(fullUserForm.consultationFee) : undefined,
+      };
+
+      await api.post('/admin/users', payload);
+      showSuccess(`Account for ${fullUserForm.firstName} ${fullUserForm.lastName} (${formatRoleLabel(fullUserForm.role)}) created successfully!`);
+      
+      setCreatedUserCreds({
+        email: fullUserForm.email,
+        pass: fullUserForm.password,
+        role: fullUserForm.role,
+        name: `${fullUserForm.firstName} ${fullUserForm.lastName}`
+      });
+
+      setFullUserForm({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        role: 'doctor',
+        phone: '',
+        gender: 'male',
+        address: '',
+        emergencyContact: '',
+        departmentId: departments[0]?.id ? String(departments[0].id) : '',
+        specialization: 'General Physician',
+        qualification: 'MD',
+        licenseNumber: '',
+        experienceYears: '3',
+        consultationFee: '250',
+        isActive: true
+      });
+
+      fetchAll();
+    } catch (err: any) {
+      setFormError(err.response?.data?.message || 'Failed to create user account. Please verify all requirements.');
+    } finally {
+      setSubmittingUser(false);
+    }
+  };
 
   useEffect(() => {
     fetchAll();
@@ -150,7 +235,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
       setRoleFilter(queryRole);
       setTab('users');
     } else if (queryTab) {
-      setTab(queryTab);
+      setTab(queryTab === 'staff' ? 'add_user' : queryTab);
     }
   }, [queryRole, queryTab]);
 
@@ -202,21 +287,16 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
     setLoading(true);
     setFormError('');
     try {
-      const [usersRes, statsRes, deptRes, docRes] = await Promise.allSettled([
+      const [usersRes, statsRes, deptRes] = await Promise.allSettled([
         api.get(`/admin/users${roleFilter ? `?role=${roleFilter}` : ''}`),
         api.get('/admin/stats'),
         api.get('/admin/departments'),
-        api.get('/doctors?limit=100'),
       ]);
 
       if (usersRes.status === 'fulfilled') setUsers(usersRes.value.data.data.users || []);
       if (statsRes.status === 'fulfilled') setStats(statsRes.value.data.data);
       if (deptRes.status === 'fulfilled') setDepartments(deptRes.value.data.data.departments || []);
-      if (docRes.status === 'fulfilled') {
-        const rawDocs = docRes.value.data.data.doctors || docRes.value.data.data || [];
-        setDoctorsList(rawDocs.map((d: any) => ({ id: d.id, name: `${d.first_name} ${d.last_name}` })));
-      }
-
+      
       if (tab === 'notifications') {
         fetchNotificationQueue();
       }
@@ -297,76 +377,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
     }
   };
 
-  // ── Staff Onboarding ───────────────────────────────────────────────────────
-  const handleCreateStaff = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError('');
-    try {
-      await api.post('/auth/create-staff', {
-        ...staffForm,
-        departmentId: staffForm.departmentId ? parseInt(staffForm.departmentId) : undefined,
-      });
-      showSuccess(`Staff account for ${staffForm.firstName} ${staffForm.lastName} created!`);
-      setStaffForm({
-        firstName: '', lastName: '', email: '', password: '',
-        role: 'receptionist', phone: '', specialization: '',
-        licenseNumber: '', departmentId: ''
-      });
-      setTab('users');
-      fetchAll();
-    } catch (e: any) {
-      setFormError(e.response?.data?.message || 'Failed to create staff account.');
-    }
-  };
 
-  // ── Department Management ──────────────────────────────────────────────────
-  const handleSaveDept = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError('');
-    try {
-      const payload = {
-        name: deptForm.name,
-        description: deptForm.description,
-        head_doctor_id: deptForm.headDoctorId ? parseInt(deptForm.headDoctorId) : null
-      };
-
-      if (selectedDepartment) {
-        await api.put(`/admin/departments/${selectedDepartment.id}`, payload);
-        showSuccess(`Department "${deptForm.name}" updated.`);
-      } else {
-        await api.post('/admin/departments', payload);
-        showSuccess(`Department "${deptForm.name}" created.`);
-      }
-      setShowDeptModal(false);
-      setSelectedDepartment(null);
-      setDeptForm({ name: '', description: '', headDoctorId: '' });
-      fetchAll();
-    } catch (e: any) {
-      setFormError(e.response?.data?.message || 'Failed to save department.');
-    }
-  };
-
-  const handleEditDepartment = (dept: Department) => {
-    setSelectedDepartment(dept);
-    setDeptForm({
-      name: dept.name,
-      description: dept.description || '',
-      headDoctorId: dept.head_doctor_id ? String(dept.head_doctor_id) : ''
-    });
-    setFormError('');
-    setShowDeptModal(true);
-  };
-
-  const handleDeleteDepartment = async (dept: Department) => {
-    if (!window.confirm(`Delete department "${dept.name}"? This action cannot be undone.`)) return;
-    try {
-      await api.delete(`/admin/departments/${dept.id}`);
-      showSuccess(`Department "${dept.name}" deleted.`);
-      fetchAll();
-    } catch (e: any) {
-      alert(e.response?.data?.message || 'Failed to delete department');
-    }
-  };
 
   // Filtered Users
   const filteredUsers = users.filter(u => {
@@ -405,35 +416,21 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
         {/* Priority Quick Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={() => {
-              setEditingUser(null);
-              setUserForm({ email: '', password: '', role: 'nurse', is_active: true });
-              setShowUserModal(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-sm transition-all"
+            onClick={() => setTab('add_user')}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Add User
+            <UserPlus className="w-4 h-4" /> Add User (Full Requirements)
           </button>
           <button
-            onClick={() => setTab('staff')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-sm transition-all"
+            onClick={() => setTab('roles')}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
           >
-            <Users className="w-4 h-4" /> Add Staff
-          </button>
-          <button
-            onClick={() => {
-              setSelectedDepartment(null);
-              setDeptForm({ name: '', description: '', headDoctorId: '' });
-              setShowDeptModal(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs rounded-xl shadow-sm transition-all"
-          >
-            <Building2 className="w-4 h-4" /> Add Department
+            <ShieldCheck className="w-4 h-4" /> System Roles
           </button>
           <button
             onClick={fetchAll}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-700/80 hover:bg-slate-600 text-slate-200 text-xs font-medium rounded-xl transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-700/80 hover:bg-slate-600 text-slate-200 text-xs font-medium rounded-xl transition-all disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </button>
@@ -489,19 +486,18 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
       {/* ── Priority Tab Navigation Bar ── */}
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
         {[
-          { id: 'users', label: '1. User Directory', icon: Users },
-          { id: 'staff', label: '2. Staff Onboarding', icon: Plus },
-          { id: 'departments', label: '3. Departments', icon: Building2 },
+          { id: 'users', label: '1. Users Directory', icon: Users },
+          { id: 'add_user', label: '2. Add User (Full Requirements)', icon: UserPlus },
+          { id: 'roles', label: '3. Roles & Permissions', icon: ShieldCheck },
           { id: 'audit', label: '4. Security Audit Logs', icon: Lock },
           { id: 'notifications', label: '5. Patient Notifications Outbox', icon: Bell },
           { id: 'system', label: '6. System Health', icon: Server },
-          { id: 'roles', label: '7. Role Descriptions & Distribution', icon: ShieldCheck },
         ].map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id as any)}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-bold rounded-t-2xl transition-all whitespace-nowrap ${
-              tab === t.id
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-bold rounded-t-2xl transition-all whitespace-nowrap cursor-pointer ${
+              (tab === t.id || (t.id === 'add_user' && tab === 'staff'))
                 ? 'bg-blue-600 text-white shadow-md'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
@@ -642,151 +638,270 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
         </div>
       )}
 
-      {/* ── TAB 2: STAFF ONBOARDING ── */}
-      {tab === 'staff' && (
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
-              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
-                <Users className="w-6 h-6" />
+      {/* ── TAB 2: ADD USER (FULL REQUIREMENTS) ── */}
+      {(tab === 'add_user' || tab === 'staff') && (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-inner flex-shrink-0">
+                  <UserPlus className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
+                    Provision New User Account (Full Requirements)
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Complete profile requirements: identity, contact, department assignment, qualifications, and secure temporary credentials.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Provision New Staff Credentials</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Create staff accounts for Doctors, Nurses, Pharmacists, Lab Technicians, Cashiers, Receptionists, and Managers.
-                </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={generateStrongPassword}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 text-xs font-bold border border-purple-200 dark:border-purple-800 hover:bg-purple-100 transition-colors cursor-pointer"
+                >
+                  <Key className="w-3.5 h-3.5" />
+                  <span>Generate Password</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => generateLicenseNumber(fullUserForm.role)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 text-xs font-bold border border-teal-200 dark:border-teal-800 hover:bg-teal-100 transition-colors cursor-pointer"
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>Auto License</span>
+                </button>
               </div>
             </div>
 
+            {/* Created Credentials Handover Banner */}
+            {createdUserCreds && (
+              <div className="p-4 mb-6 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl animate-fadeIn space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold text-sm">
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    <span>Account Successfully Provisioned for {createdUserCreds.name} ({formatRoleLabel(createdUserCreds.role)})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`HMS Login Credentials\nName: ${createdUserCreds.name}\nRole: ${formatRoleLabel(createdUserCreds.role)}\nEmail: ${createdUserCreds.email}\nTemporary Password: ${createdUserCreds.pass}`);
+                      setCopiedCreds(true);
+                      setTimeout(() => setCopiedCreds(false), 3000);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-xs hover:bg-emerald-700 transition-colors cursor-pointer"
+                  >
+                    {copiedCreds ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedCreds ? 'Copied!' : 'Copy Credentials'}</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono bg-white dark:bg-gray-800 p-3 rounded-xl border border-emerald-200/60 dark:border-emerald-900">
+                  <div><span className="text-gray-400 font-sans">Login Email:</span> <strong>{createdUserCreds.email}</strong></div>
+                  <div><span className="text-gray-400 font-sans">Temp Password:</span> <strong>{createdUserCreds.pass}</strong></div>
+                </div>
+              </div>
+            )}
+
             {formError && (
-              <div className="flex items-start gap-2.5 p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl mb-4 text-xs">
+              <div className="flex items-start gap-2.5 p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl mb-6 text-xs">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>{formError}</span>
               </div>
             )}
 
-            <form onSubmit={handleCreateStaff} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">First Name *</label>
-                  <input required value={staffForm.firstName} onChange={e => setStaffForm({ ...staffForm, firstName: e.target.value })} className={inputClass} placeholder="e.g. Alem" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Last Name *</label>
-                  <input required value={staffForm.lastName} onChange={e => setStaffForm({ ...staffForm, lastName: e.target.value })} className={inputClass} placeholder="e.g. Tesfaye" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Email Address *</label>
-                <input type="email" required value={staffForm.email} onChange={e => setStaffForm({ ...staffForm, email: e.target.value })} className={inputClass} placeholder="staff@hospital.et" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Password *</label>
-                  <input type="password" required minLength={6} value={staffForm.password} onChange={e => setStaffForm({ ...staffForm, password: e.target.value })} className={inputClass} placeholder="Min. 6 characters" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Role *</label>
-                  <select required value={staffForm.role} onChange={e => setStaffForm({ ...staffForm, role: e.target.value })} className={inputClass}>
-                    {ROLES.filter(r => r !== 'patient').map(r => (
-                      <option key={r} value={r}>{formatRoleLabel(r)}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
-                  <input value={staffForm.phone} onChange={e => setStaffForm({ ...staffForm, phone: e.target.value })} className={inputClass} placeholder="+251 91 234 5678" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Department</label>
-                  <select value={staffForm.departmentId} onChange={e => setStaffForm({ ...staffForm, departmentId: e.target.value })} className={inputClass}>
-                    <option value="">-- Select Department --</option>
-                    {departments.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {staffForm.role === 'doctor' && (
-                <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl">
+            <form onSubmit={handleCreateFullUser} className="space-y-6">
+              {/* Section 1: Personal Identity */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 text-xs flex items-center justify-center font-bold">1</span>
+                  Personal & Identity Information
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-blue-900 dark:text-blue-300 mb-1">Specialization</label>
-                    <input value={staffForm.specialization} onChange={e => setStaffForm({ ...staffForm, specialization: e.target.value })} className={inputClass} placeholder="e.g. Pediatrics" />
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">First Name *</label>
+                    <input required value={fullUserForm.firstName} onChange={e => setFullUserForm({ ...fullUserForm, firstName: e.target.value })} className={inputClass} placeholder="e.g. Abebe" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-blue-900 dark:text-blue-300 mb-1">License Number</label>
-                    <input value={staffForm.licenseNumber} onChange={e => setStaffForm({ ...staffForm, licenseNumber: e.target.value })} className={inputClass} placeholder="MD-12345" />
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Last Name / Father Name *</label>
+                    <input required value={fullUserForm.lastName} onChange={e => setFullUserForm({ ...fullUserForm, lastName: e.target.value })} className={inputClass} placeholder="e.g. Bikila" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Gender *</label>
+                    <select required value={fullUserForm.gender} onChange={e => setFullUserForm({ ...fullUserForm, gender: e.target.value })} className={inputClass}>
+                      <option value="male">Male (ወንድ)</option>
+                      <option value="female">Female (ሴት)</option>
+                    </select>
                   </div>
                 </div>
-              )}
+              </div>
 
-              <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-all shadow-md mt-4">
-                Create Staff Account
-              </button>
+              {/* Section 2: Contact & Location */}
+              <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700/60">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 text-xs flex items-center justify-center font-bold">2</span>
+                  Contact & Residential Details
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hospital Login Email *</label>
+                    <input type="email" required value={fullUserForm.email} onChange={e => setFullUserForm({ ...fullUserForm, email: e.target.value })} className={inputClass} placeholder="staff.name@hospital.et" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Phone Number *</label>
+                    <input required value={fullUserForm.phone} onChange={e => setFullUserForm({ ...fullUserForm, phone: e.target.value })} className={inputClass} placeholder="+251 91 123 4567" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Residential Address / Kebele</label>
+                    <input value={fullUserForm.address} onChange={e => setFullUserForm({ ...fullUserForm, address: e.target.value })} className={inputClass} placeholder="e.g. Alem Ketema, Woreda 01" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Emergency Contact Person & Phone</label>
+                    <input value={fullUserForm.emergencyContact} onChange={e => setFullUserForm({ ...fullUserForm, emergencyContact: e.target.value })} className={inputClass} placeholder="e.g. Aster Tadesse (+251 92 111 2222)" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Role & Department Assignment */}
+              <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700/60">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 text-xs flex items-center justify-center font-bold">3</span>
+                  Role & Department Assignment
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">System Role *</label>
+                    <select required value={fullUserForm.role} onChange={e => setFullUserForm({ ...fullUserForm, role: e.target.value })} className={inputClass}>
+                      {ROLES.filter(r => r !== 'patient').map(r => (
+                        <option key={r} value={r}>{formatRoleLabel(r)} ({r})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hospital Department *</label>
+                    <select value={fullUserForm.departmentId} onChange={e => setFullUserForm({ ...fullUserForm, departmentId: e.target.value })} className={inputClass}>
+                      <option value="">-- General / Administrative --</option>
+                      {departments.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 4: Professional & Clinical Scope */}
+              <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700/60">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 text-xs flex items-center justify-center font-bold">4</span>
+                  Professional Credentials & Licensing
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Qualification *</label>
+                    <input required value={fullUserForm.qualification} onChange={e => setFullUserForm({ ...fullUserForm, qualification: e.target.value })} className={inputClass} placeholder="e.g. MD, MSc, BSc Nursing" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">License Number</label>
+                    <input value={fullUserForm.licenseNumber} onChange={e => setFullUserForm({ ...fullUserForm, licenseNumber: e.target.value })} className={inputClass} placeholder="e.g. ETH-DOC-12345" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Experience (Years)</label>
+                    <input type="number" min="0" value={fullUserForm.experienceYears} onChange={e => setFullUserForm({ ...fullUserForm, experienceYears: e.target.value })} className={inputClass} placeholder="e.g. 3" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Medical Specialization / Track</label>
+                    <input value={fullUserForm.specialization} onChange={e => setFullUserForm({ ...fullUserForm, specialization: e.target.value })} className={inputClass} placeholder="e.g. Pediatrics, Surgery, General Medicine" />
+                  </div>
+                  {fullUserForm.role === 'doctor' && (
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Consultation Fee (ETB)</label>
+                      <input type="number" step="10" min="0" value={fullUserForm.consultationFee} onChange={e => setFullUserForm({ ...fullUserForm, consultationFee: e.target.value })} className={inputClass} placeholder="250" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Section 5: Credentials & Account Status */}
+              <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700/60">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 text-xs flex items-center justify-center font-bold">5</span>
+                  Security Credentials & Account Status
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Temporary Initial Password *</label>
+                    <div className="relative">
+                      <input
+                        type={showFormPassword ? 'text' : 'password'}
+                        required
+                        minLength={6}
+                        value={fullUserForm.password}
+                        onChange={e => setFullUserForm({ ...fullUserForm, password: e.target.value })}
+                        className={`${inputClass} pr-10`}
+                        placeholder="Min. 6 characters"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowFormPassword(!showFormPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showFormPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col justify-end pb-1.5">
+                    <label className="flex items-center gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={fullUserForm.isActive}
+                        onChange={e => setFullUserForm({ ...fullUserForm, isActive: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                        Account Active Immediately
+                      </span>
+                    </label>
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      User will be required to change this temporary password upon first login.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="pt-4 flex flex-col sm:flex-row items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={submittingUser}
+                  className="w-full sm:flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>{submittingUser ? 'Registering User...' : 'Provision User Account with Full Profile'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFullUserForm({
+                      firstName: '', lastName: '', email: '', password: '',
+                      role: 'doctor', phone: '', gender: 'male', address: '',
+                      emergencyContact: '', departmentId: '', specialization: 'General Physician',
+                      qualification: 'MD', licenseNumber: '', experienceYears: '3',
+                      consultationFee: '250', isActive: true
+                    });
+                    setFormError('');
+                  }}
+                  className="w-full sm:w-auto px-5 py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                >
+                  Clear Form
+                </button>
+              </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── TAB 3: DEPARTMENTS ── */}
-      {tab === 'departments' && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
-            <h3 className="font-bold text-sm text-gray-800 dark:text-white">Hospital Clinical & Administrative Departments</h3>
-            <button
-              onClick={() => {
-                setSelectedDepartment(null);
-                setDeptForm({ name: '', description: '', headDoctorId: '' });
-                setFormError('');
-                setShowDeptModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all"
-            >
-              <Plus className="w-4 h-4" /> Add Department
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {loading ? (
-              <p className="text-gray-400 text-xs py-8">Loading departments...</p>
-            ) : departments.map(d => (
-              <div key={d.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
-                        <Building2 className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-900 dark:text-white text-base">{d.name}</h4>
-                        {d.head_doctor_name ? (
-                          <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-0.5">Head: {d.head_doctor_name}</p>
-                        ) : (
-                          <p className="text-xs text-gray-400 mt-0.5 italic">Head Doctor Unassigned</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => handleEditDepartment(d)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit department"><Edit className="w-4 h-4" /></button>
-                      {currentUser?.role === 'super_admin' && (
-                        <button onClick={() => handleDeleteDepartment(d)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title="Delete department"><Trash2 className="w-4 h-4" /></button>
-                      )}
-                    </div>
-                  </div>
-                  {d.description && <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-3">{d.description}</p>}
-                </div>
-                <div className="pt-3 border-t border-gray-100 dark:border-gray-700/50 flex items-center justify-between text-xs text-gray-400">
-                  <span>Assigned Personnel:</span>
-                  <span className="font-bold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">{d.doctor_count} doctors</span>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       )}
@@ -1120,45 +1235,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
         </div>
       )}
 
-      {/* Add / Edit Department Modal */}
-      {showDeptModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="font-bold text-base text-gray-900 dark:text-white">
-                {selectedDepartment ? 'Edit Department' : 'Add New Department'}
-              </h3>
-              <button onClick={() => setShowDeptModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
-            </div>
-            {formError && <p className="text-xs text-red-500 mb-3">{formError}</p>}
-            <form onSubmit={handleSaveDept} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Department Name *</label>
-                <input required value={deptForm.name} onChange={e => setDeptForm({ ...deptForm, name: e.target.value })} className={inputClass} placeholder="e.g. Cardiology" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                <textarea value={deptForm.description} onChange={e => setDeptForm({ ...deptForm, description: e.target.value })} rows={3} className={inputClass} placeholder="Clinical services and scope..." />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Head of Department (Doctor)</label>
-                <select value={deptForm.headDoctorId} onChange={e => setDeptForm({ ...deptForm, headDoctorId: e.target.value })} className={inputClass}>
-                  <option value="">-- Assign Head Doctor --</option>
-                  {doctorsList.map(doc => (
-                    <option key={doc.id} value={doc.id}>{doc.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowDeptModal(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50">Cancel</button>
-                <button type="submit" className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all">
-                  {selectedDepartment ? 'Update Department' : 'Create Department'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      
 
       {/* Reset Password Modal */}
       {showResetModal && selectedUser && (

@@ -67,6 +67,7 @@ export const en = {
   'nav.admin': 'System Configuration',
   'nav.user_management': 'User Management',
   'nav.users': 'Users',
+  'nav.add_user': 'Add User',
   'nav.role_descriptions': 'Role Descriptions',
   'nav.patient_portal': 'Patient Health Portal',
 

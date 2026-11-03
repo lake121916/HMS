@@ -9,7 +9,7 @@ import PatientQuickSearchModal from './PatientQuickSearchModal';
 import api from '../services/api';
 import OfflineStatusBanner from './OfflineStatusBanner';
 import {
-  LayoutDashboard, Users, Stethoscope, Calendar, Clock, LogOut, Menu, X,
+  LayoutDashboard, Users, UserPlus, Stethoscope, Calendar, Clock, LogOut, Menu, X,
   Activity, Pill, FlaskConical, Bed, FileText, Shield, ShieldCheck,
   BarChart2, CreditCard, Settings, Bell,
   Palette, Sun, Moon, RefreshCw, ClipboardCheck,
@@ -304,6 +304,7 @@ const Layout: React.FC = () => {
   // ══════════════════════════════════════════════════════════════
   const USER_MGMT_NAV_ITEMS: Record<string, NavItem> = {
     users: { id: 'admin_users', name: 'Users', href: '/admin', icon: Users, group: 'User Management', permission: 'admin:departments', translationKey: 'nav.users' },
+    add_user: { id: 'admin_add_user', name: 'Add User', href: '/admin?tab=add_user', icon: UserPlus, group: 'User Management', permission: 'admin:departments', translationKey: 'nav.add_user' },
     role_descriptions: { id: 'role_descriptions', name: 'Role Descriptions', href: '/admin/roles', icon: ShieldCheck, group: 'User Management', permission: 'admin:departments', translationKey: 'nav.role_descriptions' }
   };
 

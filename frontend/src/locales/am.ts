@@ -67,6 +67,7 @@ export const am = {
   'nav.admin': 'የሲስተም ውቅርና አስተዳደር',
   'nav.user_management': 'የተጠቃሚዎች አስተዳደር',
   'nav.users': 'ተጠቃሚዎች',
+  'nav.add_user': 'ተጠቃሚ መዝግብ',
   'nav.role_descriptions': 'የሚና መግለጫዎች እና ስርጭት',
   'nav.patient_portal': 'የታካሚ መረጃ ፖርታል',
 
