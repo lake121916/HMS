@@ -241,6 +241,17 @@ export const am = {
   'role.cashier': 'ገንዘብ ተቀባይ (Cashier POS)',
   'role.lab_tech': 'የላቦራቶሪ ባለሙያ (Lab Tech)',
   'role.pharmacist': 'ፋርማሲስት (Pharmacist)',
-  'role.hospital_manager': 'የሆስፒታል ስራ አስኪያጅ (Hospital Manager)',
+  'role.hospital_manager': 'ሜዲካል ዳይሬክተር (Medical Director)',
   'role.patient': 'ታካሚ (Patient)',
+
+  // Board & Administrative Services
+  'nav.board_admin': 'የቦርድ እና አስተዳደራዊ አገልግሎቶች',
+  'nav.birth_certificates': 'የልደት ምስክር ወረቀቶች',
+  'nav.death_certificates': 'የሞት ማረጋገጫ ሰነዶች',
+  'nav.scholarships': 'የነፃ ትምህርት ዕድሎች (Scholarships)',
+  'nav.specializations': 'የህክምና ስፔሻላይዜሽን',
+  'nav.training': 'ስልጠና እና ሙያዊ ማጎልበቻ',
+  'nav.board_members': 'የቦርድ አባላት',
+  'nav.board_meetings': 'የቦርድ ስብሰባዎች',
+  'nav.board_reports': 'የቦርድ ሪፖርቶችና ስታቲስቲክስ',
 };

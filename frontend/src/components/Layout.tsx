@@ -14,7 +14,7 @@ import {
   BarChart2, CreditCard, Settings, Bell,
   Palette, Sun, Moon, RefreshCw, ClipboardCheck,
   UserCheck, Building2, Receipt, Package, Scan,
-  ChevronLeft, ChevronRight, User, Key, Eye, EyeOff,
+  ChevronLeft, ChevronRight, ChevronDown, User, Key, Eye, EyeOff,
   CheckCircle2, AlertCircle, Search, Loader2,
   Baby, GraduationCap, BookOpen, BarChart3
 } from 'lucide-react';
@@ -52,6 +52,30 @@ const Layout: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileModalOpen, setProfileModalOpen] = React.useState(false);
   const [changePasswordModalOpen, setChangePasswordModalOpen] = React.useState(false);
+  const [boardDropdownOpen, setBoardDropdownOpen] = React.useState(() => {
+    return location.pathname.startsWith('/board');
+  });
+
+  React.useEffect(() => {
+    if (location.pathname.startsWith('/board')) {
+      setBoardDropdownOpen(true);
+    }
+  }, [location.pathname]);
+
+  const formatRoleName = (role?: string) => {
+    if (!role) return '';
+    if (role === 'hospital_manager') return language === 'am' ? 'ሜዲካል ዳይሬክተር' : 'Medical Director';
+    if (role === 'super_admin') return language === 'am' ? 'ዋና አስተዳዳሪ' : 'Super Admin';
+    if (role === 'admin') return language === 'am' ? 'አስተዳዳሪ' : 'Admin';
+    if (role === 'doctor') return language === 'am' ? 'ሀኪም' : 'Doctor';
+    if (role === 'nurse') return language === 'am' ? 'ነርስ' : 'Nurse';
+    if (role === 'pharmacist') return language === 'am' ? 'ፋርማሲስት' : 'Pharmacist';
+    if (role === 'lab_technician') return language === 'am' ? 'ላብራቶሪ ቴክኒሻን' : 'Lab Technician';
+    if (role === 'cashier') return language === 'am' ? 'ገንዘብ ተቀባይ' : 'Cashier';
+    if (role === 'receptionist') return language === 'am' ? 'እንግዳ ተቀባይ' : 'Receptionist';
+    if (role === 'patient') return language === 'am' ? 'ታካሚ' : 'Patient';
+    return role.replace(/_/g, ' ');
+  };
 
   // Live Workload & Authoritative Duty State (Phase 3 & Phase 4)
   const [workloadCounts, setWorkloadCounts] = React.useState({
@@ -294,10 +318,6 @@ const Layout: React.FC = () => {
           { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
           { id: 'beds', name: 'Ward & Bed Management', href: '/beds', icon: Bed, group: 'Records & Schedule', permission: 'beds:view', translationKey: 'nav.beds' },
           { id: 'admissions', name: 'Inpatient Admissions', href: '/admissions', icon: Bed, group: 'Records & Schedule', permission: 'admissions:view', translationKey: 'nav.admissions' },
-          BOARD_NAV_ITEMS.birth_certificates,
-          BOARD_NAV_ITEMS.scholarships,
-          BOARD_NAV_ITEMS.specializations,
-          BOARD_NAV_ITEMS.training,
           { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
         ];
 
@@ -310,12 +330,6 @@ const Layout: React.FC = () => {
           { id: 'lab_tests', name: 'Laboratory Orders', href: '/lab-tests', icon: FlaskConical, group: 'Records & Schedule', permission: 'lab_tests:view', translationKey: 'nav.lab_tests' },
           { id: 'radiology', name: 'Radiology & Imaging', href: '/radiology', icon: Scan, group: 'Records & Schedule', permission: 'radiology:view', translationKey: 'nav.radiology' },
           { id: 'appointments', name: 'Appointments Schedule', href: '/appointments', icon: Calendar, group: 'Records & Schedule', permission: 'appointments:view', translationKey: 'nav.appointments' },
-          BOARD_NAV_ITEMS.birth_certificates,
-          BOARD_NAV_ITEMS.death_certificates,
-          BOARD_NAV_ITEMS.scholarships,
-          BOARD_NAV_ITEMS.specializations,
-          BOARD_NAV_ITEMS.training,
-          BOARD_NAV_ITEMS.board_reports,
           { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
         ];
 
@@ -324,8 +338,6 @@ const Layout: React.FC = () => {
           { id: 'lab_dashboard', name: 'Laboratory Worklist', href: '/lab-dashboard', icon: FlaskConical, group: 'Daily Workbench', translationKey: 'nav.lab' },
           { id: 'lab_tests', name: 'Laboratory Orders', href: '/lab-tests', icon: FlaskConical, group: 'Records & Schedule', permission: 'lab_tests:view', translationKey: 'nav.lab_tests' },
           { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
-          BOARD_NAV_ITEMS.scholarships,
-          BOARD_NAV_ITEMS.training,
           { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
         ];
 
@@ -335,8 +347,6 @@ const Layout: React.FC = () => {
           { id: 'prescriptions', name: 'Prescriptions', href: '/prescriptions', icon: Pill, group: 'Records & Schedule', permission: 'prescriptions:view', translationKey: 'nav.prescriptions' },
           { id: 'medicines', name: 'Pharmaceutical Catalog', href: '/medicines', icon: Pill, group: 'Records & Schedule', permission: 'medicines:view', translationKey: 'nav.medicines' },
           { id: 'inventory', name: 'Stock & Inventory', href: '/inventory', icon: Package, group: 'Records & Schedule', permission: 'inventory:view', translationKey: 'nav.inventory' },
-          BOARD_NAV_ITEMS.scholarships,
-          BOARD_NAV_ITEMS.training,
           { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
         ];
 
@@ -345,7 +355,6 @@ const Layout: React.FC = () => {
           { id: 'cashier_pos', name: 'Cashier POS & Register', href: '/cashier-workflow', icon: Receipt, group: 'Daily Workbench', translationKey: 'nav.cashier' },
           { id: 'invoices', name: 'Patient Invoices', href: '/invoices', icon: FileText, group: 'Records & Schedule', permission: 'invoices:view', translationKey: 'nav.invoices' },
           { id: 'payments', name: 'Payment Transactions', href: '/payments', icon: CreditCard, group: 'Records & Schedule', permission: 'payments:view', translationKey: 'nav.payments' },
-          BOARD_NAV_ITEMS.training,
           { id: 'finance_reports', name: 'Financial Reports', href: '/finance-reports', icon: BarChart2, group: 'Duty & Account', permission: 'finance_reports:view', translationKey: 'nav.finance_reports' }
         ];
 
@@ -547,6 +556,100 @@ const Layout: React.FC = () => {
           <nav className={`flex-1 py-3 overflow-y-auto overflow-x-hidden ${isExpanded ? 'px-2' : 'px-1.5'}`}>
             {groupedNav.map((group, gIdx) => {
               const groupTitle = getGroupTitle(group.name);
+              const isBoardGroup = group.name === 'Board & Administrative Services';
+              const isBoardActive = location.pathname.startsWith('/board');
+
+              if (isBoardGroup) {
+                return (
+                  <div key={group.name} className={gIdx > 0 ? 'mt-3 pt-2.5 border-t border-white/[0.08]' : ''}>
+                    {isExpanded ? (
+                      <div>
+                        {/* Collapsible Accordion Header */}
+                        <button
+                          type="button"
+                          onClick={() => setBoardDropdownOpen(prev => !prev)}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group text-left cursor-pointer ${
+                            isBoardActive
+                              ? 'bg-gradient-to-r from-amber-500/25 to-white/[0.08] text-white ring-1 ring-inset ring-amber-400/40 shadow-[0_2px_12px_rgba(0,0,0,0.15)]'
+                              : 'text-white/75 hover:text-white hover:bg-white/[0.07]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Building2 className={`w-4 h-4 flex-shrink-0 transition-colors ${
+                              isBoardActive ? 'text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]' : 'text-white/60 group-hover:text-white'
+                            }`} />
+                            <span className="text-xs font-bold tracking-tight truncate">
+                              {groupTitle}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-md bg-white/10 text-white/70 font-semibold">
+                              {group.items.length}
+                            </span>
+                            <ChevronDown className={`w-3.5 h-3.5 text-white/60 group-hover:text-white transition-transform duration-200 ${
+                              boardDropdownOpen ? 'rotate-180 text-amber-300' : ''
+                            }`} />
+                          </div>
+                        </button>
+
+                        {/* Collapsible Sub-item Drawer */}
+                        {boardDropdownOpen && (
+                          <div className="mt-1 ml-3.5 pl-2.5 border-l-2 border-amber-400/30 space-y-0.5 animate-fadeIn">
+                            {group.items.map(item => {
+                              const isActive = location.pathname === item.href ||
+                                (item.href !== '/' && location.pathname.startsWith(item.href + '/'));
+                              const translatedLabel = t(item.translationKey, item.name);
+
+                              return (
+                                <Link
+                                  key={item.id}
+                                  to={item.href}
+                                  onClick={() => { setSidebarOpen(false); setSidebarHovered(false); }}
+                                  className={`relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs transition-all duration-150 group ${
+                                    isActive
+                                      ? 'bg-white/[0.18] text-white font-bold shadow-sm ring-1 ring-inset ring-white/10'
+                                      : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+                                  }`}
+                                >
+                                  <item.icon className={`w-3.5 h-3.5 flex-shrink-0 transition-colors ${
+                                    isActive ? 'text-amber-300 drop-shadow-[0_0_4px_rgba(251,191,36,0.8)]' : 'text-white/45 group-hover:text-white/80'
+                                  }`} />
+                                  <span className="truncate flex-1">{translatedLabel}</span>
+                                  {isActive && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0 shadow-[0_0_4px_rgba(251,191,36,0.9)]" />
+                                  )}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      // Collapsed Sidebar View (Icon Only)
+                      <div className="my-1.5 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSidebarCollapsed(false);
+                            setBoardDropdownOpen(true);
+                          }}
+                          title={groupTitle}
+                          className={`relative p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                            isBoardActive
+                              ? 'bg-amber-500/25 text-white ring-1 ring-inset ring-amber-400/40'
+                              : 'text-white/60 hover:text-white hover:bg-white/[0.07]'
+                          }`}
+                        >
+                          <Building2 className={`w-5 h-5 ${isBoardActive ? 'text-amber-400' : 'text-white/50'}`} />
+                          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // Standard Group Rendering
               return (
                 <div key={group.name} className={gIdx > 0 ? 'mt-3.5 pt-2.5 border-t border-white/[0.08]' : ''}>
                   {isExpanded ? (
@@ -692,7 +795,7 @@ const Layout: React.FC = () => {
                   {user?.firstName} {user?.lastName}
                 </span>
                 <span className="block text-[9px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                  {user?.role?.replace(/_/g, ' ')}
+                  {formatRoleName(user?.role)}
                 </span>
               </div>
             </div>
@@ -865,7 +968,7 @@ const Layout: React.FC = () => {
                     <p className="text-xs font-black truncate text-slate-900 dark:text-white">{user?.firstName} {user?.lastName}</p>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{user?.email}</p>
                     <span className={`mt-1.5 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider inline-block ${getRoleColor(user?.role || 'patient')}`}>
-                      {user?.role?.replace(/_/g, ' ')}
+                      {formatRoleName(user?.role)}
                     </span>
                   </div>
 
@@ -1050,7 +1153,7 @@ const Layout: React.FC = () => {
                     {t('common.role', 'Assigned Role')}
                   </span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${getRoleColor(user?.role || 'patient')}`}>
-                    {user?.role?.replace(/_/g, ' ')}
+                    {formatRoleName(user?.role)}
                   </span>
                 </div>
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">

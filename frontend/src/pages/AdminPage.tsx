@@ -52,6 +52,7 @@ interface AuditLog {
 }
 
 const ROLES = ['super_admin', 'receptionist', 'doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier', 'hospital_manager', 'patient'];
+const formatRoleLabel = (r: string) => (r === 'hospital_manager' ? 'Medical Director' : r.replace(/_/g, ' '));
 
 const ROLE_COLORS: Record<string, string> = {
   super_admin: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200',
@@ -457,7 +458,7 @@ const AdminPage: React.FC = () => {
           <div className="flex flex-wrap gap-2">
             {stats.byRole.map(r => (
               <span key={r.role} className={`px-3 py-1.5 rounded-xl text-xs font-semibold border ${ROLE_COLORS[r.role] || 'bg-gray-100 text-gray-600'}`}>
-                {r.role.replace(/_/g, ' ')} <strong className="ml-1 opacity-80">({r.count})</strong>
+                {formatRoleLabel(r.role)} <strong className="ml-1 opacity-80">({r.count})</strong>
               </span>
             ))}
           </div>
@@ -510,7 +511,7 @@ const AdminPage: React.FC = () => {
               >
                 <option value="">All Roles</option>
                 {ROLES.map(r => (
-                  <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>
+                  <option key={r} value={r}>{formatRoleLabel(r)}</option>
                 ))}
               </select>
               <select
@@ -556,7 +557,7 @@ const AdminPage: React.FC = () => {
                         </td>
                         <td className="px-5 py-3.5">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-bold border capitalize ${ROLE_COLORS[u.role] || 'bg-gray-100 text-gray-700'}`}>
-                            {u.role.replace(/_/g, ' ')}
+                            {formatRoleLabel(u.role)}
                           </span>
                         </td>
                         <td className="px-5 py-3.5">
@@ -668,7 +669,7 @@ const AdminPage: React.FC = () => {
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Role *</label>
                   <select required value={staffForm.role} onChange={e => setStaffForm({ ...staffForm, role: e.target.value })} className={inputClass}>
                     {ROLES.filter(r => r !== 'patient').map(r => (
-                      <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>
+                      <option key={r} value={r}>{formatRoleLabel(r)}</option>
                     ))}
                   </select>
                 </div>
@@ -1075,7 +1076,7 @@ const AdminPage: React.FC = () => {
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Role *</label>
                 <select required value={userForm.role} onChange={e => setUserForm({ ...userForm, role: e.target.value })} className={inputClass}>
                   {ROLES.map(role => (
-                    <option key={role} value={role}>{role.replace(/_/g, ' ')}</option>
+                    <option key={role} value={role}>{formatRoleLabel(role)}</option>
                   ))}
                 </select>
               </div>

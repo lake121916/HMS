@@ -241,6 +241,17 @@ export const en = {
   'role.cashier': 'Cashier POS',
   'role.lab_tech': 'Lab Tech',
   'role.pharmacist': 'Pharmacist',
-  'role.hospital_manager': 'Hospital Manager',
+  'role.hospital_manager': 'Medical Director',
   'role.patient': 'Patient',
+
+  // Board & Administrative Services
+  'nav.board_admin': 'Board & Administrative Services',
+  'nav.birth_certificates': 'Birth Certificates',
+  'nav.death_certificates': 'Death Certificates',
+  'nav.scholarships': 'Scholarships',
+  'nav.specializations': 'Medical Specialization',
+  'nav.training': 'Training & Development',
+  'nav.board_members': 'Board Members',
+  'nav.board_meetings': 'Board Meetings',
+  'nav.board_reports': 'Reports & Statistics',
 };

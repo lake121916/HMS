@@ -51,6 +51,8 @@ const ROLES = [
   'patient'
 ];
 
+const formatRoleLabel = (r: string) => (r === 'hospital_manager' ? 'Medical Director' : r.replace(/_/g, ' '));
+
 const ROLE_COLORS: Record<string, string> = {
   super_admin: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200',
   admin: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border-indigo-200',
@@ -353,7 +355,7 @@ const UserManagementPage: React.FC = () => {
           >
             <option value="" className="bg-white text-gray-900 dark:bg-gray-800 dark:text-white">All Roles ({users.length})</option>
             {ROLES.filter(r => currentUser?.role === 'super_admin' || r !== 'super_admin').map(r => (
-              <option key={r} value={r} className="bg-white text-gray-900 dark:bg-gray-800 dark:text-white">{r.replace(/_/g, ' ')}</option>
+              <option key={r} value={r} className="bg-white text-gray-900 dark:bg-gray-800 dark:text-white">{formatRoleLabel(r)}</option>
             ))}
           </select>
           <select
@@ -413,7 +415,7 @@ const UserManagementPage: React.FC = () => {
                         <td className="px-5 py-4">
                           <span className={`inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-lg border ${ROLE_COLORS[displayRole] || 'bg-gray-100 text-gray-700'}`}>
                             <Shield className="w-3 h-3 mr-1 opacity-70" />
-                            {displayRole.replace(/_/g, ' ')}
+                            {formatRoleLabel(displayRole)}
                           </span>
                         </td>
                         <td className="px-5 py-4">
@@ -695,7 +697,7 @@ const UserManagementPage: React.FC = () => {
                       >
                         {ROLES.map(r => (
                           <option key={r} value={r} className="bg-white text-gray-900 dark:bg-gray-900 dark:text-white py-1.5">
-                            {r.replace(/_/g, ' ').toUpperCase()}
+                            {formatRoleLabel(r).toUpperCase()}
                           </option>
                         ))}
                       </select>

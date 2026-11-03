@@ -110,11 +110,11 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'training', 'board-members', 'board-meetings', 'board-reports'
   ],
   receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'reception', 'reception-workflow', 'vitals'],
-  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines', 'birth-certificates', 'death-certificates', 'scholarships', 'specializations', 'training', 'board-reports'],
-  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse', 'birth-certificates', 'scholarships', 'specializations', 'training'],
-  lab_technician:   ['dashboard', 'shifts', 'lab-tests', 'lab-dashboard', 'patients', 'scholarships', 'training'],
-  pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy', 'scholarships', 'training'],
-  cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow', 'training'],
+  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
+  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse'],
+  lab_technician:   ['dashboard', 'shifts', 'lab-tests', 'lab-dashboard', 'patients'],
+  pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
+  cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow'],
   patient:          ['patient-portal', 'appointments', 'prescriptions', 'invoices'],
 };
 

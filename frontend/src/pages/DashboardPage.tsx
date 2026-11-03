@@ -124,7 +124,7 @@ const DashboardPage: React.FC = () => {
             {' · '}
             <span className="inline-flex items-center gap-1 font-medium text-gray-600 dark:text-gray-300">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-              {user?.role?.replace(/_/g, ' ')}
+              {user?.role === 'hospital_manager' ? 'Medical Director' : user?.role?.replace(/_/g, ' ')}
             </span>
           </p>
         </div>

@@ -128,7 +128,7 @@ const LoginPage: React.FC = () => {
 
   const demoAccounts = [
     { label: 'System Admin', translationKey: 'role.super_admin', email: 'admin@hospital.com', icon: Shield, color: 'hover:bg-purple-50 hover:border-purple-300 text-purple-700' },
-    { label: 'Hospital Manager', translationKey: 'role.hospital_manager', email: 'manager@hospital.com', icon: Building2, color: 'hover:bg-sky-50 hover:border-sky-300 text-sky-700' },
+    { label: 'Medical Director', translationKey: 'role.hospital_manager', email: 'manager@hospital.com', icon: Building2, color: 'hover:bg-sky-50 hover:border-sky-300 text-sky-700' },
     { label: 'Doctor', translationKey: 'role.doctor', email: 'doctor@hospital.com', icon: Stethoscope, color: 'hover:bg-emerald-50 hover:border-emerald-300 text-emerald-700' },
     { label: 'Nurse / Triage', translationKey: 'role.nurse', email: 'nurse@hospital.com', icon: HeartPulse, color: 'hover:bg-rose-50 hover:border-rose-300 text-rose-700' },
     { label: 'Receptionist', translationKey: 'role.receptionist', email: 'reception@hospital.com', icon: Receipt, color: 'hover:bg-indigo-50 hover:border-indigo-300 text-indigo-700' },
