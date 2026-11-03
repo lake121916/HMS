@@ -61,6 +61,14 @@ import OPDQueueDisplay from './pages/OPDQueueDisplay';
 import DocumentVerificationPage from './pages/DocumentVerificationPage';
 import DoctorShiftManagementPage from './pages/DoctorShiftManagementPage';
 import InactivityLock from './components/security/InactivityLock';
+import BirthCertificatesPage from './pages/board/BirthCertificatesPage';
+import DeathCertificatesPage from './pages/board/DeathCertificatesPage';
+import ScholarshipsPage from './pages/board/ScholarshipsPage';
+import SpecializationPage from './pages/board/SpecializationPage';
+import TrainingDevelopmentPage from './pages/board/TrainingDevelopmentPage';
+import BoardMembersPage from './pages/board/BoardMembersPage';
+import BoardMeetingsPage from './pages/board/BoardMeetingsPage';
+import BoardReportsPage from './pages/board/BoardReportsPage';
 
 // ── Role permission map ──────────────────────────────────────────────────────
 const ALL_PAGES = [
@@ -70,7 +78,9 @@ const ALL_PAGES = [
   'user-management', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
   'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
   'assignment', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-  'services-admin', 'shifts'
+  'services-admin', 'shifts',
+  'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
+  'training', 'board-members', 'board-meetings', 'board-reports'
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -82,7 +92,9 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'user-management', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'radiology',
     'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
     'assignment', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-    'services-admin', 'shifts'
+    'services-admin', 'shifts',
+  'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
+  'training', 'board-members', 'board-meetings', 'board-reports'
   ],
   hospital_manager: [
     'dashboard',
@@ -94,13 +106,15 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'reports',
     'services-admin',
     'shifts',
+    'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
+    'training', 'board-members', 'board-meetings', 'board-reports'
   ],
   receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'reception', 'reception-workflow', 'vitals'],
-  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
-  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse'],
-  lab_technician:   ['dashboard', 'shifts', 'lab-tests', 'lab-dashboard', 'patients'],
-  pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
-  cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow'],
+  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines', 'birth-certificates', 'death-certificates', 'scholarships', 'specializations', 'training', 'board-reports'],
+  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse', 'birth-certificates', 'scholarships', 'specializations', 'training'],
+  lab_technician:   ['dashboard', 'shifts', 'lab-tests', 'lab-dashboard', 'patients', 'scholarships', 'training'],
+  pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy', 'scholarships', 'training'],
+  cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow', 'training'],
   patient:          ['patient-portal', 'appointments', 'prescriptions', 'invoices'],
 };
 
@@ -316,6 +330,32 @@ function App() {
             } />
             <Route path="services-admin" element={
               <ProtectedRoute page="services-admin"><ServicesAdminPage /></ProtectedRoute>
+            } />
+
+            {/* ── Board & Administrative Services Routes ────────── */}
+            <Route path="board/birth-certificates" element={
+              <ProtectedRoute page="birth-certificates"><BirthCertificatesPage /></ProtectedRoute>
+            } />
+            <Route path="board/death-certificates" element={
+              <ProtectedRoute page="death-certificates"><DeathCertificatesPage /></ProtectedRoute>
+            } />
+            <Route path="board/scholarships" element={
+              <ProtectedRoute page="scholarships"><ScholarshipsPage /></ProtectedRoute>
+            } />
+            <Route path="board/specializations" element={
+              <ProtectedRoute page="specializations"><SpecializationPage /></ProtectedRoute>
+            } />
+            <Route path="board/training" element={
+              <ProtectedRoute page="training"><TrainingDevelopmentPage /></ProtectedRoute>
+            } />
+            <Route path="board/members" element={
+              <ProtectedRoute page="board-members"><BoardMembersPage /></ProtectedRoute>
+            } />
+            <Route path="board/meetings" element={
+              <ProtectedRoute page="board-meetings"><BoardMeetingsPage /></ProtectedRoute>
+            } />
+            <Route path="board/reports" element={
+              <ProtectedRoute page="board-reports"><BoardReportsPage /></ProtectedRoute>
             } />
           </Route>
         </Routes>

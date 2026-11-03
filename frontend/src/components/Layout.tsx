@@ -15,7 +15,8 @@ import {
   Palette, Sun, Moon, RefreshCw, ClipboardCheck,
   UserCheck, Building2, Receipt, Package, Scan,
   ChevronLeft, ChevronRight, User, Key, Eye, EyeOff,
-  CheckCircle2, AlertCircle, Search, Loader2
+  CheckCircle2, AlertCircle, Search, Loader2,
+  Baby, GraduationCap, BookOpen, BarChart3
 } from 'lucide-react';
 
 interface NavItem {
@@ -261,9 +262,22 @@ const Layout: React.FC = () => {
   }, [sidebarOpen]);
 
   // ══════════════════════════════════════════════════════════════
-  // ROLE-BASED NAVIGATION WITH STRICT 3-GROUP ARCHITECTURE (PHASE 2)
-  // 1. Daily Workbench   2. Records & Schedule   3. Duty & Account
+  // ROLE-BASED NAVIGATION WITH STRICT GROUP ARCHITECTURE
+  // 1. Daily Workbench   2. Records & Schedule   3. Board & Administrative Services   4. Duty & Account
   // ══════════════════════════════════════════════════════════════
+  const BOARD_NAV_ITEMS: Record<string, NavItem> = {
+    birth_certificates: { id: 'birth_certificates', name: 'Birth Certificates', href: '/board/birth-certificates', icon: Baby, group: 'Board & Administrative Services', translationKey: 'nav.birth_certificates' },
+    death_certificates: { id: 'death_certificates', name: 'Death Certificates', href: '/board/death-certificates', icon: FileText, group: 'Board & Administrative Services', translationKey: 'nav.death_certificates' },
+    scholarships: { id: 'scholarships', name: 'Scholarships', href: '/board/scholarships', icon: GraduationCap, group: 'Board & Administrative Services', translationKey: 'nav.scholarships' },
+    specializations: { id: 'specializations', name: 'Medical Specialization', href: '/board/specializations', icon: Stethoscope, group: 'Board & Administrative Services', translationKey: 'nav.specializations' },
+    training: { id: 'training', name: 'Training & Development', href: '/board/training', icon: BookOpen, group: 'Board & Administrative Services', translationKey: 'nav.training' },
+    board_members: { id: 'board_members', name: 'Board Members', href: '/board/members', icon: Users, group: 'Board & Administrative Services', translationKey: 'nav.board_members' },
+    board_meetings: { id: 'board_meetings', name: 'Board Meetings', href: '/board/meetings', icon: Calendar, group: 'Board & Administrative Services', translationKey: 'nav.board_meetings' },
+    board_reports: { id: 'board_reports', name: 'Reports & Statistics', href: '/board/reports', icon: BarChart3, group: 'Board & Administrative Services', translationKey: 'nav.board_reports' }
+  };
+
+  const allBoardItems = Object.values(BOARD_NAV_ITEMS);
+
   const getNavigationByRole = (role: string): NavItem[] => {
     switch (role) {
       case 'receptionist':
@@ -280,6 +294,10 @@ const Layout: React.FC = () => {
           { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
           { id: 'beds', name: 'Ward & Bed Management', href: '/beds', icon: Bed, group: 'Records & Schedule', permission: 'beds:view', translationKey: 'nav.beds' },
           { id: 'admissions', name: 'Inpatient Admissions', href: '/admissions', icon: Bed, group: 'Records & Schedule', permission: 'admissions:view', translationKey: 'nav.admissions' },
+          BOARD_NAV_ITEMS.birth_certificates,
+          BOARD_NAV_ITEMS.scholarships,
+          BOARD_NAV_ITEMS.specializations,
+          BOARD_NAV_ITEMS.training,
           { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
         ];
 
@@ -292,6 +310,12 @@ const Layout: React.FC = () => {
           { id: 'lab_tests', name: 'Laboratory Orders', href: '/lab-tests', icon: FlaskConical, group: 'Records & Schedule', permission: 'lab_tests:view', translationKey: 'nav.lab_tests' },
           { id: 'radiology', name: 'Radiology & Imaging', href: '/radiology', icon: Scan, group: 'Records & Schedule', permission: 'radiology:view', translationKey: 'nav.radiology' },
           { id: 'appointments', name: 'Appointments Schedule', href: '/appointments', icon: Calendar, group: 'Records & Schedule', permission: 'appointments:view', translationKey: 'nav.appointments' },
+          BOARD_NAV_ITEMS.birth_certificates,
+          BOARD_NAV_ITEMS.death_certificates,
+          BOARD_NAV_ITEMS.scholarships,
+          BOARD_NAV_ITEMS.specializations,
+          BOARD_NAV_ITEMS.training,
+          BOARD_NAV_ITEMS.board_reports,
           { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
         ];
 
@@ -300,6 +324,8 @@ const Layout: React.FC = () => {
           { id: 'lab_dashboard', name: 'Laboratory Worklist', href: '/lab-dashboard', icon: FlaskConical, group: 'Daily Workbench', translationKey: 'nav.lab' },
           { id: 'lab_tests', name: 'Laboratory Orders', href: '/lab-tests', icon: FlaskConical, group: 'Records & Schedule', permission: 'lab_tests:view', translationKey: 'nav.lab_tests' },
           { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
+          BOARD_NAV_ITEMS.scholarships,
+          BOARD_NAV_ITEMS.training,
           { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
         ];
 
@@ -309,6 +335,8 @@ const Layout: React.FC = () => {
           { id: 'prescriptions', name: 'Prescriptions', href: '/prescriptions', icon: Pill, group: 'Records & Schedule', permission: 'prescriptions:view', translationKey: 'nav.prescriptions' },
           { id: 'medicines', name: 'Pharmaceutical Catalog', href: '/medicines', icon: Pill, group: 'Records & Schedule', permission: 'medicines:view', translationKey: 'nav.medicines' },
           { id: 'inventory', name: 'Stock & Inventory', href: '/inventory', icon: Package, group: 'Records & Schedule', permission: 'inventory:view', translationKey: 'nav.inventory' },
+          BOARD_NAV_ITEMS.scholarships,
+          BOARD_NAV_ITEMS.training,
           { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
         ];
 
@@ -317,6 +345,7 @@ const Layout: React.FC = () => {
           { id: 'cashier_pos', name: 'Cashier POS & Register', href: '/cashier-workflow', icon: Receipt, group: 'Daily Workbench', translationKey: 'nav.cashier' },
           { id: 'invoices', name: 'Patient Invoices', href: '/invoices', icon: FileText, group: 'Records & Schedule', permission: 'invoices:view', translationKey: 'nav.invoices' },
           { id: 'payments', name: 'Payment Transactions', href: '/payments', icon: CreditCard, group: 'Records & Schedule', permission: 'payments:view', translationKey: 'nav.payments' },
+          BOARD_NAV_ITEMS.training,
           { id: 'finance_reports', name: 'Financial Reports', href: '/finance-reports', icon: BarChart2, group: 'Duty & Account', permission: 'finance_reports:view', translationKey: 'nav.finance_reports' }
         ];
 
@@ -327,6 +356,7 @@ const Layout: React.FC = () => {
           { id: 'departments_admin', name: 'Hospital Departments', href: '/departments-admin', icon: Building2, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.departments' },
           { id: 'admissions', name: 'Inpatient Admissions', href: '/admissions', icon: Bed, group: 'Records & Schedule', permission: 'admissions:view', translationKey: 'nav.admissions' },
           { id: 'beds', name: 'Ward & Bed Management', href: '/beds', icon: Bed, group: 'Records & Schedule', permission: 'beds:view', translationKey: 'nav.beds' },
+          ...allBoardItems,
           { id: 'reports', name: 'Operational Analytics', href: '/reports', icon: BarChart2, group: 'Duty & Account', permission: 'reports:view', translationKey: 'nav.reports' },
           { id: 'finance_reports', name: 'Financial Reports', href: '/finance-reports', icon: BarChart2, group: 'Duty & Account', permission: 'finance_reports:view', translationKey: 'nav.finance_reports' }
         ];
@@ -338,6 +368,7 @@ const Layout: React.FC = () => {
           { id: 'shifts', name: 'Staff Shifts & Rosters', href: '/shifts', icon: Clock, group: 'Records & Schedule', translationKey: 'nav.shifts' },
           { id: 'departments_admin', name: 'Hospital Departments', href: '/departments-admin', icon: Building2, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.departments' },
           { id: 'services_admin', name: 'Clinical Services', href: '/services-admin', icon: Package, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.services' },
+          ...allBoardItems,
           { id: 'reports', name: 'Operational Analytics', href: '/reports', icon: BarChart2, group: 'Duty & Account', permission: 'reports:view', translationKey: 'nav.reports' },
           { id: 'finance_reports', name: 'Financial Reports', href: '/finance-reports', icon: BarChart2, group: 'Duty & Account', permission: 'finance_reports:view', translationKey: 'nav.finance_reports' }
         ];
@@ -349,6 +380,7 @@ const Layout: React.FC = () => {
           { id: 'shifts', name: 'Staff Shifts & Rosters', href: '/shifts', icon: Clock, group: 'Records & Schedule', translationKey: 'nav.shifts' },
           { id: 'departments_admin', name: 'Hospital Departments', href: '/departments-admin', icon: Building2, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.departments' },
           { id: 'services_admin', name: 'Clinical Services', href: '/services-admin', icon: Package, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.services' },
+          ...allBoardItems,
           { id: 'audit', name: 'Audit Trail & Security', href: '/audit', icon: Shield, group: 'Duty & Account', permission: 'audit:view', translationKey: 'nav.audit' },
           { id: 'reports', name: 'Operational Analytics', href: '/reports', icon: BarChart2, group: 'Duty & Account', permission: 'reports:view', translationKey: 'nav.reports' },
           { id: 'finance_reports', name: 'Financial Reports', href: '/finance-reports', icon: BarChart2, group: 'Duty & Account', permission: 'finance_reports:view', translationKey: 'nav.finance_reports' }
@@ -375,13 +407,14 @@ const Layout: React.FC = () => {
   const getGroupTitle = (groupName: string): string => {
     if (groupName === 'Daily Workbench') return language === 'am' ? 'ዕለታዊ የሥራ ጠረጴዛ' : 'Daily Workbench';
     if (groupName === 'Records & Schedule') return language === 'am' ? 'መዛግብት እና መርሃ ግብር' : 'Records & Schedule';
+    if (groupName === 'Board & Administrative Services') return language === 'am' ? 'የቦርድ እና አስተዳደራዊ አገልግሎቶች' : 'Board & Administrative Services';
     if (groupName === 'Duty & Account') return language === 'am' ? 'ተረኝነት እና መለያ' : 'Duty & Account';
     return groupName;
   };
 
   const groupedNav = React.useMemo(() => {
     const groups: { name: string; items: NavItem[] }[] = [];
-    const orderedGroups = ['Daily Workbench', 'Records & Schedule', 'Duty & Account'];
+    const orderedGroups = ['Daily Workbench', 'Records & Schedule', 'Board & Administrative Services', 'Duty & Account'];
 
     orderedGroups.forEach(gName => {
       const matchingItems = navigation.filter(item => item.group === gName);

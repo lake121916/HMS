@@ -128,6 +128,7 @@ app.use('/api/documents', require('./routes/documents'));
 app.use('/api/shifts', require('./routes/shifts'));
 app.use('/api/workload', require('./routes/workload'));
 app.use('/api/sync', require('./routes/sync'));
+app.use('/api/board', require('./routes/boardAdmin'));
 
 // Error handling
 app.use(notFound);

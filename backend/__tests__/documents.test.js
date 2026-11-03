@@ -69,9 +69,11 @@ describe('Priority 2: Official Clinical PDF Documents & Verification', () => {
     });
 
     it('generates a valid A4 PDF stream with Ethiopic font when prescription exists', async () => {
-      if (!sampleRxId) return;
+      const freshRx = await pool.query('SELECT pr.id FROM prescriptions pr JOIN patients p ON p.id = pr.patient_id ORDER BY pr.id DESC LIMIT 1');
+      const testRxId = freshRx.rows[0]?.id || sampleRxId;
+      if (!testRxId) return;
       const res = await request(app)
-        .get(`/api/documents/prescription/${sampleRxId}/pdf`)
+        .get(`/api/documents/prescription/${testRxId}/pdf`)
         .set('Authorization', `Bearer ${doctorToken}`);
 
       expect(res.statusCode).toBe(200);
