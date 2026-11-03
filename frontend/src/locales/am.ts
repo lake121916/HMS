@@ -65,7 +65,9 @@ export const am = {
   'nav.reports': 'የአሰራር ትንታኔዎችና ሪፖርቶች',
   'nav.audit': 'የሲስተም ቁጥጥር (ኦዲት)',
   'nav.admin': 'የሲስተም ውቅርና አስተዳደር',
-  'nav.users': 'የሰራተኞችና ተጠቃሚዎች አስተዳደር',
+  'nav.user_management': 'የተጠቃሚዎች አስተዳደር',
+  'nav.users': 'ተጠቃሚዎች',
+  'nav.role_descriptions': 'የሚና መግለጫዎች እና ስርጭት',
   'nav.patient_portal': 'የታካሚ መረጃ ፖርታል',
 
   // Navigation Group Headers / የአሰሳ ምድቦች

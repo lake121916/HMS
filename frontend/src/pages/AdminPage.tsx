@@ -1,8 +1,10 @@
 import RoleGuard from '../components/RoleGuard';
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import RoleDescriptionsPage from './admin/RoleDescriptionsPage';
 import api from '../services/api';
 import {
-  Users, Plus, Search, Trash2, X, Shield,
+  Users, Plus, Search, Trash2, X, Shield, ShieldCheck,
   CheckCircle, XCircle, RefreshCw, Building2, Key, Edit,
   Activity, Server, Database, Lock, AlertCircle, ChevronLeft, ChevronRight,
   Bell, Send, Smartphone
@@ -67,9 +69,19 @@ const ROLE_COLORS: Record<string, string> = {
   patient: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200',
 };
 
-const AdminPage: React.FC = () => {
+interface AdminPageProps {
+  initialTab?: 'users' | 'staff' | 'departments' | 'audit' | 'notifications' | 'system' | 'roles';
+}
+
+const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
   const { user: currentUser } = useAuth();
-  const [tab, setTab] = useState<'users' | 'staff' | 'departments' | 'audit' | 'notifications' | 'system'>('users');
+  const [searchParams] = useSearchParams();
+  const queryTab = searchParams.get('tab') as any;
+  const queryRole = searchParams.get('role');
+
+  const [tab, setTab] = useState<'users' | 'staff' | 'departments' | 'audit' | 'notifications' | 'system' | 'roles'>(
+    initialTab || (queryTab && ['users', 'staff', 'departments', 'audit', 'notifications', 'system', 'roles'].includes(queryTab) ? queryTab : 'users')
+  );
 
   // Priority 3: Notifications Outbox State
   const [notificationQueue, setNotificationQueue] = useState<any[]>([]);
@@ -132,6 +144,15 @@ const AdminPage: React.FC = () => {
   useEffect(() => {
     fetchAll();
   }, [tab, roleFilter, auditPage, notifStatusFilter]);
+
+  useEffect(() => {
+    if (queryRole) {
+      setRoleFilter(queryRole);
+      setTab('users');
+    } else if (queryTab) {
+      setTab(queryTab);
+    }
+  }, [queryRole, queryTab]);
 
 
   const fetchNotificationQueue = async () => {
@@ -474,6 +495,7 @@ const AdminPage: React.FC = () => {
           { id: 'audit', label: '4. Security Audit Logs', icon: Lock },
           { id: 'notifications', label: '5. Patient Notifications Outbox', icon: Bell },
           { id: 'system', label: '6. System Health', icon: Server },
+          { id: 'roles', label: '7. Role Descriptions & Distribution', icon: ShieldCheck },
         ].map(t => (
           <button
             key={t.id}
@@ -1002,6 +1024,11 @@ const AdminPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── TAB 7: ROLE DESCRIPTIONS & DISTRIBUTION ── */}
+      {tab === 'roles' && (
+        <RoleDescriptionsPage embedded={true} />
       )}
 
       {/* ── TAB 6: SYSTEM HEALTH ── */}

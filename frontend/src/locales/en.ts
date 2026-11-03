@@ -65,7 +65,9 @@ export const en = {
   'nav.reports': 'Operational Analytics',
   'nav.audit': 'Audit Trail & Security',
   'nav.admin': 'System Configuration',
-  'nav.users': 'Staff & User Accounts',
+  'nav.user_management': 'User Management',
+  'nav.users': 'Users',
+  'nav.role_descriptions': 'Role Descriptions',
   'nav.patient_portal': 'Patient Health Portal',
 
   // Navigation Group Headers

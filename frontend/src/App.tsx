@@ -38,6 +38,7 @@ import InventoryPage from './pages/InventoryPage';
 import BedsPage from './pages/BedsPage';
 import ReportsPage from './pages/ReportsPage';
 import AdminPage from './pages/AdminPage';
+import RoleDescriptionsPage from './pages/admin/RoleDescriptionsPage';
 // Standalone UserManagementPage unified into AdminPage
 import CashierDashboard from './pages/CashierDashboard';
 import InsurancePage from './pages/InsurancePage';
@@ -75,7 +76,7 @@ const ALL_PAGES = [
   'dashboard', 'doctor-dashboard', 'patients', 'doctors', 'appointments',
   'vitals', 'prescriptions', 'lab-tests', 'admissions', 'invoices', 'payments',
   'reception', 'medicines', 'inventory', 'beds', 'reports', 'admin',
-  'user-management', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
+  'user-management', 'admin', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
   'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
   'assignment', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
   'services-admin', 'shifts',
@@ -293,8 +294,17 @@ function App() {
             <Route path="admin" element={
               <ProtectedRoute page="admin"><AdminPage /></ProtectedRoute>
             } />
+            <Route path="admin/users" element={
+              <ProtectedRoute page="admin"><AdminPage initialTab="users" /></ProtectedRoute>
+            } />
+            <Route path="admin/roles" element={
+              <ProtectedRoute page="admin"><RoleDescriptionsPage /></ProtectedRoute>
+            } />
             <Route path="user-management" element={
-              <Navigate to="/admin" replace />
+              <ProtectedRoute page="admin"><AdminPage initialTab="users" /></ProtectedRoute>
+            } />
+            <Route path="user-management/roles" element={
+              <ProtectedRoute page="admin"><RoleDescriptionsPage /></ProtectedRoute>
             } />
             <Route path="departments-admin" element={
               <ProtectedRoute page="departments-admin"><DepartmentsAdminPage /></ProtectedRoute>

@@ -10,7 +10,7 @@ import api from '../services/api';
 import OfflineStatusBanner from './OfflineStatusBanner';
 import {
   LayoutDashboard, Users, Stethoscope, Calendar, Clock, LogOut, Menu, X,
-  Activity, Pill, FlaskConical, Bed, FileText, Shield,
+  Activity, Pill, FlaskConical, Bed, FileText, Shield, ShieldCheck,
   BarChart2, CreditCard, Settings, Bell,
   Palette, Sun, Moon, RefreshCw, ClipboardCheck,
   UserCheck, Building2, Receipt, Package, Scan,
@@ -55,6 +55,19 @@ const Layout: React.FC = () => {
   const [boardDropdownOpen, setBoardDropdownOpen] = React.useState(() => {
     return location.pathname.startsWith('/board');
   });
+  const [userMgmtDropdownOpen, setUserMgmtDropdownOpen] = React.useState(() => {
+    return location.pathname === '/admin' || 
+           location.pathname.startsWith('/admin/') || 
+           location.pathname.startsWith('/user-management');
+  });
+
+  React.useEffect(() => {
+    if (location.pathname === '/admin' || 
+        location.pathname.startsWith('/admin/') || 
+        location.pathname.startsWith('/user-management')) {
+      setUserMgmtDropdownOpen(true);
+    }
+  }, [location.pathname]);
 
   React.useEffect(() => {
     if (location.pathname.startsWith('/board')) {
@@ -289,6 +302,13 @@ const Layout: React.FC = () => {
   // ROLE-BASED NAVIGATION WITH STRICT GROUP ARCHITECTURE
   // 1. Daily Workbench   2. Records & Schedule   3. Board & Administrative Services   4. Duty & Account
   // ══════════════════════════════════════════════════════════════
+  const USER_MGMT_NAV_ITEMS: Record<string, NavItem> = {
+    users: { id: 'admin_users', name: 'Users', href: '/admin', icon: Users, group: 'User Management', permission: 'admin:departments', translationKey: 'nav.users' },
+    role_descriptions: { id: 'role_descriptions', name: 'Role Descriptions', href: '/admin/roles', icon: ShieldCheck, group: 'User Management', permission: 'admin:departments', translationKey: 'nav.role_descriptions' }
+  };
+
+  const allUserMgmtItems = Object.values(USER_MGMT_NAV_ITEMS);
+
   const BOARD_NAV_ITEMS: Record<string, NavItem> = {
     birth_certificates: { id: 'birth_certificates', name: 'Birth Certificates', href: '/board/birth-certificates', icon: Baby, group: 'Board & Administrative Services', translationKey: 'nav.birth_certificates' },
     death_certificates: { id: 'death_certificates', name: 'Death Certificates', href: '/board/death-certificates', icon: FileText, group: 'Board & Administrative Services', translationKey: 'nav.death_certificates' },
@@ -373,7 +393,7 @@ const Layout: React.FC = () => {
       case 'admin':
         return [
           { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
-          { id: 'admin', name: 'Admin Control Center', href: '/admin', icon: Settings, group: 'Daily Workbench', permission: 'admin:departments', translationKey: 'nav.admin' },
+          ...allUserMgmtItems,
           { id: 'shifts', name: 'Staff Shifts & Rosters', href: '/shifts', icon: Clock, group: 'Records & Schedule', translationKey: 'nav.shifts' },
           { id: 'departments_admin', name: 'Hospital Departments', href: '/departments-admin', icon: Building2, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.departments' },
           { id: 'services_admin', name: 'Clinical Services', href: '/services-admin', icon: Package, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.services' },
@@ -385,7 +405,7 @@ const Layout: React.FC = () => {
       case 'super_admin':
         return [
           { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
-          { id: 'admin', name: 'Super Admin Center', href: '/admin', icon: Settings, group: 'Daily Workbench', permission: 'admin:departments', translationKey: 'nav.admin' },
+          ...allUserMgmtItems,
           { id: 'shifts', name: 'Staff Shifts & Rosters', href: '/shifts', icon: Clock, group: 'Records & Schedule', translationKey: 'nav.shifts' },
           { id: 'departments_admin', name: 'Hospital Departments', href: '/departments-admin', icon: Building2, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.departments' },
           { id: 'services_admin', name: 'Clinical Services', href: '/services-admin', icon: Package, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.services' },
@@ -415,6 +435,7 @@ const Layout: React.FC = () => {
 
   const getGroupTitle = (groupName: string): string => {
     if (groupName === 'Daily Workbench') return language === 'am' ? 'ዕለታዊ የሥራ ጠረጴዛ' : 'Daily Workbench';
+    if (groupName === 'User Management') return language === 'am' ? 'የተጠቃሚዎች አስተዳደር' : 'User Management';
     if (groupName === 'Records & Schedule') return language === 'am' ? 'መዛግብት እና መርሃ ግብር' : 'Records & Schedule';
     if (groupName === 'Board & Administrative Services') return language === 'am' ? 'የቦርድ እና አስተዳደራዊ አገልግሎቶች' : 'Board & Administrative Services';
     if (groupName === 'Duty & Account') return language === 'am' ? 'ተረኝነት እና መለያ' : 'Duty & Account';
@@ -423,7 +444,7 @@ const Layout: React.FC = () => {
 
   const groupedNav = React.useMemo(() => {
     const groups: { name: string; items: NavItem[] }[] = [];
-    const orderedGroups = ['Daily Workbench', 'Records & Schedule', 'Board & Administrative Services', 'Duty & Account'];
+    const orderedGroups = ['Daily Workbench', 'User Management', 'Records & Schedule', 'Board & Administrative Services', 'Duty & Account'];
 
     orderedGroups.forEach(gName => {
       const matchingItems = navigation.filter(item => item.group === gName);
@@ -642,6 +663,102 @@ const Layout: React.FC = () => {
                         >
                           <Building2 className={`w-5 h-5 ${isBoardActive ? 'text-amber-400' : 'text-white/50'}`} />
                           <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+
+              const isUserMgmtGroup = group.name === 'User Management';
+              const isUserMgmtActive = location.pathname === '/admin' || 
+                                       location.pathname.startsWith('/admin/') || 
+                                       location.pathname.startsWith('/user-management');
+
+              if (isUserMgmtGroup) {
+                return (
+                  <div key={group.name} className={gIdx > 0 ? 'mt-3 pt-2.5 border-t border-white/[0.08]' : ''}>
+                    {isExpanded ? (
+                      <div>
+                        {/* Collapsible Accordion Header */}
+                        <button
+                          type="button"
+                          onClick={() => setUserMgmtDropdownOpen(prev => !prev)}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group text-left cursor-pointer ${
+                            isUserMgmtActive
+                              ? 'bg-gradient-to-r from-blue-500/25 to-white/[0.08] text-white ring-1 ring-inset ring-blue-400/40 shadow-[0_2px_12px_rgba(0,0,0,0.15)]'
+                              : 'text-white/75 hover:text-white hover:bg-white/[0.07]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Users className={`w-4 h-4 flex-shrink-0 transition-colors ${
+                              isUserMgmtActive ? 'text-blue-400 drop-shadow-[0_0_6px_rgba(96,165,250,0.6)]' : 'text-white/60 group-hover:text-white'
+                            }`} />
+                            <span className="text-xs font-bold tracking-tight truncate">
+                              {groupTitle}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-md bg-white/10 text-white/70 font-semibold">
+                              {group.items.length}
+                            </span>
+                            <ChevronDown className={`w-3.5 h-3.5 text-white/60 group-hover:text-white transition-transform duration-200 ${
+                              userMgmtDropdownOpen ? 'rotate-180 text-blue-300' : ''
+                            }`} />
+                          </div>
+                        </button>
+
+                        {/* Collapsible Sub-item Drawer */}
+                        {userMgmtDropdownOpen && (
+                          <div className="mt-1 ml-3.5 pl-2.5 border-l-2 border-blue-400/30 space-y-0.5 animate-fadeIn">
+                            {group.items.map(item => {
+                              const isActive = location.pathname === item.href ||
+                                (item.href !== '/' && location.pathname.startsWith(item.href + '/'));
+                              const translatedLabel = t(item.translationKey, item.name);
+
+                              return (
+                                <Link
+                                  key={item.id}
+                                  to={item.href}
+                                  onClick={() => { setSidebarOpen(false); setSidebarHovered(false); }}
+                                  className={`relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs transition-all duration-150 group ${
+                                    isActive
+                                      ? 'bg-white/[0.18] text-white font-bold shadow-sm ring-1 ring-inset ring-white/10'
+                                      : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+                                  }`}
+                                >
+                                  <item.icon className={`w-3.5 h-3.5 flex-shrink-0 transition-colors ${
+                                    isActive ? 'text-blue-300 drop-shadow-[0_0_4px_rgba(96,165,250,0.8)]' : 'text-white/45 group-hover:text-white/80'
+                                  }`} />
+                                  <span className="truncate flex-1">{translatedLabel}</span>
+                                  {isActive && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0 shadow-[0_0_4px_rgba(96,165,250,0.9)]" />
+                                  )}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      // Collapsed Sidebar View (Icon Only)
+                      <div className="my-1.5 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSidebarCollapsed(false);
+                            setUserMgmtDropdownOpen(true);
+                          }}
+                          title={groupTitle}
+                          className={`relative p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                            isUserMgmtActive
+                              ? 'bg-blue-500/25 text-white ring-1 ring-inset ring-blue-400/40'
+                              : 'text-white/60 hover:text-white hover:bg-white/[0.07]'
+                          }`}
+                        >
+                          <Users className={`w-5 h-5 ${isUserMgmtActive ? 'text-blue-400' : 'text-white/50'}`} />
+                          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-blue-400" />
                         </button>
                       </div>
                     )}
