@@ -8,6 +8,7 @@ const router = express.Router();
 const pool = require('../config/database');
 const { authenticate, authorize } = require('../middleware/auth');
 const fefoService = require('../services/fefoService');
+const dispensingService = require('../services/dispensingService');
 
 // ── 1. GET all batches (with filters for medication, status, expiry) ──────────
 router.get('/batches', authenticate, async (req, res) => {
@@ -158,58 +159,34 @@ router.post('/batches', authenticate, authorize('pharmacist', 'admin', 'super_ad
 // ── 4. POST dispense medication using FEFO ────────────────────────────────────
 router.post('/dispense', authenticate, authorize('pharmacist', 'admin', 'super_admin'), async (req, res) => {
   try {
-    const { prescription_id, medication_id, quantity, notes } = req.body;
+    const { prescription_id, medication_id, quantity, batch_id, notes } = req.body;
 
-    let targetMedicationId = medication_id;
-    let targetQuantity = parseInt(quantity, 10) || 1;
-
-    // If prescription_id is provided, verify prescription and get medication_id
     if (prescription_id) {
-      const rxRes = await pool.query(`
-        SELECT pr.*, m.id AS matched_med_id
-        FROM prescriptions pr
-        LEFT JOIN medicines m ON (LOWER(m.name) = LOWER(pr.medication_name) OR LOWER(m.generic_name) = LOWER(pr.medication_name))
-        WHERE pr.id = $1
-      `, [prescription_id]);
+      const dispResult = await dispensingService.dispensePrescription({
+        prescriptionId: parseInt(prescription_id, 10),
+        quantityToDispense: quantity !== undefined ? parseInt(quantity, 10) : undefined,
+        batchId: batch_id ? parseInt(batch_id, 10) : undefined,
+        notes: notes || null,
+        userId: req.user.id
+      });
 
-      if (!rxRes.rows.length) {
-        return res.status(404).json({ success: false, message: 'Prescription not found' });
-      }
-
-      const rx = rxRes.rows[0];
-      if (rx.is_dispensed) {
-        return res.status(400).json({ success: false, message: 'This prescription has already been dispensed.' });
-      }
-
-      if (!targetMedicationId) {
-        if (!rx.matched_med_id) {
-          // Try to look up by name
-          const medLookup = await pool.query(
-            'SELECT id FROM medicines WHERE name ILIKE $1 OR generic_name ILIKE $1 LIMIT 1',
-            [`%${rx.medication_name}%`]
-          );
-          if (medLookup.rows.length) {
-            targetMedicationId = medLookup.rows[0].id;
-          } else {
-            return res.status(400).json({
-              success: false,
-              message: `No medicine catalog entry found matching "${rx.medication_name}". Please map medication first.`
-            });
-          }
-        } else {
-          targetMedicationId = rx.matched_med_id;
-        }
-      }
+      return res.json({
+        success: true,
+        message: dispResult.isFullyDispensed
+          ? `Prescription fully dispensed (${dispResult.quantityDispensedNow} units).`
+          : `Prescription partially dispensed (${dispResult.quantityDispensedNow} units). Remaining: ${dispResult.remainingQuantity}.`,
+        data: dispResult
+      });
     }
 
-    if (!targetMedicationId) {
-      return res.status(400).json({ success: false, message: 'medication_id is required' });
+    if (!medication_id) {
+      return res.status(400).json({ success: false, message: 'medication_id or prescription_id is required' });
     }
 
     const allocationResult = await fefoService.allocateAndDispenseFEFO({
-      prescriptionId: prescription_id ? parseInt(prescription_id, 10) : null,
-      medicationId: parseInt(targetMedicationId, 10),
-      quantityRequested: targetQuantity,
+      prescriptionId: null,
+      medicationId: parseInt(medication_id, 10),
+      quantityRequested: parseInt(quantity, 10) || 1,
       dispensedBy: req.user.id,
       notes: notes || null
     });
@@ -221,7 +198,8 @@ router.post('/dispense', authenticate, authorize('pharmacist', 'admin', 'super_a
     });
   } catch (error) {
     console.error('Error dispensing medication:', error);
-    res.status(400).json({ success: false, message: error.message });
+    const status = error.statusCode || 400;
+    res.status(status).json({ success: false, message: error.message });
   }
 });
 

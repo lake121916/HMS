@@ -92,15 +92,35 @@ export interface Prescription {
   patient_id: number;
   doctor_id: number;
   patient_name?: string;
+  patient_mrn?: string;
+  patient_gender?: string;
+  patient_phone?: string;
+  patient_dob?: string;
   doctor_name?: string;
+  doctor_department?: string;
+  medication_id?: number;
   medication_name: string;
   dosage: string;
   frequency: string;
   duration: string;
   instructions?: string;
-  is_dispensed: boolean;
+  quantity?: number;
+  quantity_dispensed?: number;
+  remaining_quantity?: number;
+  status?: string;
   workflow_status?: string;
+  is_dispensed: boolean;
   prescribed_date: string;
+  expiry_date?: string;
+  stock_available?: number;
+  active_batch_count?: number;
+  is_controlled?: boolean;
+  invoice_id?: number;
+  invoice_status?: string;
+  invoice_total?: string | number;
+  unit_price?: string | number;
+  dispensed_at?: string;
+  dispensed_by_name?: string;
   encounter_id?: number;
 }
 
@@ -393,7 +413,7 @@ export function useRecordPayment(invoiceId: number) {
 // PRESCRIPTIONS
 // ═══════════════════════════════════════════════════════════════════════════
 
-export function usePrescriptions(params: { patient_id?: number; is_dispensed?: boolean } = {}) {
+export function usePrescriptions(params: { patient_id?: number; is_dispensed?: boolean; status?: string; search?: string } = {}) {
   return useQuery({
     queryKey: qk.prescriptions(params),
     queryFn: async () => {
