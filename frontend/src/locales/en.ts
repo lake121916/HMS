@@ -46,6 +46,7 @@ export const en = {
   'nav.reception': 'Reception & Intake Desk',
   'nav.triage': 'Triage & Nursing Worklist',
   'nav.opd_coordinator': 'OPD Coordinator Desk',
+  'nav.queue_management': 'Smart Queue & Token Center',
   'nav.consultations': 'Clinical Consultations',
   'nav.lab': 'Laboratory Worklist',
   'nav.pharmacy': 'Pharmacy & Dispensing',

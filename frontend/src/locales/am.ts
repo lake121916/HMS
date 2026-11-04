@@ -46,6 +46,7 @@ export const am = {
   'nav.reception': 'የመስተንግዶና ምዝገባ ዴስክ',
   'nav.triage': 'የትሪያጅና የነርስ ስራዎች',
   'nav.opd_coordinator': 'የኦፒዲ አስተባባሪ ጠረጴዛ',
+  'nav.queue_management': 'የቶከን እና የተራ መቆጣጠሪያ ማዕከል',
   'nav.consultations': 'የሀኪም ምርመራዎች',
   'nav.lab': 'የላቦራቶሪ ምርመራ ክፍለ-ስራ',
   'nav.pharmacy': 'የመድኃኒት ቤትና ማከፋፈያ',

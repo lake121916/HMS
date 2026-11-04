@@ -70,6 +70,7 @@ import TrainingDevelopmentPage from './pages/board/TrainingDevelopmentPage';
 import BoardMembersPage from './pages/board/BoardMembersPage';
 import BoardMeetingsPage from './pages/board/BoardMeetingsPage';
 import BoardReportsPage from './pages/board/BoardReportsPage';
+import QueueCommandCenter from './pages/QueueCommandCenter';
 
 // ── Role permission map ──────────────────────────────────────────────────────
 const ALL_PAGES = [
@@ -79,7 +80,7 @@ const ALL_PAGES = [
   'user-management', 'admin', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
   'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
   'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-  'services-admin', 'shifts',
+  'services-admin', 'shifts', 'queue-management',
   'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
   'training', 'board-members', 'board-meetings', 'board-reports'
 ];
@@ -93,7 +94,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'user-management', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'radiology',
     'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
     'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-    'services-admin', 'shifts',
+    'services-admin', 'shifts', 'queue-management',
   'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
   'training', 'board-members', 'board-meetings', 'board-reports'
   ],
@@ -101,6 +102,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'dashboard',
     'assignment',
     'opd-coordinator',
+    'queue-management',
     'departments-admin',
     'doctors',
     'admissions',
@@ -112,11 +114,11 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
     'training', 'board-members', 'board-meetings', 'board-reports'
   ],
-  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'reception', 'reception-workflow', 'vitals'],
-  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines'],
-  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse', 'assignment', 'opd-coordinator'],
+  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'reception', 'reception-workflow', 'vitals', 'queue-management'],
+  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines', 'queue-management'],
+  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse', 'assignment', 'opd-coordinator', 'queue-management'],
   lab_technician:   ['dashboard', 'shifts', 'lab-tests', 'lab-dashboard', 'patients'],
-  pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy'],
+  pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy', 'queue-management'],
   cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow'],
   patient:          ['patient-portal', 'appointments', 'prescriptions', 'invoices'],
 };
@@ -327,6 +329,9 @@ function App() {
             } />
             <Route path="opd-coordinator" element={
               <ProtectedRoute page="opd-coordinator"><OPDCoordinatorDashboard /></ProtectedRoute>
+            } />
+            <Route path="queue-management" element={
+              <ProtectedRoute page="queue-management"><QueueCommandCenter /></ProtectedRoute>
             } />
             <Route path="consultation" element={
               <ProtectedRoute page="consultation"><DoctorConsultationPage /></ProtectedRoute>
