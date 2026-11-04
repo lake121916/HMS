@@ -360,4 +360,479 @@ router.post('/inventory/batches/:id/quarantine', authenticate, authorize('pharma
   }
 });
 
+// ── 9. Point of Sale (POS) & Walk-In OTC Dispensing ─────────────────────────
+// GET /api/pharmacy/sales
+router.get('/sales', authenticate, async (req, res) => {
+  try {
+    const { limit = 50, date } = req.query;
+    let dateFilter = '';
+    const params = [limit];
+
+    if (date) {
+      dateFilter = 'WHERE DATE(s.created_at) = $2';
+      params.push(date);
+    }
+
+    const salesRes = await pool.query(`
+      SELECT s.*, u.first_name || ' ' || u.last_name AS dispensed_by_name
+      FROM pharmacy_sales s
+      LEFT JOIN users u ON u.id = s.dispensed_by
+      ${dateFilter}
+      ORDER BY s.created_at DESC
+      LIMIT $1
+    `, params);
+
+    const sales = salesRes.rows;
+    // Attach items
+    if (sales.length) {
+      const saleIds = sales.map(s => s.id);
+      const itemsRes = await pool.query(`
+        SELECT * FROM pharmacy_sale_items WHERE sale_id = ANY($1)
+      `, [saleIds]);
+
+      const itemsBySale = {};
+      itemsRes.rows.forEach(item => {
+        if (!itemsBySale[item.sale_id]) itemsBySale[item.sale_id] = [];
+        itemsBySale[item.sale_id].push(item);
+      });
+
+      sales.forEach(s => {
+        s.items = itemsBySale[s.id] || [];
+      });
+    }
+
+    // Summary stats
+    const statsRes = await pool.query(`
+      SELECT
+        COUNT(*) AS total_sales_today,
+        COALESCE(SUM(final_amount), 0) AS total_revenue_today
+      FROM pharmacy_sales
+      WHERE DATE(created_at) = CURRENT_DATE
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        sales,
+        summary: {
+          todaySalesCount: parseInt(statsRes.rows[0].total_sales_today, 10),
+          todayRevenueETB: parseFloat(statsRes.rows[0].total_revenue_today)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching pharmacy sales:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/pharmacy/sales — Process Direct OTC Sale
+router.post('/sales', authenticate, authorize('pharmacist', 'cashier', 'admin', 'super_admin'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const {
+      customer_name,
+      customer_phone,
+      patient_id,
+      items, // [{ medication_id, quantity }]
+      payment_method = 'cash',
+      dispensed_counter = 'Pharmacy 1',
+      notes
+    } = req.body;
+
+    if (!customer_name || !items || !items.length) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: 'customer_name and at least one item are required' });
+    }
+
+    // Generate unique receipt number
+    const countRes = await client.query('SELECT COUNT(*) FROM pharmacy_sales WHERE DATE(created_at) = CURRENT_DATE');
+    const seq = parseInt(countRes.rows[0].count, 10) + 1;
+    const year = new Date().getFullYear();
+    const receiptNumber = `POS-${year}-${String(seq).padStart(4, '0')}`;
+
+    let totalAmount = 0;
+    const processedItems = [];
+
+    for (const item of items) {
+      const medRes = await client.query('SELECT * FROM medicines WHERE id = $1', [item.medication_id]);
+      if (!medRes.rows.length) {
+        throw new Error(`Medicine with ID ${item.medication_id} not found.`);
+      }
+      const med = medRes.rows[0];
+      const unitPrice = parseFloat(med.unit_price) || 0;
+      const qty = parseInt(item.quantity, 10) || 1;
+      const lineTotal = unitPrice * qty;
+      totalAmount += lineTotal;
+
+      // Find earliest available batch via FEFO
+      const batchRes = await client.query(`
+        SELECT * FROM medication_batches
+        WHERE medication_id = $1 AND status = 'active' AND expiry_date > CURRENT_DATE AND quantity_available > 0
+        ORDER BY expiry_date ASC
+        LIMIT 1 FOR UPDATE
+      `, [item.medication_id]);
+
+      let batchId = null;
+      if (batchRes.rows.length) {
+        const batch = batchRes.rows[0];
+        batchId = batch.id;
+        const newAvailable = Math.max(0, batch.quantity_available - qty);
+        await client.query(`
+          UPDATE medication_batches
+          SET quantity_available = $1,
+              status = CASE WHEN $1 = 0 THEN 'depleted' ELSE status END,
+              updated_at = NOW()
+          WHERE id = $2
+        `, [newAvailable, batch.id]);
+
+        // Record in inventory_ledger
+        await client.query(`
+          INSERT INTO inventory_ledger
+            (medication_id, batch_id, movement_type, quantity, reference_id, authorized_by, notes)
+          VALUES
+            ($1, $2, 'dispensed', $3, $4, $5, 'Direct OTC Walk-in Sale')
+        `, [med.id, batch.id, -qty, receiptNumber, req.user.id]);
+      }
+
+      processedItems.push({
+        medication_id: med.id,
+        batch_id: batchId,
+        medication_name: med.name,
+        unit_price: unitPrice,
+        quantity: qty,
+        total_price: lineTotal
+      });
+    }
+
+    // Insert sales record
+    const saleInsert = await client.query(`
+      INSERT INTO pharmacy_sales
+        (sale_receipt_number, customer_name, customer_phone, patient_id, total_amount, discount_amount,
+         final_amount, payment_method, payment_status, dispensed_by, dispensed_counter, notes)
+      VALUES
+        ($1, $2, $3, $4, $5, 0, $5, $6, 'paid', $7, $8, $9)
+      RETURNING *
+    `, [
+      receiptNumber,
+      customer_name,
+      customer_phone || null,
+      patient_id || null,
+      totalAmount,
+      payment_method,
+      req.user.id,
+      dispensed_counter,
+      notes || null
+    ]);
+
+    const createdSale = saleInsert.rows[0];
+
+    // Insert sale items
+    for (const pi of processedItems) {
+      await client.query(`
+        INSERT INTO pharmacy_sale_items
+          (sale_id, medication_id, batch_id, medication_name, unit_price, quantity, total_price)
+        VALUES
+          ($1, $2, $3, $4, $5, $6, $7)
+      `, [createdSale.id, pi.medication_id, pi.batch_id, pi.medication_name, pi.unit_price, pi.quantity, pi.total_price]);
+    }
+
+    await client.query('COMMIT');
+
+    createdSale.items = processedItems;
+
+    res.status(201).json({
+      success: true,
+      message: `Direct sale ${receiptNumber} completed successfully.`,
+      data: { sale: createdSale }
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error processing pharmacy sale:', error);
+    res.status(400).json({ success: false, message: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// ── 10. Controlled Substances / Narcotics Register ───────────────────────────
+// GET /api/pharmacy/controlled-substances
+router.get('/controlled-substances', authenticate, authorize('pharmacist', 'doctor', 'admin', 'super_admin'), async (req, res) => {
+  try {
+    const logsRes = await pool.query(`
+      SELECT csl.*, u.first_name || ' ' || u.last_name AS dispensed_by_name
+      FROM controlled_substances_log csl
+      LEFT JOIN users u ON u.id = csl.dispensed_by
+      ORDER BY csl.dispensed_at DESC
+      LIMIT 100
+    `);
+
+    // Safe inventory summary of controlled medicines
+    const safeRes = await pool.query(`
+      SELECT m.id, m.name, m.generic_name, m.unit,
+             COALESCE(SUM(mb.quantity_available), 0) AS safe_balance
+      FROM medicines m
+      LEFT JOIN medication_batches mb ON mb.medication_id = m.id AND mb.status = 'active'
+      WHERE m.is_controlled = true
+      GROUP BY m.id, m.name, m.generic_name, m.unit
+      ORDER BY m.name ASC
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        logs: logsRes.rows,
+        safeInventory: safeRes.rows
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching controlled substances:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/pharmacy/controlled-substances — Log Administration / Dispensation
+router.post('/controlled-substances', authenticate, authorize('pharmacist', 'doctor', 'admin', 'super_admin'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const {
+      medication_id,
+      patient_id,
+      patient_name,
+      patient_mrn,
+      prescribing_doctor_id,
+      doctor_name,
+      doctor_license_number,
+      indication,
+      quantity_prescribed,
+      quantity_dispensed,
+      unit = 'ampoules',
+      witness_name,
+      witness_role,
+      notes
+    } = req.body;
+
+    if (!medication_id || !patient_name || !quantity_dispensed || !doctor_name) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, message: 'medication, patient, doctor, and quantity are required' });
+    }
+
+    const medRes = await client.query('SELECT * FROM medicines WHERE id = $1', [medication_id]);
+    if (!medRes.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Medicine not found' });
+    }
+    const med = medRes.rows[0];
+
+    // Find batch
+    const batchRes = await client.query(`
+      SELECT * FROM medication_batches
+      WHERE medication_id = $1 AND status = 'active' AND quantity_available > 0
+      ORDER BY expiry_date ASC
+      LIMIT 1 FOR UPDATE
+    `, [medication_id]);
+
+    const batch = batchRes.rows[0];
+    const qty = parseFloat(quantity_dispensed);
+    let balanceRemaining = 0;
+    let batchNumber = 'SAFE-STOCK';
+    let batchId = null;
+
+    if (batch) {
+      batchId = batch.id;
+      batchNumber = batch.batch_number;
+      balanceRemaining = Math.max(0, batch.quantity_available - qty);
+      await client.query(`
+        UPDATE medication_batches
+        SET quantity_available = $1,
+            status = CASE WHEN $1 = 0 THEN 'depleted' ELSE status END,
+            updated_at = NOW()
+        WHERE id = $2
+      `, [balanceRemaining, batch.id]);
+    }
+
+    // Generate unique log number
+    const countRes = await client.query('SELECT COUNT(*) FROM controlled_substances_log');
+    const logNumber = `CSL-${new Date().getFullYear()}-${String(parseInt(countRes.rows[0].count, 10) + 1).padStart(4, '0')}`;
+
+    const insertRes = await client.query(`
+      INSERT INTO controlled_substances_log
+        (log_number, medication_id, medication_name, batch_id, batch_number, patient_id, patient_name,
+         patient_mrn, prescribing_doctor_id, doctor_name, doctor_license_number, indication,
+         quantity_prescribed, quantity_dispensed, unit, balance_remaining, dispensed_by,
+         witness_name, witness_role, status, notes)
+      VALUES
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, 'dispensed', $20)
+      RETURNING *
+    `, [
+      logNumber,
+      med.id,
+      med.name,
+      batchId,
+      batchNumber,
+      patient_id || null,
+      patient_name,
+      patient_mrn || 'AKEH-GEN',
+      prescribing_doctor_id || null,
+      doctor_name,
+      doctor_license_number || 'ETH-MD-ACTIVE',
+      indication || 'Severe Clinical Pain / Trauma',
+      parseFloat(quantity_prescribed || quantity_dispensed),
+      qty,
+      unit,
+      balanceRemaining,
+      req.user.id,
+      witness_name || 'Senior Nurse On Duty',
+      witness_role || 'Witness Clinical Staff',
+      notes || null
+    ]);
+
+    await client.query('COMMIT');
+
+    res.status(201).json({
+      success: true,
+      message: `Controlled substance recorded under ${logNumber}.`,
+      data: { log: insertRes.rows[0] }
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error logging controlled substance:', error);
+    res.status(400).json({ success: false, message: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// ── 11. Prescription Dispensing Label Generator ──────────────────────────────
+// GET /api/pharmacy/prescriptions/:id/label
+router.get('/prescriptions/:id/label', authenticate, async (req, res) => {
+  try {
+    const rxRes = await pool.query(`
+      SELECT pr.*, 
+             p.first_name || ' ' || p.last_name AS patient_name,
+             p.date_of_birth, p.gender,
+             doc.first_name || ' ' || doc.last_name AS doctor_name,
+             doc.specialization,
+             d.name AS department_name
+      FROM prescriptions pr
+      JOIN patients p ON p.id = pr.patient_id
+      LEFT JOIN doctors doc ON doc.id = pr.doctor_id
+      LEFT JOIN departments d ON d.id = doc.department_id
+      WHERE pr.id = $1
+    `, [req.params.id]);
+
+    if (!rxRes.rows.length) {
+      return res.status(404).json({ success: false, message: 'Prescription not found' });
+    }
+
+    const rx = rxRes.rows[0];
+
+    // Label formatted data
+    const labelData = {
+      hospitalName: 'Alem Ketema Enat Hospital',
+      pharmacyName: 'Central Dispensary & Outpatient Pharmacy',
+      phone: '+251 11 681 2044',
+      prescriptionNumber: `RX-${String(rx.id).padStart(6, '0')}`,
+      date: new Date().toLocaleDateString('en-GB'),
+      patientName: rx.patient_name,
+      gender: rx.gender,
+      medicationName: rx.medication_name,
+      dosage: rx.dosage,
+      frequency: rx.frequency,
+      duration: rx.duration,
+      instructions: rx.instructions,
+      instructionsAmharic: rx.instructions ? (
+        rx.instructions.toLowerCase().includes('food') ? 'ከምግብ ጋር ይወሰድ' :
+        rx.instructions.toLowerCase().includes('night') ? 'ማታ ከመኝታ በፊት ይወሰድ' :
+        'እንደ ሀኪሙ ትዕዛዝ በጥንቃቄ ይወሰድ'
+      ) : 'እንደ ሀኪሙ ትዕዛዝ በጥንቃቄ ይወሰድ',
+      doctorName: rx.doctor_name ? `Dr. ${rx.doctor_name}` : 'Attending Physician',
+      dispensedBy: req.user.username || 'Authorized Pharmacist',
+      precautions: 'Keep out of reach of children. Store in a cool, dry place away from direct sunlight.',
+      counterStation: 'Pharmacy Counter 1'
+    };
+
+    res.json({ success: true, data: labelData });
+  } catch (error) {
+    console.error('Error generating prescription label:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ── 12. Clinical Safety & Drug-Drug / Allergy Checker ────────────────────────
+// POST /api/pharmacy/safety-check
+router.post('/safety-check', authenticate, async (req, res) => {
+  try {
+    const { patient_id, medication_name } = req.body;
+    const warnings = [];
+
+    if (patient_id && medication_name) {
+      // 1. Check patient allergies
+      const allergyRes = await pool.query(`
+        SELECT allergen, severity, reaction
+        FROM patient_allergies
+        WHERE patient_id = $1 AND (
+          LOWER(allergen) LIKE LOWER($2) OR LOWER($2) LIKE '%' || LOWER(allergen) || '%'
+        )
+      `, [patient_id, `%${medication_name}%`]);
+
+      if (allergyRes.rows.length) {
+        allergyRes.rows.forEach(a => {
+          warnings.push({
+            type: 'allergy',
+            severity: a.severity || 'high',
+            message: `CRITICAL ALLERGY: Patient has recorded allergy to "${a.allergen}" (${a.severity}). Reaction: ${a.reaction || 'Unknown'}.`
+          });
+        });
+      }
+
+      // 2. Check active concurrent prescriptions for interactions
+      const concurrentRes = await pool.query(`
+        SELECT medication_name FROM prescriptions
+        WHERE patient_id = $1 AND is_dispensed = true AND prescribed_date >= CURRENT_DATE - INTERVAL '14 days'
+      `, [patient_id]);
+
+      const activeMeds = concurrentRes.rows.map(r => r.medication_name.toLowerCase());
+      const lowerMed = medication_name.toLowerCase();
+
+      // Common significant interaction pairs
+      if (lowerMed.includes('warfarin') && activeMeds.some(m => m.includes('aspirin') || m.includes('ibuprofen'))) {
+        warnings.push({
+          type: 'interaction',
+          severity: 'high',
+          message: 'MAJOR DRUG INTERACTION: Warfarin with NSAIDs (Aspirin/Ibuprofen) significantly increases bleeding risk.'
+        });
+      }
+      if (lowerMed.includes('ciprofloxacin') && activeMeds.some(m => m.includes('theophylline') || m.includes('antacid'))) {
+        warnings.push({
+          type: 'interaction',
+          severity: 'moderate',
+          message: 'MODERATE INTERACTION: Ciprofloxacin absorption reduced by concurrent cation antacids.'
+        });
+      }
+      if (lowerMed.includes('metronidazole') && activeMeds.some(m => m.includes('alcohol') || m.includes('warfarin'))) {
+        warnings.push({
+          type: 'interaction',
+          severity: 'high',
+          message: 'SEVERE INTERACTION: Metronidazole potentiates anticoagulant effects of Warfarin.'
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        safe: warnings.length === 0,
+        warningsCount: warnings.length,
+        warnings
+      }
+    });
+  } catch (error) {
+    console.error('Safety check error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;
