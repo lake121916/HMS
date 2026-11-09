@@ -11,6 +11,9 @@
     "db:migrate": "node-pg-migrate up",
     "db:down": "node-pg-migrate down",
     "db:seed": "node scripts/seed-all-actors.js",
+    "db:seed-demo": "node scripts/seed-ethiopian-demo.js",
+    "db:seed-encounters": "node scripts/seed-waiting-encounters.js",
+    "ai:eval": "node scripts/evaluate-ai-accuracy.js",
     "seed": "node scripts/seed-all-actors.js",
     "test": "jest --forceExit"
   },

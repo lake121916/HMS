@@ -3,7 +3,7 @@ import api from '../services/api';
 import {
   DollarSign, Users, FileText, Clock, CreditCard, Smartphone,
   Building2, Shield, RefreshCw, Search, Filter, Printer,
-  TrendingUp, CheckCircle2, AlertTriangle, Lock, Unlock, ShieldCheck
+  TrendingUp, CheckCircle2, AlertTriangle, Lock, Unlock, ShieldCheck, QrCode
 } from 'lucide-react';
 import { fmt } from '../utils/format';
 import StatCard from '../components/cashier/StatCard';
@@ -13,6 +13,7 @@ import ReceiptPreview, { ReceiptData, HospitalConfig } from '../components/cashi
 import ShiftManagementModal from '../components/cashier/ShiftManagementModal';
 import ZReportModal, { ZReportData } from '../components/cashier/ZReportModal';
 import FinanceReconciliationTab from '../components/cashier/FinanceReconciliationTab';
+import WristbandScannerModal from '../components/WristbandScannerModal';
 
 interface Invoice {
   id: number;
@@ -84,6 +85,17 @@ const CashierDashboard: React.FC = () => {
   const [currentZReport, setCurrentZReport] = useState<ZReportData | null>(null);
 
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const handlePatientScanVerified = (result: any) => {
+    setShowScannerModal(false);
+    const patient = result?.patient;
+    if (!patient) return;
+    const fullName = `${patient.first_name} ${patient.last_name}`;
+    setSearch(fullName);
+    setActiveTab('unpaid');
+    showToast('success', `Identified patient: ${fullName} (${patient.mrn || 'ID #' + patient.id}). Filtering unpaid invoices.`);
+  };
 
   useEffect(() => {
     fetchHospitalConfig();
@@ -327,13 +339,23 @@ const CashierDashboard: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={fetchDashboardData}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowScannerModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95"
+          >
+            <QrCode className="w-4 h-4" /> Scan Patient QR
+          </button>
+
+          <button
+            onClick={fetchDashboardData}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Navigation Tabs */}
@@ -726,6 +748,15 @@ const CashierDashboard: React.FC = () => {
           onClose={() => setShowZReportModal(false)}
           zReport={currentZReport}
           onHandover={handleHandoverSubmit}
+        />
+      )}
+      {/* ── Cashier Patient QR Scanner Modal ── */}
+      {showScannerModal && (
+        <WristbandScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onPatientVerified={handlePatientScanVerified}
+          continueLabel="Filter Patient Invoices"
         />
       )}
     </div>

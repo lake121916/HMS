@@ -261,10 +261,33 @@ Authorization: Bearer <JWT_TOKEN>
   "data": {
     "id": 1,
     "firstName": "John",
-    "lastName": "Doe"
+    "lastName": "Doe",
+    "qr": {
+      "patientId": 1,
+      "patientUserId": 2,
+      "fullName": "John Doe",
+      "mrn": "PAT-0001",
+      "qrCodeDataUrl": "data:image/png;base64,..."
+    }
   }
 }
 ```
+
+### Patient QR identification
+
+Patient registration creates an active QR identity in the same database transaction. The QR contains only `AKEH:PATIENT:<opaque-token>`; it does not contain patient details. Printing or downloading the card reuses the active token.
+
+| Endpoint | Access | Description |
+|---|---|---|
+| `GET /patients/:id/qr` | Authenticated patient-view roles | Retrieve or issue the active QR identity for the patient card |
+| `POST /patients/:id/qr` | Authenticated patient-view roles | Idempotently retrieve or issue the active QR identity |
+| `POST /patients/:id/qr/regenerate` | Admin, Super Admin | Revoke the current identity and issue a replacement |
+| `POST /patients/scan` | Authorized hospital staff | Validate an opaque QR payload and return role-limited patient information |
+| `POST /patients/lookup-by-identifier` | Authenticated patient-view roles | Look up a patient by a manual wristband identifier |
+
+`POST /patients/scan` accepts `{ "qrContent": "AKEH:PATIENT:<opaque-token>" }`. Invalid, unknown, expired, or revoked tokens are rejected. Scan requests are rate limited and recorded in `patient_qr_audit_logs`; QR payloads are excluded from the general audit log.
+
+Apply the additive migration `backend/migrations/017_patient_qr_identities.sql` to an existing database before using QR features. Do not apply `backend/database/schema.sql` to an existing database; it is a fresh-install schema and begins by dropping tables.
 
 ### PUT /patients/:id
 Update patient information.

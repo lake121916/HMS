@@ -8,10 +8,11 @@ import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import {
   Search, UserPlus, ClipboardList, ArrowRight, RefreshCw,
-  CheckCircle2, User, Printer
+  CheckCircle2, User, Printer, QrCode
 } from 'lucide-react';
 import QueueTokenTicket, { QueueTicketData } from '../components/queue/QueueTokenTicket';
 import PatientWristbandModal from '../components/PatientWristbandModal';
+import WristbandScannerModal from '../components/WristbandScannerModal';
 
 interface Patient {
   id: number;
@@ -76,6 +77,23 @@ const ReceptionistWorkflow: React.FC = () => {
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [printTicket, setPrintTicket] = useState<QueueTicketData | null>(null);
   const [wristbandPatient, setWristbandPatient] = useState<any | null>(null);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const handlePatientScanVerified = async (result: any) => {
+    setShowScannerModal(false);
+    const scannedPatient = result?.patient;
+    if (!scannedPatient) return;
+    try {
+      const res = await api.get(`/patients/${scannedPatient.id}`);
+      setSelectedPatient(res.data.data);
+      setSearch(`${scannedPatient.first_name} ${scannedPatient.last_name}`);
+      setActiveTab('search');
+      showToast('success', `Identified patient: ${scannedPatient.first_name} ${scannedPatient.last_name} (${scannedPatient.mrn || 'ID #' + scannedPatient.id})`);
+    } catch {
+      setSelectedPatient(scannedPatient);
+      setActiveTab('search');
+    }
+  };
 
   // New patient form
   const [showRegForm, setShowRegForm] = useState(false);
@@ -205,13 +223,23 @@ const ReceptionistWorkflow: React.FC = () => {
           <h1 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">Patient Registration & Check-in</h1>
           <p className="text-sm text-slate-500 mt-1">Search, register, and send patients to triage</p>
         </div>
-        <button
-          onClick={() => { setShowRegForm(true); setActiveTab('search'); }}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition"
-        >
-          <UserPlus className="h-4 w-4" />
-          New Patient
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowScannerModal(true)}
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow-sm"
+          >
+            <QrCode className="h-4 w-4" />
+            <span>Scan Patient QR</span>
+          </button>
+          <button
+            onClick={() => { setShowRegForm(true); setActiveTab('search'); }}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition"
+          >
+            <UserPlus className="h-4 w-4" />
+            New Patient
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -253,6 +281,15 @@ const ReceptionistWorkflow: React.FC = () => {
                 className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
               >
                 Search
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowScannerModal(true)}
+                title="Scan Patient QR Code via Camera"
+                className="px-3 py-2.5 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 rounded-xl text-sm font-medium transition flex items-center gap-1.5"
+              >
+                <QrCode className="w-4 h-4" />
+                <span className="hidden sm:inline">Scan QR</span>
               </button>
             </div>
 
@@ -534,6 +571,16 @@ const ReceptionistWorkflow: React.FC = () => {
           onClose={() => setWristbandPatient(null)}
           patient={wristbandPatient}
           encounterId={wristbandPatient?.encounterId}
+        />
+      )}
+
+      {/* ── Patient QR Scanner Modal ── */}
+      {showScannerModal && (
+        <WristbandScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onPatientVerified={handlePatientScanVerified}
+          continueLabel="Select Patient Record"
         />
       )}
     </div>

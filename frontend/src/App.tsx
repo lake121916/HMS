@@ -1,76 +1,86 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 
+// Layout & Security components
+import Layout from './components/Layout';
+import InactivityLock from './components/security/InactivityLock';
+
+// Page loading fallback
+const PageFallback: React.FC = () => (
+  <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center">
+    <div className="w-10 h-10 border-4 border-teal-600 border-t-transparent rounded-full animate-spin mb-3" />
+    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Loading module…</p>
+  </div>
+);
+
 // Public pages
-import HomePage from './pages/public/HomePage';
-import AboutPage from './pages/public/AboutPage';
-import ServicesPage from './pages/public/ServicesPage';
-import DepartmentsPage from './pages/public/DepartmentsPage';
-import DoctorsPublicPage from './pages/public/DoctorsPublicPage';
-import ContactPage from './pages/public/ContactPage';
-import SearchResults from './pages/public/SearchResults';
-import GalleryPage from './pages/public/GalleryPage';
-import NewsPage from './pages/public/NewsPage';
+const HomePage = lazy(() => import('./pages/public/HomePage'));
+const AboutPage = lazy(() => import('./pages/public/AboutPage'));
+const ServicesPage = lazy(() => import('./pages/public/ServicesPage'));
+const DepartmentsPage = lazy(() => import('./pages/public/DepartmentsPage'));
+const DoctorsPublicPage = lazy(() => import('./pages/public/DoctorsPublicPage'));
+const ContactPage = lazy(() => import('./pages/public/ContactPage'));
+const SearchResults = lazy(() => import('./pages/public/SearchResults'));
+const GalleryPage = lazy(() => import('./pages/public/GalleryPage'));
+const NewsPage = lazy(() => import('./pages/public/NewsPage'));
 
 // Auth pages
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import UnauthorizedPage from './pages/UnauthorizedPage';
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const UnauthorizedPage = lazy(() => import('./pages/UnauthorizedPage'));
 
 // Protected HMS pages
-import Layout from './components/Layout';
-import DashboardPage from './pages/DashboardPage';
-import DoctorDashboardPage from './pages/DoctorDashboardPage';
-import PatientsPage from './pages/PatientsPage';
-import DoctorsPage from './pages/DoctorsPage';
-import AppointmentsPage from './pages/AppointmentsPage';
-import VitalsPage from './pages/VitalsPage';
-import PrescriptionsPage from './pages/PrescriptionsPage';
-import LabTestsPage from './pages/LabTestsPage';
-import AdmissionsPage from './pages/AdmissionsPage';
-import InvoicesPage from './pages/InvoicesPage';
-import PaymentsPage from './pages/PaymentsPage';
-import ReceptionPage from './pages/ReceptionPage';
-import MedicinesPage from './pages/MedicinesPage';
-import InventoryPage from './pages/InventoryPage';
-import BedsPage from './pages/BedsPage';
-import ReportsPage from './pages/ReportsPage';
-import AdminPage from './pages/AdminPage';
-import RoleDescriptionsPage from './pages/admin/RoleDescriptionsPage';
-// Standalone UserManagementPage unified into AdminPage
-import CashierDashboard from './pages/CashierDashboard';
-import InsurancePage from './pages/InsurancePage';
-import BloodBankPage from './pages/BloodBankPage';
-import AuditPage from './pages/AuditPage';
-import RadiologyPage from './pages/RadiologyPage';
-import FinanceReportsPage from './pages/FinanceReportsPage';
-import PatientPortalPage from './pages/PatientPortalPage';
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const DoctorDashboardPage = lazy(() => import('./pages/DoctorDashboardPage'));
+const PatientsPage = lazy(() => import('./pages/PatientsPage'));
+const DoctorsPage = lazy(() => import('./pages/DoctorsPage'));
+const AppointmentsPage = lazy(() => import('./pages/AppointmentsPage'));
+const VitalsPage = lazy(() => import('./pages/VitalsPage'));
+const PrescriptionsPage = lazy(() => import('./pages/PrescriptionsPage'));
+const LabTestsPage = lazy(() => import('./pages/LabTestsPage'));
+const AdmissionsPage = lazy(() => import('./pages/AdmissionsPage'));
+const InvoicesPage = lazy(() => import('./pages/InvoicesPage'));
+const PaymentsPage = lazy(() => import('./pages/PaymentsPage'));
+const ReceptionPage = lazy(() => import('./pages/ReceptionPage'));
+const MedicinesPage = lazy(() => import('./pages/MedicinesPage'));
+const InventoryPage = lazy(() => import('./pages/InventoryPage'));
+const BedsPage = lazy(() => import('./pages/BedsPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const RoleDescriptionsPage = lazy(() => import('./pages/admin/RoleDescriptionsPage'));
+const CashierDashboard = lazy(() => import('./pages/CashierDashboard'));
+const InsurancePage = lazy(() => import('./pages/InsurancePage'));
+const BloodBankPage = lazy(() => import('./pages/BloodBankPage'));
+const AuditPage = lazy(() => import('./pages/AuditPage'));
+const RadiologyPage = lazy(() => import('./pages/RadiologyPage'));
+const FinanceReportsPage = lazy(() => import('./pages/FinanceReportsPage'));
+const PatientPortalPage = lazy(() => import('./pages/PatientPortalPage'));
 
 // ── New workflow pages ───────────────────────────────────────────────────────
-import ReceptionistWorkflow from './pages/ReceptionistWorkflow';
-import TriageDashboard from './pages/TriageDashboard';
-import OPDCoordinatorDashboard from './pages/OPDCoordinatorDashboard';
-import DoctorConsultationPage from './pages/DoctorConsultationPage';
-import LabTechDashboard from './pages/LabTechDashboard';
-import PharmacyDashboard from './pages/PharmacyDashboard';
-import CashierWorkflow from './pages/CashierWorkflow';
-import ServicesAdminPage from './pages/ServicesAdminPage';
-import DepartmentsAdminPage from './pages/DepartmentsAdminPage';
-import OPDQueueDisplay from './pages/OPDQueueDisplay';
-import DocumentVerificationPage from './pages/DocumentVerificationPage';
-import DoctorShiftManagementPage from './pages/DoctorShiftManagementPage';
-import InactivityLock from './components/security/InactivityLock';
-import BirthCertificatesPage from './pages/board/BirthCertificatesPage';
-import DeathCertificatesPage from './pages/board/DeathCertificatesPage';
-import ScholarshipsPage from './pages/board/ScholarshipsPage';
-import SpecializationPage from './pages/board/SpecializationPage';
-import TrainingDevelopmentPage from './pages/board/TrainingDevelopmentPage';
-import BoardMembersPage from './pages/board/BoardMembersPage';
-import BoardMeetingsPage from './pages/board/BoardMeetingsPage';
-import BoardReportsPage from './pages/board/BoardReportsPage';
-import QueueCommandCenter from './pages/QueueCommandCenter';
+const ReceptionistWorkflow = lazy(() => import('./pages/ReceptionistWorkflow'));
+const TriageDashboard = lazy(() => import('./pages/TriageDashboard'));
+const OPDCoordinatorDashboard = lazy(() => import('./pages/OPDCoordinatorDashboard'));
+const DoctorConsultationPage = lazy(() => import('./pages/DoctorConsultationPage'));
+const LabTechDashboard = lazy(() => import('./pages/LabTechDashboard'));
+const PharmacyDashboard = lazy(() => import('./pages/PharmacyDashboard'));
+const CashierWorkflow = lazy(() => import('./pages/CashierWorkflow'));
+const ServicesAdminPage = lazy(() => import('./pages/ServicesAdminPage'));
+const DepartmentsAdminPage = lazy(() => import('./pages/DepartmentsAdminPage'));
+const OPDQueueDisplay = lazy(() => import('./pages/OPDQueueDisplay'));
+const DocumentVerificationPage = lazy(() => import('./pages/DocumentVerificationPage'));
+const DoctorShiftManagementPage = lazy(() => import('./pages/DoctorShiftManagementPage'));
+const BirthCertificatesPage = lazy(() => import('./pages/board/BirthCertificatesPage'));
+const DeathCertificatesPage = lazy(() => import('./pages/board/DeathCertificatesPage'));
+const ScholarshipsPage = lazy(() => import('./pages/board/ScholarshipsPage'));
+const SpecializationPage = lazy(() => import('./pages/board/SpecializationPage'));
+const TrainingDevelopmentPage = lazy(() => import('./pages/board/TrainingDevelopmentPage'));
+const BoardMembersPage = lazy(() => import('./pages/board/BoardMembersPage'));
+const BoardMeetingsPage = lazy(() => import('./pages/board/BoardMeetingsPage'));
+const BoardReportsPage = lazy(() => import('./pages/board/BoardReportsPage'));
+const QueueCommandCenter = lazy(() => import('./pages/QueueCommandCenter'));
+const PatientQRScannerPage = lazy(() => import('./pages/PatientQRScannerPage'));
 
 // ── Role permission map ──────────────────────────────────────────────────────
 const ALL_PAGES = [
@@ -80,7 +90,7 @@ const ALL_PAGES = [
   'user-management', 'admin', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
   'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
   'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-  'services-admin', 'shifts', 'queue-management',
+  'services-admin', 'shifts', 'queue-management', 'qr-scanner',
   'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
   'training', 'board-members', 'board-meetings', 'board-reports'
 ];
@@ -94,7 +104,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'user-management', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'radiology',
     'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
     'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-    'services-admin', 'shifts', 'queue-management',
+    'services-admin', 'shifts', 'queue-management', 'qr-scanner',
   'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
   'training', 'board-members', 'board-meetings', 'board-reports'
   ],
@@ -111,15 +121,16 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'reports',
     'services-admin',
     'shifts',
+    'qr-scanner',
     'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
     'training', 'board-members', 'board-meetings', 'board-reports'
   ],
-  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'reception', 'reception-workflow', 'vitals', 'queue-management'],
-  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines', 'queue-management'],
-  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse', 'assignment', 'opd-coordinator', 'queue-management'],
-  lab_technician:   ['dashboard', 'shifts', 'lab-tests', 'lab-dashboard', 'patients'],
-  pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy', 'queue-management'],
-  cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow'],
+  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'reception', 'reception-workflow', 'vitals', 'queue-management', 'qr-scanner'],
+  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines', 'queue-management', 'qr-scanner'],
+  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse', 'assignment', 'opd-coordinator', 'queue-management', 'qr-scanner'],
+  lab_technician:   ['dashboard', 'shifts', 'lab-tests', 'lab-dashboard', 'patients', 'qr-scanner'],
+  pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy', 'queue-management', 'qr-scanner'],
+  cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow', 'qr-scanner'],
   patient:          ['patient-portal', 'appointments', 'prescriptions', 'invoices'],
 };
 
@@ -181,7 +192,8 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <Router>
-          <Routes>
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
           {/* ── Public website ── */}
           <Route path="/home" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
@@ -227,6 +239,9 @@ function App() {
               <ProtectedRoute page="patients"><PatientsPage /></ProtectedRoute>
             } />
             <Route path="patients/new" element={
+              <ProtectedRoute page="patients"><PatientsPage /></ProtectedRoute>
+            } />
+            <Route path="patients/:id" element={
               <ProtectedRoute page="patients"><PatientsPage /></ProtectedRoute>
             } />
             <Route path="doctors" element={
@@ -351,6 +366,9 @@ function App() {
             <Route path="services-admin" element={
               <ProtectedRoute page="services-admin"><ServicesAdminPage /></ProtectedRoute>
             } />
+            <Route path="qr-scanner" element={
+              <ProtectedRoute page="qr-scanner"><PatientQRScannerPage /></ProtectedRoute>
+            } />
 
             {/* ── Board & Administrative Services Routes ────────── */}
             <Route path="board/birth-certificates" element={
@@ -379,6 +397,7 @@ function App() {
             } />
           </Route>
         </Routes>
+          </Suspense>
       </Router>
     </AuthProvider>
     </ErrorBoundary>

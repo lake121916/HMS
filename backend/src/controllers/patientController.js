@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const pool = require('../config/database');
 const { sendSuccess, sendError, handleAsync } = require('../utils/response');
+const patientQrService = require('../services/patientQrService');
 
 // Helper function to convert camelCase to snake_case
 const toSnakeCase = (obj) => {
@@ -192,6 +193,11 @@ const registerPatient = handleAsync(async (req, res) => {
     );
 
     const patientRow = patientResult.rows[0];
+    const qrIdentity = await patientQrService.ensurePatientQrIdentity(client, {
+      patientId: patientRow.id,
+      actorUserId: req.user.id,
+      req
+    });
 
     // ── AUTOMATIC INVOICE GENERATION ──────────────────────────────────────────
     // Automatically generate Patient Registration Fee invoice (50 ETB) in 'pending' status
@@ -223,7 +229,8 @@ const registerPatient = handleAsync(async (req, res) => {
       ...patientRow,
       patient: patientRow,
       invoice: autoInvoice,
-      registration_invoice: autoInvoice
+      registration_invoice: autoInvoice,
+      qr: qrIdentity
     };
     if (!password) {
       responseData.generated_password = rawPassword;
@@ -452,6 +459,171 @@ const lookupPatientByIdentifier = handleAsync(async (req, res) => {
   });
 });
 
+const withPatientQrTransaction = async (req, patientId, regenerate = false) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const qr = await patientQrService.ensurePatientQrIdentity(client, {
+      patientId,
+      actorUserId: req.user.id,
+      req,
+      regenerate
+    });
+    if (!qr) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+    await client.query('COMMIT');
+    return qr;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+const getPatientQr = handleAsync(async (req, res) => {
+  const patientId = Number(req.params.id);
+  if (!Number.isSafeInteger(patientId) || patientId < 1) {
+    return sendError(res, 'Invalid patient ID', 400);
+  }
+  const qr = await withPatientQrTransaction(req, patientId);
+  if (!qr) return sendError(res, 'Patient not found', 404);
+  sendSuccess(res, qr, 'Patient QR identity ready');
+});
+
+const regeneratePatientQr = handleAsync(async (req, res) => {
+  const patientId = Number(req.params.id);
+  if (!Number.isSafeInteger(patientId) || patientId < 1) {
+    return sendError(res, 'Invalid patient ID', 400);
+  }
+  const qr = await withPatientQrTransaction(req, patientId, true);
+  if (!qr) return sendError(res, 'Patient not found', 404);
+  sendSuccess(res, qr, 'Patient QR identity regenerated');
+});
+
+const scanPatientQr = handleAsync(async (req, res) => {
+  const { qrContent } = req.body;
+  if (typeof qrContent !== 'string' || qrContent.length > 128) {
+    return sendError(res, 'A valid patient QR code is required', 400);
+  }
+
+  const raw = qrContent.trim();
+  const tokenMatch = raw.match(/^(?:AKEH:PATIENT:)?([A-Za-z0-9_-]{43})$/);
+  const mrnMatch = raw.match(/^\*?(?:PAT-)?0*(\d+)\*?$/i);
+
+  if (!tokenMatch && !mrnMatch) {
+    await patientQrService.logQrAction(pool, {
+      actorUserId: req.user.id,
+      action: 'scan_rejected',
+      req
+    });
+    return sendError(res, 'Invalid patient QR code', 400);
+  }
+
+  const client = await pool.connect();
+  let row;
+  try {
+    await client.query('BEGIN');
+    if (tokenMatch) {
+      const identityResult = await client.query(
+        `SELECT i.id AS identity_id, p.id, p.first_name, p.last_name,
+                p.date_of_birth, p.gender, p.blood_type, p.allergies, p.phone
+         FROM patient_qr_identities i
+         JOIN patients p ON p.id = i.patient_id
+         WHERE i.token = $1 AND i.is_active = true
+           AND (i.expires_at IS NULL OR i.expires_at > CURRENT_TIMESTAMP)
+         LIMIT 1
+         FOR SHARE OF i`,
+        [tokenMatch[1]]
+      );
+      if (!identityResult.rows.length) {
+        await patientQrService.logQrAction(client, {
+          actorUserId: req.user.id,
+          action: 'scan_rejected',
+          req
+        });
+        await client.query('COMMIT');
+        return sendError(res, 'Patient QR code is invalid, expired, or revoked', 404);
+      }
+      row = identityResult.rows[0];
+    } else {
+      const patientId = parseInt(mrnMatch[1], 10);
+      const patientResult = await client.query(
+        `SELECT p.id, p.first_name, p.last_name,
+                p.date_of_birth, p.gender, p.blood_type, p.allergies, p.phone
+         FROM patients p
+         WHERE p.id = $1
+         LIMIT 1`,
+        [patientId]
+      );
+      if (!patientResult.rows.length) {
+        await patientQrService.logQrAction(client, {
+          actorUserId: req.user.id,
+          action: 'scan_rejected',
+          req
+        });
+        await client.query('COMMIT');
+        return sendError(res, 'Patient record not found for scanned identifier', 404);
+      }
+      const p = patientResult.rows[0];
+      const identRes = await client.query(
+        `SELECT id FROM patient_qr_identities WHERE patient_id = $1 AND is_active = true LIMIT 1`,
+        [p.id]
+      );
+      row = { ...p, identity_id: identRes.rows[0]?.id || null };
+    }
+
+    await patientQrService.logQrAction(client, {
+      patientId: row.id,
+      identityId: row.identity_id,
+      actorUserId: req.user.id,
+      action: 'scan_succeeded',
+      req
+    });
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  const clinicalRoles = ['doctor', 'nurse', 'admin', 'super_admin'];
+  const receptionistRoles = ['receptionist', 'hospital_manager'];
+  const pharmacyRoles = ['pharmacist'];
+  const labRoles = ['lab_technician'];
+
+  const patient = {
+    id: row.id,
+    mrn: patientQrService.formatMrn(row.id),
+    first_name: row.first_name,
+    last_name: row.last_name
+  };
+  if (clinicalRoles.includes(req.user.role)) {
+    patient.gender = row.gender;
+    patient.date_of_birth = row.date_of_birth;
+    patient.blood_type = row.blood_type;
+    patient.allergies = row.allergies;
+    patient.phone = row.phone;
+  } else if (receptionistRoles.includes(req.user.role)) {
+    patient.gender = row.gender;
+    patient.date_of_birth = row.date_of_birth;
+    patient.phone = row.phone;
+  } else if (pharmacyRoles.includes(req.user.role)) {
+    patient.gender = row.gender;
+    patient.date_of_birth = row.date_of_birth;
+    patient.allergies = row.allergies;
+  } else if (labRoles.includes(req.user.role)) {
+    patient.gender = row.gender;
+    patient.date_of_birth = row.date_of_birth;
+  }
+  // For cashier and non-clinical roles: returns only id, mrn, first_name, last_name
+
+  sendSuccess(res, { patient, verified_at: new Date().toISOString() }, 'Patient QR verified');
+});
+
 const recordWristbandPrinted = handleAsync(async (req, res) => {
   const patientId = parseInt(req.params.id, 10);
   const { encounter_id, barcode } = req.body;
@@ -481,5 +653,8 @@ module.exports = {
   getPatientHistory,
   deletePatient,
   lookupPatientByIdentifier,
-  recordWristbandPrinted
+  recordWristbandPrinted,
+  getPatientQr,
+  regeneratePatientQr,
+  scanPatientQr
 };

@@ -134,8 +134,14 @@ const InvoicesPage: React.FC = () => {
 
   const filtered = invoices.filter(inv =>
     inv.patient_name?.toLowerCase().includes(search.toLowerCase()) ||
+    String(inv.patient_id).includes(search) ||
     String(inv.id).includes(search)
   );
+
+  React.useEffect(() => {
+    const patientId = searchParams.get('patient_id');
+    if (patientId) setSearch(patientId);
+  }, [searchParams]);
 
   return (
     <div className="space-y-6">

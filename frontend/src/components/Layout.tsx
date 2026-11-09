@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import { useTheme } from '../contexts/ThemeContext';
@@ -9,6 +9,7 @@ import PatientQuickSearchModal from './PatientQuickSearchModal';
 import api from '../services/api';
 import OfflineStatusBanner from './OfflineStatusBanner';
 import ProfileAvatar from './ProfileAvatar';
+import WristbandScannerModal from './WristbandScannerModal';
 import {
   LayoutDashboard, Users, UserPlus, Stethoscope, Calendar, Clock, LogOut, Menu, X,
   Activity, Pill, FlaskConical, Bed, FileText, Shield, ShieldCheck,
@@ -52,6 +53,7 @@ const Layout: React.FC = () => {
   const { user, logout, setUser } = useAuth();
   const { t, language } = useLanguage();
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [sidebarHovered, setSidebarHovered] = React.useState(false);
@@ -127,6 +129,7 @@ const Layout: React.FC = () => {
 
   // Universal Quick-Search State (Phase 5)
   const [quickSearchOpen, setQuickSearchOpen] = React.useState(false);
+  const [patientScannerOpen, setPatientScannerOpen] = React.useState(false);
 
   // Change password form state
   const [oldPassword, setOldPassword] = React.useState('');
@@ -400,11 +403,21 @@ const Layout: React.FC = () => {
     translationKey: 'nav.queue_management'
   };
 
+  const QR_SCANNER_NAV_ITEM: NavItem = {
+    id: 'qr_scanner',
+    name: 'Patient QR Scanner',
+    href: '/qr-scanner',
+    icon: Scan,
+    group: 'Daily Workbench',
+    translationKey: 'nav.qr_scanner'
+  };
+
   const getNavigationByRole = (role: string): NavItem[] => {
     switch (role) {
       case 'receptionist':
         return [
           { id: 'reception_workflow', name: 'Reception & Intake Desk', href: '/reception-workflow', icon: UserCheck, group: 'Daily Workbench', translationKey: 'nav.reception' },
+          QR_SCANNER_NAV_ITEM,
           QUEUE_NAV_ITEM,
           { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
           { id: 'appointments', name: 'Appointments Schedule', href: '/appointments', icon: Calendar, group: 'Records & Schedule', permission: 'appointments:view', translationKey: 'nav.appointments' }
@@ -413,6 +426,7 @@ const Layout: React.FC = () => {
       case 'nurse':
         return [
           { id: 'nurse_worklist', name: 'Triage & Nursing Worklist', href: '/nurse', icon: ClipboardCheck, group: 'Daily Workbench', translationKey: 'nav.triage' },
+          QR_SCANNER_NAV_ITEM,
           { id: 'vitals', name: 'Vital Signs & Triage', href: '/vitals', icon: Activity, group: 'Daily Workbench', permission: 'vitals:view', translationKey: 'nav.vitals' },
           { id: 'opd_coordinator', name: 'OPD Coordinator Desk', href: '/opd-coordinator', icon: GitBranch, group: 'Daily Workbench', translationKey: 'nav.opd_coordinator' },
           QUEUE_NAV_ITEM,
@@ -425,6 +439,7 @@ const Layout: React.FC = () => {
       case 'doctor':
         return [
           { id: 'consultation', name: 'Clinical Consultations', href: '/consultation', icon: Stethoscope, group: 'Daily Workbench', translationKey: 'nav.consultations' },
+          QR_SCANNER_NAV_ITEM,
           QUEUE_NAV_ITEM,
           { id: 'vitals', name: 'Vital Signs & Triage', href: '/vitals', icon: Activity, group: 'Daily Workbench', permission: 'vitals:view', translationKey: 'nav.vitals' },
           { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
@@ -438,6 +453,7 @@ const Layout: React.FC = () => {
       case 'lab_technician':
         return [
           { id: 'lab_dashboard', name: 'Laboratory Worklist', href: '/lab-dashboard', icon: FlaskConical, group: 'Daily Workbench', translationKey: 'nav.lab' },
+          QR_SCANNER_NAV_ITEM,
           { id: 'lab_tests', name: 'Laboratory Orders', href: '/lab-tests', icon: FlaskConical, group: 'Records & Schedule', permission: 'lab_tests:view', translationKey: 'nav.lab_tests' },
           { id: 'patients', name: 'Patient Directory', href: '/patients', icon: Users, group: 'Records & Schedule', permission: 'patients:view', translationKey: 'nav.patients' },
           { id: 'shifts', name: 'Staff Shifts & Roster', href: '/shifts', icon: Clock, group: 'Duty & Account', translationKey: 'nav.shifts' }
@@ -446,6 +462,7 @@ const Layout: React.FC = () => {
       case 'pharmacist':
         return [
           { id: 'pharmacy_dashboard', name: 'Pharmacy & Dispensing', href: '/pharmacy', icon: Pill, group: 'Daily Workbench', translationKey: 'nav.pharmacy' },
+          QR_SCANNER_NAV_ITEM,
           QUEUE_NAV_ITEM,
           { id: 'prescriptions', name: 'Prescriptions', href: '/prescriptions', icon: Pill, group: 'Records & Schedule', permission: 'prescriptions:view', translationKey: 'nav.prescriptions' },
           { id: 'medicines', name: 'Pharmaceutical Catalog', href: '/medicines', icon: Pill, group: 'Records & Schedule', permission: 'medicines:view', translationKey: 'nav.medicines' },
@@ -456,6 +473,7 @@ const Layout: React.FC = () => {
       case 'cashier':
         return [
           { id: 'cashier_pos', name: 'Cashier POS & Register', href: '/cashier-workflow', icon: Receipt, group: 'Daily Workbench', translationKey: 'nav.cashier' },
+          QR_SCANNER_NAV_ITEM,
           { id: 'invoices', name: 'Patient Invoices', href: '/invoices', icon: FileText, group: 'Records & Schedule', permission: 'invoices:view', translationKey: 'nav.invoices' },
           { id: 'payments', name: 'Payment Transactions', href: '/payments', icon: CreditCard, group: 'Records & Schedule', permission: 'payments:view', translationKey: 'nav.payments' },
           { id: 'finance_reports', name: 'Financial Reports', href: '/finance-reports', icon: BarChart2, group: 'Duty & Account', permission: 'finance_reports:view', translationKey: 'nav.finance_reports' }
@@ -464,6 +482,7 @@ const Layout: React.FC = () => {
       case 'hospital_manager':
         return [
           { id: 'dashboard', name: 'Hospital Overview', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
+          QR_SCANNER_NAV_ITEM,
           { id: 'opd_coordinator', name: 'OPD Coordinator Desk', href: '/opd-coordinator', icon: GitBranch, group: 'Daily Workbench', translationKey: 'nav.opd_coordinator' },
           QUEUE_NAV_ITEM,
           { id: 'shifts', name: 'Staff Shifts & Rosters', href: '/shifts', icon: Clock, group: 'Records & Schedule', translationKey: 'nav.shifts' },
@@ -478,6 +497,7 @@ const Layout: React.FC = () => {
       case 'admin':
         return [
           { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
+          QR_SCANNER_NAV_ITEM,
           { id: 'opd_coordinator', name: 'OPD Coordinator Desk', href: '/opd-coordinator', icon: GitBranch, group: 'Daily Workbench', translationKey: 'nav.opd_coordinator' },
           QUEUE_NAV_ITEM,
           ...allUserMgmtItems,
@@ -492,6 +512,7 @@ const Layout: React.FC = () => {
       case 'super_admin':
         return [
           { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
+          QR_SCANNER_NAV_ITEM,
           { id: 'opd_coordinator', name: 'OPD Coordinator Desk', href: '/opd-coordinator', icon: GitBranch, group: 'Daily Workbench', translationKey: 'nav.opd_coordinator' },
           QUEUE_NAV_ITEM,
           ...allUserMgmtItems,
@@ -516,6 +537,20 @@ const Layout: React.FC = () => {
   };
 
   const { can } = useRoleAccess();
+  const canScanPatientQr = !!user && [
+    'super_admin', 'admin', 'hospital_manager', 'receptionist',
+    'doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier'
+  ].includes(user.role);
+  const handlePatientQrVerified = (result: { patient: { id: number } }) => {
+    const patientId = result.patient.id;
+    if (can('patients:view')) {
+      navigate(`/patients/${patientId}`);
+    } else if (user?.role === 'cashier') {
+      navigate(`/invoices?patient_id=${patientId}`);
+    } else if (user?.role === 'pharmacist') {
+      navigate(`/prescriptions?patient_id=${patientId}`);
+    }
+  };
   const navigation = getNavigationByRole(user?.role || 'patient')
     .filter(item => {
       if (!item.permission) return true;
@@ -964,6 +999,17 @@ const Layout: React.FC = () => {
                 Ctrl+K
               </kbd>
             </button>
+            {canScanPatientQr && (
+              <button
+                type="button"
+                onClick={() => setPatientScannerOpen(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800 hover:bg-teal-100 dark:border-teal-900 dark:bg-teal-950/40 dark:text-teal-300 dark:hover:bg-teal-950"
+                title="Scan a patient QR code"
+              >
+                <Scan className="h-4 w-4" />
+                <span className="hidden sm:inline">Scan patient</span>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
@@ -1248,6 +1294,21 @@ const Layout: React.FC = () => {
         isOpen={quickSearchOpen}
         onClose={() => setQuickSearchOpen(false)}
       />
+      {canScanPatientQr && (
+        <WristbandScannerModal
+          isOpen={patientScannerOpen}
+          onClose={() => setPatientScannerOpen(false)}
+          onPatientVerified={handlePatientQrVerified}
+          qrOnly={!can('patients:view')}
+          continueLabel={
+            user?.role === 'cashier'
+              ? 'Open Patient Invoices'
+              : user?.role === 'pharmacist'
+                ? 'Open Patient Prescriptions'
+                : 'Open Patient Profile'
+          }
+        />
+      )}
 
       {/* ── Duty Status Modal (Phase 4.3) ───────────────────────────── */}
       {dutyModalOpen && (

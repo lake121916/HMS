@@ -70,11 +70,11 @@ class AIService {
         }
       }
 
-      // Call ML microservice
+      // Call ML microservice with fast 1000ms timeout
       const response = await axios.post(`${ML_SERVICE_URL}/predict`, {
         symptoms: symptomBooleans,
         vitals: Object.keys(mappedVitals).length > 0 ? mappedVitals : null
-      });
+      }, { timeout: 1000 });
 
       return [{
         disease: response.data.disease,
@@ -90,71 +90,319 @@ class AIService {
     }
   }
 
-  // Fallback rule-based prediction
+  // Fallback rule-based prediction with Ethiopian clinical knowledge base
   async predictDiseaseFallback(symptoms, vitals) {
     const diseaseDatabase = {
-      influenza: {
-        symptoms: ['fever', 'cough', 'headache', 'fatigue', 'body aches'],
-        vitals: { temperature: { min: 38, max: 40 } },
-        confidence: 0.85,
-        severity: 'moderate'
+      'Acute Plasmodium Falciparum Malaria': {
+        symptoms: ['fever', 'high fever', 'intermittent fever', 'severe fever', 'paroxysmal fever', 'chills', 'rigors', 'shivering', 'headache', 'severe headache', 'sweating', 'profuse sweating', 'nausea', 'vomiting', 'body aches', 'joint pain', 'dark urine', 'malaise', 'fatigue', 'weakness', 'loss of appetite'],
+        hallmarks: ['chills', 'rigors', 'shivering', 'profuse sweating', 'paroxysmal fever', 'intermittent fever', 'dark urine'],
+        vitals: { temperature: { min: 38.2, max: 41.5 } },
+        baseConfidence: 0.92,
+        severity: 'severe',
+        icdCode: 'B50.9',
+        recommendations: [
+          'Immediate Blood Film for Malaria Parasites (BF) or Rapid Diagnostic Test (RDT)',
+          'Initiate Artemisinin-based Combination Therapy (Coartem: Artemether 20mg / Lumefantrine 120mg)',
+          'Administer Paracetamol for antipyretic relief; avoid Aspirin in acute febrile illness',
+          'Ensure oral rehydration and monitor for danger signs of cerebral malaria'
+        ]
       },
-      pneumonia: {
-        symptoms: ['fever', 'cough', 'chest pain', 'shortness of breath'],
-        vitals: { temperature: { min: 38.5, max: 41 }, oxygenSaturation: { max: 95 } },
-        confidence: 0.9,
-        severity: 'severe'
+      'Typhoid Fever (Enteric Fever)': {
+        symptoms: ['fever', 'step-ladder fever', 'step-ladder pattern', 'prolonged fever', 'persistent fever', 'gradual fever', 'headache', 'persistent headache', 'abdominal pain', 'abdominal discomfort', 'abdominal cramps', 'abdominal tenderness', 'constipation', 'diarrhea', 'malaise', 'rose spots', 'anorexia', 'weakness'],
+        hallmarks: ['step-ladder', 'rose spots', 'constipation', 'abdominal cramps', 'abdominal tenderness', 'abdominal discomfort', 'abdominal pain', 'anorexia', 'prolonged fever', 'persistent fever', 'gradual fever'],
+        vitals: { temperature: { min: 38.5, max: 40.5 } },
+        baseConfidence: 0.91,
+        severity: 'moderate',
+        icdCode: 'A01.0',
+        recommendations: [
+          'Order Widal agglutination test and blood culture before antimicrobial therapy',
+          'Prescribe Ciprofloxacin 500mg BID or Ceftriaxone 1g IV for 7-10 days',
+          'Maintain adequate fluid and electrolyte balance',
+          'Dietary guidance: soft, bland, easily digestible meals'
+        ]
       },
-      hypertension: {
-        symptoms: ['headache', 'dizziness', 'blurred vision'],
-        vitals: { bloodPressureSystolic: { min: 140 } },
-        confidence: 0.8,
-        severity: 'moderate'
+      'Acute Bacterial Pneumonia': {
+        symptoms: ['cough', 'productive cough', 'cough with sputum', 'purulent sputum', 'cough with purulent sputum', 'rust sputum', 'fever', 'chest pain', 'pleuritic pain', 'pleuritic chest pain', 'shortness of breath', 'dyspnea', 'tachypnea', 'chills'],
+        hallmarks: ['productive cough', 'rust sputum', 'purulent sputum', 'pleuritic pain', 'pleuritic chest pain', 'cough with sputum'],
+        vitals: { temperature: { min: 38.5, max: 41.0 }, oxygenSaturation: { max: 94 } },
+        baseConfidence: 0.92,
+        severity: 'severe',
+        icdCode: 'J18.9',
+        recommendations: [
+          'Order urgent Complete Blood Count (CBC) and posterior-anterior Chest X-Ray',
+          'Initiate empirical Ceftriaxone 1g IV plus Azithromycin or Amoxicillin',
+          'Continuous pulse oximetry monitoring; provide supplemental oxygen if SpO2 < 93%',
+          'Evaluate for inpatient hospital admission based on CURB-65 criteria'
+        ]
       },
-      diabetes: {
-        symptoms: ['increased thirst', 'frequent urination', 'fatigue'],
+      'Acute Gastroenteritis with Dehydration': {
+        symptoms: ['diarrhea', 'watery diarrhea', 'frequent diarrhea', 'loose stools', 'frequent loose stools', 'watery stools', 'vomiting', 'nausea', 'abdominal cramps', 'stomach cramps', 'stomach pain', 'dry mouth', 'dry tongue', 'weakness', 'dehydration', 'thirst', 'malaise'],
+        hallmarks: ['watery diarrhea', 'frequent diarrhea', 'watery stools', 'loose stools', 'frequent loose stools', 'vomiting', 'dehydration', 'dry mouth', 'dry tongue', 'thirst'],
+        vitals: { temperature: { max: 38.5 } },
+        baseConfidence: 0.90,
+        severity: 'moderate',
+        icdCode: 'A09',
+        recommendations: [
+          'Immediate Oral Rehydration Salts (ORS) administration (1 liter prepared solution)',
+          'Order Stool Microscopy and routine examination for ova and parasites',
+          'Administer Zinc supplementation (20mg daily for 10-14 days)',
+          'Prescribe Ciprofloxacin only if invasive bacterial dysentery is confirmed'
+        ]
+      },
+      'Essential Hypertension (Stage 2)': {
+        symptoms: ['headache', 'throbbing headache', 'occipital headache', 'occipital pain', 'morning headache', 'morning occipital pain', 'dizziness', 'lightheadedness', 'blurred vision', 'palpitations', 'neck stiffness', 'neck pain'],
+        hallmarks: ['occipital', 'throbbing headache', 'neck stiffness', 'neck pain', 'morning occipital pain', 'blurred vision'],
+        vitals: { bloodPressureSystolic: { min: 140 }, bloodPressureDiastolic: { min: 90 } },
+        vitalRequired: true,
+        baseConfidence: 0.93,
+        severity: 'moderate',
+        icdCode: 'I10',
+        recommendations: [
+          'Repeat resting blood pressure measurement after 10 minutes seated',
+          'Initiate Amlodipine 5mg daily or Hydrochlorothiazide 12.5mg daily',
+          'Screen serum creatinine, electrolytes, urinalysis, and baseline lipid profile',
+          'Counsel on low-sodium dietary DASH lifestyle and regular physical activity'
+        ]
+      },
+      'Type 2 Diabetes Mellitus': {
+        symptoms: ['increased thirst', 'polydipsia', 'thirst', 'excessive thirst', 'frequent urination', 'excessive urination', 'polyuria', 'fatigue', 'tiredness', 'unexplained weight loss', 'weight loss', 'blurred vision'],
+        hallmarks: ['increased thirst', 'polydipsia', 'thirst', 'excessive thirst', 'frequent urination', 'excessive urination', 'polyuria', 'unexplained weight loss', 'weight loss'],
         vitals: { bloodGlucose: { min: 126 } },
-        confidence: 0.75,
-        severity: 'moderate'
+        baseConfidence: 0.92,
+        severity: 'moderate',
+        icdCode: 'E11.9',
+        recommendations: [
+          'Confirm with Fasting Plasma Glucose (≥ 126 mg/dL) or random glucose (≥ 200 mg/dL)',
+          'Evaluate baseline HbA1c, renal function, and spot urine for microalbuminuria',
+          'Initiate Metformin 500mg daily with meals; titrate gradually to 1000mg BID',
+          'Comprehensive diabetic lifestyle, foot care, and dietary counseling'
+        ]
+      },
+      'Bronchial Asthma (Acute Exacerbation)': {
+        symptoms: ['wheezing', 'wheeze', 'acute wheeze', 'expiratory wheeze', 'shortness of breath', 'breathlessness', 'chest tightness', 'cough', 'tachypnea', 'dyspnea'],
+        hallmarks: ['wheezing', 'wheeze', 'acute wheeze', 'expiratory wheeze', 'chest tightness', 'breathlessness'],
+        vitals: { oxygenSaturation: { max: 92 }, respiratoryRate: { min: 24 } },
+        baseConfidence: 0.93,
+        severity: 'severe',
+        icdCode: 'J45.901',
+        recommendations: [
+          'Immediate nebulized Salbutamol (2.5mg-5mg) with supplemental oxygen',
+          'Administer systemic corticosteroids (Hydrocortisone 100mg IV or Prednisolone 40mg PO)',
+          'Monitor Peak Expiratory Flow Rate (PEFR) and oxygen saturation continuously',
+          'Reassess after 30 minutes for emergency observation ward admission'
+        ]
+      },
+      'Iron Deficiency Anemia': {
+        symptoms: ['fatigue', 'chronic fatigue', 'tiredness', 'weakness', 'pale skin', 'pale', 'pale conjunctiva', 'pallor', 'dizziness', 'shortness of breath', 'shortness of breath on exertion', 'palpitations', 'headache'],
+        hallmarks: ['pale skin', 'pale conjunctiva', 'pale', 'pallor', 'chronic fatigue', 'shortness of breath on exertion'],
+        vitals: { heartRate: { min: 88 } },
+        baseConfidence: 0.90,
+        severity: 'mild',
+        icdCode: 'D50.9',
+        recommendations: [
+          'Order Complete Blood Count (CBC) with peripheral red cell indices (MCV, MCH)',
+          'Initiate Ferrous Sulfate 200mg + Folic Acid 0.4mg daily for 3 months',
+          'Dietary counseling: enhance dietary iron intake and avoid tea/coffee with meals',
+          'Screen for gastrointestinal blood loss or hookworm in endemic regions'
+        ]
+      },
+      'Acute Cystitis (Urinary Tract Infection)': {
+        symptoms: ['dysuria', 'painful urination', 'burning urination', 'burning with urination', 'urinary frequency', 'frequent urination', 'urgency', 'suprapubic pain', 'suprapubic discomfort', 'cloudy urine', 'foul urine', 'lower abdominal pain'],
+        hallmarks: ['dysuria', 'painful urination', 'burning urination', 'burning with urination', 'urinary frequency', 'urgency', 'suprapubic pain', 'suprapubic discomfort', 'cloudy urine'],
+        vitals: { temperature: { max: 38.0 } },
+        baseConfidence: 0.92,
+        severity: 'mild',
+        icdCode: 'N30.0',
+        recommendations: [
+          'Perform rapid dipstick urinalysis (Leukocyte esterase and Nitrite test)',
+          'Prescribe Ciprofloxacin 500mg BID for 3-5 days or Nitrofurantoin 100mg BID',
+          'Encourage copious oral fluid intake (> 2.5 liters/day)',
+          'Advise complete course completion and return if fever or flank pain develops'
+        ]
+      },
+      'Acute Upper Respiratory Infection (Influenza)': {
+        symptoms: ['fever', 'mild fever', 'cough', 'sore throat', 'rhinorrhea', 'runny nose', 'sneezing', 'headache', 'mild headache', 'body aches', 'nasal congestion'],
+        hallmarks: ['rhinorrhea', 'runny nose', 'sneezing', 'sore throat', 'nasal congestion'],
+        vitals: { temperature: { min: 37.2, max: 39.5 } },
+        baseConfidence: 0.90,
+        severity: 'mild',
+        icdCode: 'J11.1',
+        recommendations: [
+          'Symptomatic management: Paracetamol 500mg TID for fever and body aches',
+          'Warm saline gargles, adequate hydration, and bed rest',
+          'Withhold antibiotics unless secondary bacterial infection is clinically documented',
+          'Counsel patient to seek medical care if high fever or dyspnea develops'
+        ]
       }
     };
 
+    // Normalize input symptoms: handle both array of strings and raw sentence strings
+    let normalizedSymptoms = [];
+    if (Array.isArray(symptoms)) {
+      normalizedSymptoms = symptoms.map(s => String(s).toLowerCase().trim());
+    } else if (typeof symptoms === 'string') {
+      normalizedSymptoms = symptoms.toLowerCase().split(/[,;. ]+/).filter(Boolean);
+    }
+
+    const patientVitals = vitals || {};
     const predictions = [];
-    
+
     for (const [disease, data] of Object.entries(diseaseDatabase)) {
-      let matchCount = 0;
-      let vitalsMatch = true;
+      let matchedSymptoms = [];
+      let matchedHallmarks = [];
+      let vitalsMatchScore = 1.0;
+      let matchedVitals = [];
 
-      for (const symptom of data.symptoms) {
-        if (symptoms.some(s => s.toLowerCase().includes(symptom))) {
-          matchCount++;
+      // Helper to check if patient symptoms match a clinical pattern
+      const matchesPattern = (text, pattern) => {
+        if (!text || !pattern) return false;
+        const t = text.toLowerCase().trim();
+        const p = pattern.toLowerCase().trim();
+        if (t === p) return true;
+        if (p.includes(' ')) {
+          return t.includes(p);
         }
-      }
+        return t.split(/[\s,.-]+/).includes(p) || t.includes(p);
+      };
 
-      if (vitals && data.vitals) {
-        for (const [vital, range] of Object.entries(data.vitals)) {
-          const patientVital = vitals[vital];
-          if (patientVital !== undefined) {
-            if (range.min && patientVital < range.min) vitalsMatch = false;
-            if (range.max && patientVital > range.max) vitalsMatch = false;
+      // Symptom matching
+      for (const symptom of data.symptoms) {
+        if (normalizedSymptoms.some(s => matchesPattern(s, symptom))) {
+          if (!matchedSymptoms.includes(symptom)) {
+            matchedSymptoms.push(symptom);
           }
         }
       }
 
-      const symptomMatch = matchCount / data.symptoms.length;
-      const confidence = (symptomMatch * 0.7 + (vitalsMatch ? 0.3 : 0)) * data.confidence;
+      // Hallmark pathognomonic matching
+      if (data.hallmarks) {
+        for (const h of data.hallmarks) {
+          if (normalizedSymptoms.some(s => matchesPattern(s, h))) {
+            if (!matchedHallmarks.includes(h)) {
+              matchedHallmarks.push(h);
+            }
+          }
+        }
+      }
 
-      if (confidence > 0.5) {
+      // Vitals matching
+      let hasVitalData = false;
+      let vitalsTotal = 0;
+      let vitalsHits = 0;
+
+      if (data.vitals) {
+        // Temperature
+        if (data.vitals.temperature && (patientVitals.temperature !== undefined && patientVitals.temperature !== null)) {
+          vitalsTotal++;
+          hasVitalData = true;
+          const t = parseFloat(patientVitals.temperature);
+          const min = data.vitals.temperature.min || 0;
+          const max = data.vitals.temperature.max || 50;
+          if (t >= min && t <= max) {
+            vitalsHits++;
+            matchedVitals.push(`Temp ${t}°C`);
+          }
+        }
+
+        // Blood Pressure Systolic
+        const bpSys = patientVitals.bloodPressureSystolic || patientVitals.blood_pressure_systolic;
+        if (data.vitals.bloodPressureSystolic && bpSys) {
+          vitalsTotal++;
+          hasVitalData = true;
+          const bp = parseInt(bpSys, 10);
+          if (data.vitals.bloodPressureSystolic.min && bp >= data.vitals.bloodPressureSystolic.min) {
+            vitalsHits++;
+            matchedVitals.push(`BP ${bp} mmHg`);
+          }
+        }
+
+        // Oxygen Saturation
+        const spo2Val = patientVitals.oxygenSaturation || patientVitals.oxygen_saturation;
+        if (data.vitals.oxygenSaturation && spo2Val) {
+          vitalsTotal++;
+          hasVitalData = true;
+          const spo2 = parseFloat(spo2Val);
+          if (data.vitals.oxygenSaturation.max && spo2 <= data.vitals.oxygenSaturation.max) {
+            vitalsHits++;
+            matchedVitals.push(`SpO2 ${spo2}%`);
+          }
+        }
+
+        // Blood Glucose
+        const gluVal = patientVitals.bloodGlucose || patientVitals.blood_glucose;
+        if (data.vitals.bloodGlucose && gluVal) {
+          vitalsTotal++;
+          hasVitalData = true;
+          const gl = parseFloat(gluVal);
+          if (data.vitals.bloodGlucose.min && gl >= data.vitals.bloodGlucose.min) {
+            vitalsHits++;
+            matchedVitals.push(`Glucose ${gl} mg/dL`);
+          }
+        }
+
+        if (vitalsTotal > 0) {
+          vitalsMatchScore = vitalsHits / vitalsTotal;
+        }
+      }
+
+      // Vital requirement enforcement (e.g. Hypertension requires high BP)
+      if (data.vitalRequired && vitalsHits === 0) {
+        continue;
+      }
+
+      // Clinically calibrated scoring:
+      // Hallmark symptoms provide high specificity (+15% each, up to 30%)
+      const hallmarkBonus = Math.min(0.30, matchedHallmarks.length * 0.15);
+      const hallmarkThreshold = Math.min(3, data.symptoms.length);
+      const symptomCoverage = Math.min(1.0, matchedSymptoms.length / hallmarkThreshold);
+      
+      const compositeScore = (symptomCoverage * 0.50) + (vitalsMatchScore * 0.25) + hallmarkBonus;
+      const confidence = Math.min(0.96, Math.max(0.35, Math.round(compositeScore * data.baseConfidence * 100) / 100));
+
+      if (matchedSymptoms.length >= 1 || (vitalsMatchScore > 0.5 && matchedSymptoms.length > 0)) {
         predictions.push({
-          disease: disease.charAt(0).toUpperCase() + disease.slice(1),
-          confidence: Math.round(confidence * 100) / 100,
-          severity: data.severity
+          disease,
+          confidence,
+          severity: data.severity,
+          icdCode: data.icdCode,
+          recommendations: data.recommendations,
+          matchedCriteria: [
+            ...matchedHallmarks.map(h => `Hallmark: ${h}`),
+            ...matchedSymptoms.filter(s => !matchedHallmarks.includes(s)).map(s => `Symptom: ${s}`),
+            ...matchedVitals.map(v => `Vital: ${v}`)
+          ]
         });
       }
     }
 
     predictions.sort((a, b) => b.confidence - a.confidence);
-    return predictions.slice(0, 3);
+
+    // If top prediction exists, assign up to 2 differentials
+    if (predictions.length > 0) {
+      const top = predictions[0];
+      const differentials = predictions.slice(1, 3).map(d => ({
+        disease: d.disease,
+        confidence: d.confidence,
+        icdCode: d.icdCode
+      }));
+      return [
+        {
+          ...top,
+          differentialDiagnoses: differentials
+        },
+        ...predictions.slice(1, 3)
+      ];
+    }
+
+    // Default general assessment
+    return [{
+      disease: 'General Outpatient Evaluation',
+      confidence: 0.60,
+      severity: 'mild',
+      icdCode: 'Z00.0',
+      recommendations: ['Perform comprehensive clinical history and routine screening'],
+      matchedCriteria: ['Routine ambulatory presentation']
+    }];
   }
 
   // Drug interaction checking

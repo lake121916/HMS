@@ -87,6 +87,9 @@ const PERMISSIONS: Record<string, string[]> = {
   'reports:view':     ['super_admin','admin','hospital_manager'],
   'reports:revenue':  ['super_admin','admin','hospital_manager','cashier'],
 
+  // QR Scanner
+  'qr_scanner:view': ['super_admin','admin','hospital_manager','receptionist','doctor','nurse','lab_technician','pharmacist','cashier'],
+
   // Admin panel
   'admin:users':       ['super_admin','admin'],
   'admin:create_staff':['super_admin','admin'],

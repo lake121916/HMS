@@ -11,8 +11,9 @@ import {
   Activity, Heart, Thermometer, Wind,
   Weight, Ruler, RefreshCw, AlertTriangle,
   UserCheck, Stethoscope, Clock, CheckCircle2, AlertOctagon,
-  ChevronRight, Eye, Search, FileText
+  ChevronRight, Eye, Search, FileText, QrCode
 } from 'lucide-react';
+import WristbandScannerModal from '../components/WristbandScannerModal';
 
 interface TriageEncounter {
   id: number;
@@ -151,6 +152,25 @@ const TriageDashboard: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const handleScanVerified = (result: any) => {
+    setShowScannerModal(false);
+    const patient = result?.patient;
+    if (!patient) return;
+    const match = encounters.find(e => e.patient_id === patient.id || (
+      e.first_name?.toLowerCase() === patient.first_name?.toLowerCase() &&
+      e.last_name?.toLowerCase() === patient.last_name?.toLowerCase()
+    ));
+    if (match) {
+      selectPatient(match);
+      setStageTab('in_triage');
+      showToast('success', `Identified patient ${patient.first_name} ${patient.last_name}. Triage assessment opened.`);
+    } else {
+      setSearch(`${patient.first_name} ${patient.last_name}`);
+      showToast('success', `Identified patient: ${patient.first_name} ${patient.last_name} (${patient.mrn || 'ID #' + patient.id})`);
+    }
+  };
 
   const [vitals, setVitals] = useState({
     temperature: '',
@@ -330,13 +350,24 @@ const TriageDashboard: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={fetchAllData}
-          disabled={loading}
-          className="flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh queue
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowScannerModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold rounded-lg shadow-sm transition active:scale-95"
+          >
+            <QrCode className="w-4 h-4" />
+            <span>Scan Patient QR</span>
+          </button>
+
+          <button
+            onClick={fetchAllData}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh queue
+          </button>
+        </div>
       </div>
 
       {/* ── 3-Stage Progress Counters & Tabs Bar ── */}
@@ -939,6 +970,15 @@ const TriageDashboard: React.FC = () => {
             </button>
           </div>
         </div>
+      )}
+      {/* ── Triage QR Scanner Modal ── */}
+      {showScannerModal && (
+        <WristbandScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onPatientVerified={handleScanVerified}
+          continueLabel="Open Triage Assessment"
+        />
       )}
     </div>
   );

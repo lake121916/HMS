@@ -6,7 +6,8 @@
  */
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
-import { FlaskConical, RefreshCw, CheckCircle2, Search, AlertCircle, Printer } from 'lucide-react';
+import { FlaskConical, RefreshCw, CheckCircle2, Search, AlertCircle, Printer, QrCode } from 'lucide-react';
+import WristbandScannerModal from '../components/WristbandScannerModal';
 
 interface LabTest {
   id: number;
@@ -38,6 +39,17 @@ const LabTechDashboard: React.FC = () => {
   const [toast, setToast] = useState<{type:'success'|'error';msg:string}|null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'pending'|'in_progress'|'completed'|'all'>('pending');
+  const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const handlePatientScanVerified = (result: any) => {
+    setShowScannerModal(false);
+    const patient = result?.patient;
+    if (!patient) return;
+    const fullName = `${patient.first_name} ${patient.last_name}`;
+    setSearch(fullName);
+    setFilter('all');
+    showToast('success', `Identified patient: ${fullName} (${patient.mrn || 'ID #' + patient.id}). Filtering lab orders.`);
+  };
   const [resultForm, setResultForm] = useState({
     results: '', reference_range: '', is_abnormal: false, notes: ''
   });
@@ -104,11 +116,21 @@ const LabTechDashboard: React.FC = () => {
           <h1 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">Lab Technician Dashboard</h1>
           <p className="text-sm text-slate-500 mt-1">Process lab orders and record results</p>
         </div>
-        <button onClick={fetchTests} disabled={loading}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition text-sm text-slate-600">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowScannerModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm shadow-sm transition active:scale-95"
+          >
+            <QrCode className="h-4 w-4" />
+            <span>Scan Patient QR</span>
+          </button>
+          <button onClick={fetchTests} disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition text-sm text-slate-600">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-4 items-center flex-wrap">
@@ -285,6 +307,15 @@ const LabTechDashboard: React.FC = () => {
           </div>
         )}
       </div>
+      {/* ── Lab Patient QR Scanner Modal ── */}
+      {showScannerModal && (
+        <WristbandScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onPatientVerified={handlePatientScanVerified}
+          continueLabel="Filter Patient Lab Orders"
+        />
+      )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
@@ -80,6 +81,7 @@ interface PrescriptionDetailsResponse {
 }
 
 const PrescriptionsPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const { can } = useRoleAccess();
   const { user } = useAuth();
   const isPharmacist = user?.role === 'pharmacist';
@@ -141,6 +143,11 @@ const PrescriptionsPage: React.FC = () => {
   const { data, isLoading, refetch } = usePrescriptions();
   const prescriptions = useMemo(() => (data ?? []) as Prescription[], [data]);
 
+  React.useEffect(() => {
+    const patientId = searchParams.get('patient_id');
+    if (patientId) setSearch(patientId);
+  }, [searchParams]);
+
   const createPrescription = useCreatePrescription();
   const updatePrescription = useUpdatePrescription(editing?.id ?? 0);
   const deletePrescription = useDeletePrescription();
@@ -178,6 +185,7 @@ const PrescriptionsPage: React.FC = () => {
         !search ||
         p.patient_name?.toLowerCase().includes(s) ||
         p.patient_mrn?.toLowerCase().includes(s) ||
+        String(p.patient_id).includes(s) ||
         p.doctor_name?.toLowerCase().includes(s) ||
         p.medication_name?.toLowerCase().includes(s);
 

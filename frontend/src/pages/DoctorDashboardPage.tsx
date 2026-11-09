@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { QrCode } from 'lucide-react';
+import WristbandScannerModal from '../components/WristbandScannerModal';
 import { CalendarDays, ClipboardList, Activity, Users, Pill, FlaskConical, ArrowRight, RefreshCw } from 'lucide-react';
 
 interface DoctorDashboardData {
@@ -44,7 +47,17 @@ const cardClass = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm da
 const DoctorDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
   const [data, setData] = useState<DoctorDashboardData | null>(null);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const handlePatientScanVerified = (result: any) => {
+    setShowScannerModal(false);
+    const patient = result?.patient;
+    if (patient?.id) {
+      navigate(`/consultation?patient_id=${patient.id}`);
+    }
+  };
 
   const fetchDoctorDashboard = async () => {
     setLoading(true);
@@ -110,14 +123,24 @@ const DoctorDashboardPage: React.FC = () => {
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-sky-600">Doctor portal</p>
           <h1 className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Doctor dashboard</h1>
         </div>
-        <button
-          onClick={fetchDoctorDashboard}
-          disabled={loading}
-          className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowScannerModal(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 shadow-sm active:scale-95 transition"
+          >
+            <QrCode className="h-4 w-4" />
+            Scan Patient QR
+          </button>
+          <button
+            onClick={fetchDoctorDashboard}
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -256,6 +279,15 @@ const DoctorDashboardPage: React.FC = () => {
           )}
         </div>
       </div>
+      {/* ── Doctor Patient QR Scanner Modal ── */}
+      {showScannerModal && (
+        <WristbandScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onPatientVerified={handlePatientScanVerified}
+          continueLabel="Open Clinical Consultation"
+        />
+      )}
     </div>
   );
 };

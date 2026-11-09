@@ -29,7 +29,12 @@ async function logAuditEntry(req, res) {
     if (!user) return;
 
     const action = getActionFromRequest(req);
-    const entityType = getEntityTypeFromPath(req.path);
+    const requestPath = `${req.baseUrl}${req.path}`;
+    if (requestPath === '/api/patients/scan' || requestPath.startsWith('/api/patients/') && requestPath.includes('/qr')) {
+      return;
+    }
+
+    const entityType = getEntityTypeFromPath(requestPath);
     const entityId = getEntityIdFromRequest(req);
 
     // Only log important actions
@@ -50,8 +55,12 @@ async function logAuditEntry(req, res) {
         action,
         entityType,
         entityId,
-        req.body ? JSON.stringify(req.body) : null,
-        res.locals.responseData ? JSON.stringify(res.locals.responseData) : null,
+        entityType === 'patient'
+          ? JSON.stringify({ operation: action })
+          : req.body ? JSON.stringify(req.body) : null,
+        entityType === 'patient'
+          ? JSON.stringify({ patient_id: entityId, success: true })
+          : res.locals.responseData ? JSON.stringify(res.locals.responseData) : null,
         req.ip || req.connection.remoteAddress,
         req.get('user-agent')
       ]
@@ -64,7 +73,10 @@ async function logAuditEntry(req, res) {
 
 function getActionFromRequest(req) {
   const method = req.method;
-  const path = req.path;
+  const path = `${req.baseUrl}${req.path}`;
+
+  if (path === '/api/patients/scan') return 'PATIENT_QR_SCAN';
+  if (path.startsWith('/api/patients/') && path.includes('/qr')) return 'PATIENT_QR_IDENTITY';
   
   if (method === 'POST') {
     if (path.includes('/payments')) return 'PAYMENT_CREATED';

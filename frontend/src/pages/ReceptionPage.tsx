@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Activity, ArrowRight, ClipboardList, FileText, Search, UserPlus,
   Calendar, DollarSign, User, X, CheckCircle2, Clock,
-  AlertTriangle, RefreshCw, Users, Filter
+  AlertTriangle, RefreshCw, Users, Filter, QrCode
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { fmt } from '../utils/format';
+import WristbandScannerModal from '../components/WristbandScannerModal';
 
 interface Patient {
   id: number;
@@ -144,6 +145,16 @@ const ReceptionPage: React.FC = () => {
   // Modals state
   const [showRegModal, setShowRegModal] = useState(false);
   const [showApptModal, setShowApptModal] = useState(false);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const handlePatientScanVerified = (result: any) => {
+    setShowScannerModal(false);
+    const scannedPatient = result?.patient;
+    if (!scannedPatient) return;
+    setSelectedPatientId(scannedPatient.id);
+    setSearch(`${scannedPatient.first_name} ${scannedPatient.last_name}`);
+    showNotice('success', `Identified patient: ${scannedPatient.first_name} ${scannedPatient.last_name} (${scannedPatient.mrn || 'ID #' + scannedPatient.id})`);
+  };
 
   // Form states
   const [regForm, setRegForm] = useState({
@@ -387,6 +398,15 @@ const ReceptionPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap gap-2.5">
+          <button
+            type="button"
+            onClick={() => setShowScannerModal(true)}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white px-4 py-2.5 text-sm font-semibold shadow-sm transition active:scale-95"
+          >
+            <QrCode className="h-4 w-4 text-teal-400" />
+            Scan Patient QR
+          </button>
+
           <button
             onClick={() => setShowRegModal(true)}
             className="flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 transition"
@@ -1062,6 +1082,15 @@ const ReceptionPage: React.FC = () => {
         </div>
       )}
 
+      {/* ── Patient QR Scanner Modal ── */}
+      {showScannerModal && (
+        <WristbandScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onPatientVerified={handlePatientScanVerified}
+          continueLabel="Select Patient Record"
+        />
+      )}
     </div>
   );
 };

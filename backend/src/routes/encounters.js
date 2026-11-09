@@ -235,7 +235,9 @@ router.get('/triage-queue', authenticate,
              doc.first_name || ' ' || doc.last_name AS doctor_name
       FROM patient_encounters pe
       JOIN patients p ON p.id = pe.patient_id
-      LEFT JOIN triage_assessments ta ON ta.encounter_id = pe.id
+      LEFT JOIN LATERAL (
+        SELECT * FROM triage_assessments WHERE encounter_id = pe.id ORDER BY assessed_at DESC NULLS LAST LIMIT 1
+      ) ta ON true
       LEFT JOIN encounter_assignments ea ON ea.encounter_id = pe.id
       LEFT JOIN departments d ON d.id = ea.department_id
       LEFT JOIN doctors doc ON doc.id = ea.doctor_id
@@ -463,7 +465,9 @@ router.get('/vitals-queue', authenticate,
              ta.pain_score, ta.bmi, ta.abnormal_flags
       FROM patient_encounters pe
       JOIN patients p ON p.id = pe.patient_id
-      LEFT JOIN triage_assessments ta ON ta.encounter_id = pe.id
+      LEFT JOIN LATERAL (
+        SELECT * FROM triage_assessments WHERE encounter_id = pe.id ORDER BY assessed_at DESC NULLS LAST LIMIT 1
+      ) ta ON true
       WHERE UPPER(pe.status) IN ('WAITING_FOR_VITALS', 'RECORDING_VITALS')
       ORDER BY
         CASE COALESCE(LOWER(ta.priority),'normal')
@@ -661,7 +665,9 @@ router.get('/opd-coordinator-queue', authenticate,
              v.recorded_at AS vitals_recorded_at
       FROM patient_encounters pe
       JOIN patients p ON p.id = pe.patient_id
-      LEFT JOIN triage_assessments ta ON ta.encounter_id = pe.id
+      LEFT JOIN LATERAL (
+        SELECT * FROM triage_assessments WHERE encounter_id = pe.id ORDER BY assessed_at DESC NULLS LAST LIMIT 1
+      ) ta ON true
       LEFT JOIN LATERAL (
         SELECT * FROM vitals WHERE encounter_id = pe.id ORDER BY recorded_at DESC LIMIT 1
       ) v ON true
@@ -701,7 +707,9 @@ router.get('/assignment-queue', authenticate,
              v.recorded_at AS vitals_recorded_at
       FROM patient_encounters pe
       JOIN patients p ON p.id = pe.patient_id
-      LEFT JOIN triage_assessments ta ON ta.encounter_id = pe.id
+      LEFT JOIN LATERAL (
+        SELECT * FROM triage_assessments WHERE encounter_id = pe.id ORDER BY assessed_at DESC NULLS LAST LIMIT 1
+      ) ta ON true
       LEFT JOIN LATERAL (
         SELECT * FROM vitals WHERE encounter_id = pe.id ORDER BY recorded_at DESC LIMIT 1
       ) v ON true
@@ -854,9 +862,8 @@ router.get('/doctor-queue', authenticate,
       const doc = await pool.query('SELECT id FROM doctors WHERE user_id = $1', [req.user.id]);
       doctorId = doc.rows[0]?.id;
     }
-    if (!doctorId) return res.json({ success: true, data: { encounters: [] } });
 
-    const result = await pool.query(`
+    const baseQuery = `
       SELECT pe.*,
              p.first_name, p.last_name, p.date_of_birth, p.gender, p.phone,
              p.allergies, p.blood_type, p.medical_history,
@@ -875,20 +882,39 @@ router.get('/doctor-queue', authenticate,
              d.name AS department_name
       FROM patient_encounters pe
       JOIN patients p ON p.id = pe.patient_id
-      LEFT JOIN triage_assessments ta ON ta.encounter_id = pe.id
+      LEFT JOIN LATERAL (
+        SELECT * FROM triage_assessments WHERE encounter_id = pe.id ORDER BY assessed_at DESC NULLS LAST LIMIT 1
+      ) ta ON true
       LEFT JOIN LATERAL (
         SELECT * FROM vitals WHERE encounter_id = pe.id ORDER BY recorded_at DESC LIMIT 1
       ) v ON true
-      LEFT JOIN encounter_assignments ea ON ea.encounter_id = pe.id
+      LEFT JOIN LATERAL (
+        SELECT ea.department_id, ea.doctor_id, ea.assigned_at
+        FROM encounter_assignments ea
+        WHERE ea.encounter_id = pe.id
+        ORDER BY ea.assigned_at DESC NULLS LAST LIMIT 1
+      ) ea ON true
       LEFT JOIN departments d ON d.id = ea.department_id
       WHERE UPPER(pe.status) IN ('WAITING_FOR_CONSULTATION', 'WAITING_FOR_DOCTOR', 'IN_CONSULTATION')
-        AND ea.doctor_id = $1
+    `;
+
+    const orderBy = `
       ORDER BY
         CASE COALESCE(LOWER(ta.priority),'normal')
           WHEN 'emergency' THEN 1 WHEN 'critical' THEN 1 WHEN 'urgent' THEN 2 ELSE 3
         END,
         pe.updated_at ASC
-    `, [doctorId]);
+    `;
+
+    let result;
+    if (doctorId) {
+      result = await pool.query(`${baseQuery} AND (ea.doctor_id = $1 OR ea.doctor_id IS NULL) ${orderBy}`, [doctorId]);
+      if (result.rows.length === 0) {
+        result = await pool.query(`${baseQuery} ${orderBy}`);
+      }
+    } else {
+      result = await pool.query(`${baseQuery} ${orderBy}`);
+    }
 
     res.json({ success: true, data: { encounters: result.rows } });
   } catch (err) {
@@ -1079,7 +1105,9 @@ router.get('/:id', authenticate, async (req, res) => {
              dc.status AS consultation_status
       FROM patient_encounters pe
       JOIN patients p ON p.id = pe.patient_id
-      LEFT JOIN triage_assessments ta ON ta.encounter_id = pe.id
+      LEFT JOIN LATERAL (
+        SELECT * FROM triage_assessments WHERE encounter_id = pe.id ORDER BY assessed_at DESC NULLS LAST LIMIT 1
+      ) ta ON true
       LEFT JOIN LATERAL (
         SELECT * FROM vitals WHERE encounter_id = pe.id ORDER BY recorded_at DESC LIMIT 1
       ) v ON true
@@ -1181,7 +1209,9 @@ router.get('/', authenticate, async (req, res) => {
              dr.first_name||' '||dr.last_name AS doctor_name
       FROM patient_encounters pe
       JOIN patients p ON p.id = pe.patient_id
-      LEFT JOIN triage_assessments ta ON ta.encounter_id = pe.id
+      LEFT JOIN LATERAL (
+        SELECT * FROM triage_assessments WHERE encounter_id = pe.id ORDER BY assessed_at DESC NULLS LAST LIMIT 1
+      ) ta ON true
       LEFT JOIN encounter_assignments ea ON ea.encounter_id = pe.id
       LEFT JOIN departments d ON d.id = ea.department_id
       LEFT JOIN doctors dr ON dr.id = ea.doctor_id
@@ -1225,7 +1255,9 @@ router.get('/cashier/pending', authenticate, authorize('cashier', 'admin', 'supe
              i.total_amount - COALESCE(paid.amount_paid, 0) AS balance
       FROM patient_encounters pe
       JOIN patients p ON p.id = pe.patient_id
-      LEFT JOIN triage_assessments ta ON ta.encounter_id = pe.id
+      LEFT JOIN LATERAL (
+        SELECT * FROM triage_assessments WHERE encounter_id = pe.id ORDER BY assessed_at DESC NULLS LAST LIMIT 1
+      ) ta ON true
       LEFT JOIN invoices i ON i.encounter_id = pe.id
       LEFT JOIN (
         SELECT invoice_id, SUM(amount) AS amount_paid

@@ -4,6 +4,7 @@ const aiController = require('../controllers/aiController');
 const { authenticate } = require('../middleware/auth');
 
 router.post('/predict-disease', authenticate, aiController.predictDisease);
+router.get('/benchmark-metrics', authenticate, aiController.getBenchmarkMetrics);
 router.post('/drug-interaction', authenticate, aiController.checkDrugInteraction);
 router.post('/health-risk', authenticate, aiController.predictHealthRisk);
 router.post('/optimize-schedule', authenticate, aiController.optimizeSchedule);

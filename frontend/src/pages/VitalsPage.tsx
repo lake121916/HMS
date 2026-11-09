@@ -17,11 +17,12 @@ import React, { useState, useEffect } from 'react';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import {
   Plus, Search, Edit, Trash2, X, Activity,
-  AlertTriangle, CheckCircle2, Clock, ChevronRight, RefreshCw
+  AlertTriangle, CheckCircle2, Clock, ChevronRight, RefreshCw, QrCode
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useVitals, useCreateVital, useUpdateVital, useDeleteVital } from '../hooks/useApi';
 import api from '../services/api';
+import WristbandScannerModal from '../components/WristbandScannerModal';
 
 interface Vital {
   id: number;
@@ -121,6 +122,41 @@ const VitalsPage: React.FC = () => {
   const showToast = (type: 'success' | 'error', msg: string) => {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const handlePatientScanVerified = (result: any) => {
+    setShowScannerModal(false);
+    const patient = result?.patient;
+    if (!patient) return;
+    const match = vitalsQueue.find(e => e.patient_id === patient.id || (
+      e.first_name?.toLowerCase() === patient.first_name?.toLowerCase() &&
+      e.last_name?.toLowerCase() === patient.last_name?.toLowerCase()
+    ));
+    if (match) {
+      void openQueueRecord(match);
+      showToast('success', `Found vitals queue encounter for ${patient.first_name} ${patient.last_name}`);
+    } else {
+      setSelectedEncounter(null);
+      setEditing(null);
+      setForm({
+        patient_id: String(patient.id),
+        temperature: '',
+        blood_pressure_systolic: '',
+        blood_pressure_diastolic: '',
+        heart_rate: '',
+        respiratory_rate: '',
+        oxygen_saturation: '',
+        weight: '',
+        height: '',
+        pain_score: '0',
+        blood_glucose: '',
+        notes: ''
+      });
+      setShowModal(true);
+      showToast('success', `Identified patient: ${patient.first_name} ${patient.last_name} (${patient.mrn || 'ID #' + patient.id})`);
+    }
   };
 
   useEffect(() => {
@@ -343,6 +379,15 @@ const VitalsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowScannerModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-95"
+          >
+            <QrCode className="w-3.5 h-3.5" />
+            <span>Scan Patient QR</span>
+          </button>
+
           <button
             onClick={fetchVitalsQueue}
             disabled={queueLoading}
@@ -832,6 +877,15 @@ const VitalsPage: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+      {/* ── Patient QR Scanner Modal ── */}
+      {showScannerModal && (
+        <WristbandScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onPatientVerified={handlePatientScanVerified}
+          continueLabel="Record Patient Vitals"
+        />
       )}
     </div>
   );

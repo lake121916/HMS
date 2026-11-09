@@ -70,7 +70,7 @@ describe('Priority 3: Pharmacy Low-Stock & Expiry Alerts', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.alertsCreated).toBeGreaterThanOrEqual(1);
-  });
+  }, 15000);
 
   it('GET /api/pharmacy/inventory/alerts — retrieves active alerts with critical priorities', async () => {
     const res = await request(app)

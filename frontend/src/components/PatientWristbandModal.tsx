@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Printer, ShieldAlert, CheckCircle2, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Printer, ShieldAlert, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
 import api from '../services/api';
 
 interface PatientWristbandModalProps {
@@ -27,6 +27,22 @@ const PatientWristbandModal: React.FC<PatientWristbandModalProps> = ({
 }) => {
   const [printing, setPrinting] = useState(false);
   const [printSuccess, setPrintSuccess] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !patient?.id) return;
+    let isMounted = true;
+    api.get(`/patients/${patient.id}/qr`)
+      .then(res => {
+        if (isMounted && res.data?.data?.qrCodeDataUrl) {
+          setQrDataUrl(res.data.data.qrCodeDataUrl);
+        }
+      })
+      .catch(err => {
+        console.warn('Unable to load patient QR for wristband:', err);
+      });
+    return () => { isMounted = false; };
+  }, [isOpen, patient?.id]);
 
   if (!isOpen || !patient) return null;
 
@@ -180,13 +196,36 @@ const PatientWristbandModal: React.FC<PatientWristbandModalProps> = ({
                   </span>
                 </div>
 
-                {/* 2D QR Code */}
-                <div className="w-16 h-16 bg-slate-950 rounded-xl p-1 flex items-center justify-center">
-                  <svg viewBox="0 0 100 100" className="w-full h-full text-white fill-current">
-                    <path d="M0,0 h30 v30 h-30 z M10,10 h10 v10 h-10 z M70,0 h30 v30 h-30 z M80,10 h10 v10 h-10 z M0,70 h30 v30 h-30 z M10,80 h10 v10 h-10 z M40,10 h15 v15 h-15 z M45,45 h20 v20 h-20 z M75,75 h20 v20 h-20 z M15,45 h15 v15 h-15 z M70,40 h20 v15 h-20 z M40,75 h20 v15 h-20 z M85,55 h10 v10 h-10 z M55,0 h10 v20 h-10 z" />
-                  </svg>
+                {/* 2D Cryptographic QR Code */}
+                <div className="w-16 h-16 bg-white rounded-lg p-0.5 border border-slate-300 dark:border-slate-700 flex items-center justify-center overflow-hidden shadow-xs">
+                  {qrDataUrl ? (
+                    <img src={qrDataUrl} alt={`Scannable QR for ${mrn}`} className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="w-full h-full bg-slate-100 flex items-center justify-center text-[9px] text-slate-400 font-mono font-bold">
+                      QR...
+                    </div>
+                  )}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Quick Actions for Testing and Scanning */}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+            <div className="text-slate-600 dark:text-slate-300">
+              <span className="font-bold">Scannable Identifiers:</span> MRN is <code className="font-mono bg-slate-200 dark:bg-slate-700 px-1 py-0.5 rounded">{mrn}</code>
+            </div>
+            <div className="flex items-center gap-2">
+              {qrDataUrl && (
+                <a
+                  href={qrDataUrl}
+                  download={`patient-${mrn}-qr.png`}
+                  className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg transition inline-flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Download Scannable QR
+                </a>
+              )}
             </div>
           </div>
 

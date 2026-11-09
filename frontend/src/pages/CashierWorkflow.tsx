@@ -13,13 +13,14 @@ import api from '../services/api';
 import {
   Receipt, CreditCard, DollarSign, CheckCircle2,
   RefreshCw, Printer, Clock, FileText, Smartphone,
-  ShieldCheck, ChevronRight
+  ShieldCheck, ChevronRight, QrCode
 } from 'lucide-react';
 
 import ShiftManager from '../components/cashier/ShiftManager';
 import ZReportView from '../components/cashier/ZReportView';
 import ThermalReceiptPrint from '../components/cashier/ThermalReceiptPrint';
 import DigitalPaymentVerifier from '../components/cashier/DigitalPaymentVerifier';
+import WristbandScannerModal from '../components/WristbandScannerModal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -72,6 +73,24 @@ const CashierWorkflow: React.FC = () => {
   // Billing queue state
   const [encounters, setEncounters] = useState<PendingEncounter[]>([]);
   const [selected, setSelected] = useState<PendingEncounter | null>(null);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const handlePatientScanVerified = (result: any) => {
+    setShowScannerModal(false);
+    const patient = result?.patient;
+    if (!patient) return;
+    setActiveTab('billing');
+    const match = encounters.find(e =>
+      (e.first_name?.toLowerCase() === patient.first_name?.toLowerCase() &&
+       e.last_name?.toLowerCase() === patient.last_name?.toLowerCase())
+    );
+    if (match) {
+      openEncounter(match);
+      showToast('success', `Selected pending billing for ${patient.first_name} ${patient.last_name}`);
+    } else {
+      showToast('success', `Identified patient: ${patient.first_name} ${patient.last_name} (${patient.mrn || 'ID #' + patient.id})`);
+    }
+  };
   const [invoiceDetail, setInvoiceDetail] = useState<InvoiceDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -171,11 +190,21 @@ const CashierWorkflow: React.FC = () => {
             )}
           </p>
         </div>
-        <button onClick={fetchQueue} disabled={loading}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition text-sm text-slate-600">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowScannerModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition text-sm font-semibold shadow-sm active:scale-95"
+          >
+            <QrCode className="h-4 w-4" />
+            <span>Scan Patient QR</span>
+          </button>
+          <button onClick={fetchQueue} disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition text-sm text-slate-600">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Tab navigation */}
@@ -566,6 +595,16 @@ const CashierWorkflow: React.FC = () => {
       {/* ── TAB: Digital Verify ──────────────────────────────────── */}
       {activeTab === 'digital' && (
         <DigitalPaymentVerifier shiftId={activeShiftId} />
+      )}
+
+      {/* ── Cashier Station Patient QR Scanner Modal ── */}
+      {showScannerModal && (
+        <WristbandScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onPatientVerified={handlePatientScanVerified}
+          continueLabel="Open Pending Billing"
+        />
       )}
     </div>
   );

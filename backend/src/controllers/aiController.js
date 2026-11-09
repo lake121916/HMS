@@ -84,10 +84,18 @@ const chatbot = handleAsync(async (req, res) => {
   sendSuccess(res, result);
 });
 
+const aiBenchmarkService = require('../services/aiBenchmarkService');
+
+const getBenchmarkMetrics = handleAsync(async (req, res) => {
+  const benchmarkResult = await aiBenchmarkService.runBenchmark();
+  sendSuccess(res, benchmarkResult);
+});
+
 module.exports = {
   predictDisease,
   checkDrugInteraction,
   predictHealthRisk,
   optimizeSchedule,
-  chatbot
+  chatbot,
+  getBenchmarkMetrics
 };

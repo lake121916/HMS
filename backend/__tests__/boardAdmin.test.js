@@ -26,8 +26,14 @@ describe('Hospital Board & Administrative Services Management Module', () => {
 
   describe('1. Birth Certificate Management Workflow', () => {
     it('creates a new newborn birth record', async () => {
-      const patRes = await pool.query("SELECT id, first_name, last_name FROM patients WHERE gender = 'female' LIMIT 1");
-      const mother = patRes.rows[0] || { id: 1, first_name: 'Almaz', last_name: 'Ayana' };
+      let patRes = await pool.query("SELECT id, first_name, last_name FROM patients WHERE gender = 'female' LIMIT 1");
+      let mother = patRes.rows[0];
+      if (!mother) {
+        const ins = await pool.query(
+          "INSERT INTO patients (first_name, last_name, gender, date_of_birth, phone) VALUES ('Almaz', 'Ayana', 'female', '1995-05-15', '+251911445566') RETURNING id, first_name, last_name"
+        );
+        mother = ins.rows[0];
+      }
 
       const res = await request(app)
         .post('/api/board/birth-certificates')
@@ -128,8 +134,14 @@ describe('Hospital Board & Administrative Services Management Module', () => {
 
   describe('2. Death Certificate Management Workflow', () => {
     it('registers a deceased patient clinical death record', async () => {
-      const patRes = await pool.query('SELECT id, first_name, last_name, date_of_birth, gender FROM patients LIMIT 1');
-      const patient = patRes.rows[0] || { id: 1, first_name: 'Hailu', last_name: 'Girmay', gender: 'male' };
+      let patRes = await pool.query('SELECT id, first_name, last_name, date_of_birth, gender FROM patients LIMIT 1');
+      let patient = patRes.rows[0];
+      if (!patient) {
+        const ins = await pool.query(
+          "INSERT INTO patients (first_name, last_name, gender, date_of_birth, phone) VALUES ('Hailu', 'Girmay', 'male', '1960-01-01', '+251911223344') RETURNING id, first_name, last_name, date_of_birth, gender"
+        );
+        patient = ins.rows[0];
+      }
 
       const res = await request(app)
         .post('/api/board/death-certificates')

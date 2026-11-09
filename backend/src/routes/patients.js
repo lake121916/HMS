@@ -1,17 +1,58 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
+const rateLimit = require('express-rate-limit');
 const patientController = require('../controllers/patientController');
 const validate = require('../middleware/validation');
 const { authenticate, authorize } = require('../middleware/auth');
 
-router.get('/', authenticate, patientController.getAllPatients);
+const qrRoles = [
+  'super_admin', 'admin', 'hospital_manager', 'receptionist',
+  'doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier'
+];
+const qrScanLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many patient QR scans. Please try again later.' }
+});
+const patientViewRoles = [
+  'super_admin', 'admin', 'hospital_manager', 'receptionist',
+  'doctor', 'nurse', 'lab_technician'
+];
+
+router.get('/', authenticate, authorize(...patientViewRoles), patientController.getAllPatients);
 
 // Identifier / Wristband lookup (must precede /:id)
-router.post('/lookup-by-identifier', authenticate, patientController.lookupPatientByIdentifier);
+router.post(
+  '/lookup-by-identifier',
+  authenticate,
+  authorize(...patientViewRoles),
+  patientController.lookupPatientByIdentifier
+);
 
-router.get('/:id', authenticate, patientController.getPatientById);
-router.get('/:id/history', authenticate, patientController.getPatientHistory);
+router.post(
+  '/scan',
+  authenticate,
+  authorize(...qrRoles),
+  qrScanLimiter,
+  [body('qrContent').isString().trim().notEmpty().isLength({ max: 128 }).withMessage('Valid patient QR content is required')],
+  validate,
+  patientController.scanPatientQr
+);
+
+router.post(
+  '/:id/qr/regenerate',
+  authenticate,
+  authorize('super_admin', 'admin'),
+  patientController.regeneratePatientQr
+);
+router.get('/:id/qr', authenticate, authorize(...patientViewRoles), patientController.getPatientQr);
+router.post('/:id/qr', authenticate, authorize(...patientViewRoles), patientController.getPatientQr);
+
+router.get('/:id', authenticate, authorize(...patientViewRoles), patientController.getPatientById);
+router.get('/:id/history', authenticate, authorize(...patientViewRoles), patientController.getPatientHistory);
 
 // Record wristband printed event
 router.post('/:id/wristband-printed', authenticate, authorize('receptionist', 'nurse', 'doctor', 'admin', 'super_admin'), patientController.recordWristbandPrinted);

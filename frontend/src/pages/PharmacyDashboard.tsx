@@ -19,8 +19,9 @@ import {
   PlusCircle, ShieldAlert, Boxes, FileText, ShoppingCart,
   Trash2, Printer, Shield, Lock, Plus, Minus,
   Clock, Check, DollarSign, X,
-  Building, Sparkles
+  Building, Sparkles, QrCode
 } from 'lucide-react';
+import WristbandScannerModal from '../components/WristbandScannerModal';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface Prescription {
@@ -234,6 +235,22 @@ export const PharmacyDashboard: React.FC = () => {
 
   // ── Label Modal State ────────────────────────────────────────────────
   const [labelModalData, setLabelModalData] = useState<PrescriptionLabelData | null>(null);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const handlePatientScanVerified = (result: any) => {
+    setShowScannerModal(false);
+    const patient = result?.patient;
+    if (!patient) return;
+    const fullName = `${patient.first_name} ${patient.last_name}`;
+    setRxSearch(fullName);
+    setActiveTab('prescriptions');
+    setRxFilter('all');
+    if (patient.allergies) {
+      showToast('warning', `Identified patient ${fullName} (${patient.mrn || 'ID #' + patient.id}). Documented Allergies: ${patient.allergies}`);
+    } else {
+      showToast('success', `Identified patient: ${fullName} (${patient.mrn || 'ID #' + patient.id}). Filtering active prescriptions.`);
+    }
+  };
 
   // Ref for print container
   const printAreaRef = useRef<HTMLDivElement>(null);
@@ -699,6 +716,15 @@ export const PharmacyDashboard: React.FC = () => {
 
         {/* Quick Top Actions */}
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowScannerModal(true)}
+            className="flex items-center space-x-1.5 px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-95"
+          >
+            <QrCode className="w-3.5 h-3.5" />
+            <span>{language === 'am' ? 'የታካሚ QR ስካን' : 'Scan Patient QR'}</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('pos')}
             className="flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition"
@@ -2557,6 +2583,15 @@ export const PharmacyDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* ── Pharmacy Patient QR Scanner Modal ── */}
+      {showScannerModal && (
+        <WristbandScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onPatientVerified={handlePatientScanVerified}
+          continueLabel="Open Patient Prescriptions"
+        />
+      )}
     </div>
   );
 };

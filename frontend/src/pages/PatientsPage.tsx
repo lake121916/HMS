@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useRoleAccess } from '../hooks/useRoleAccess';
 import { usePatients, useCreatePatient, useUpdatePatient, useDeletePatient } from '../hooks/useApi';
 import type { Patient } from '../hooks/useApi';
-import { Plus, Search, Edit, Trash2, X, Eye, Users } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Eye, Users, QrCode } from 'lucide-react';
+import api from '../services/api';
+import PatientQRCode from '../components/PatientQRCode';
+import type { PatientCardData } from '../components/PatientIDCard';
+import WristbandScannerModal from '../components/WristbandScannerModal';
 
 
 const inp = 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white';
@@ -13,12 +17,29 @@ const PatientsPage: React.FC = () => {
   const { can } = useRoleAccess();
   const location = useLocation();
   const navigate = useNavigate();
+  const { id: routePatientId } = useParams();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [editing, setEditing] = useState<Patient | null>(null);
   const [viewing, setViewing] = useState<Patient | null>(null);
+  const [viewingQr, setViewingQr] = useState<PatientCardData | null>(null);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const handlePatientScanVerified = async (result: any) => {
+    setShowScannerModal(false);
+    const scanned = result?.patient;
+    if (!scanned) return;
+    try {
+      const res = await api.get(`/patients/${scanned.id}`);
+      setViewing(res.data.data);
+      setViewingQr(null);
+      setViewModal(true);
+    } catch {
+      setSearch(scanned.first_name + ' ' + scanned.last_name);
+    }
+  };
   const [form, setForm] = useState({
     firstName:'', lastName:'', email:'', phone:'', bloodType:'', dateOfBirth:'',
     address:'', gender:'male', allergies:'', emergencyContactName:'',
@@ -64,7 +85,11 @@ const PatientsPage: React.FC = () => {
       if (editing) {
         await updatePatient.mutateAsync(form as Record<string, unknown>);
       } else {
-        await createPatient.mutateAsync(form as Record<string, unknown>);
+        const response = await createPatient.mutateAsync(form as Record<string, unknown>);
+        const patient = response.data.data.patient || response.data.data;
+        setViewing(patient);
+        setViewingQr(response.data.data.qr || null);
+        setViewModal(true);
       }
       setShowModal(false);
       if (location.pathname.endsWith('/new')) navigate('/patients');
@@ -90,6 +115,23 @@ const PatientsPage: React.FC = () => {
     }
   }, [location.pathname]);
 
+  React.useEffect(() => {
+    if (!routePatientId || routePatientId === 'new') return;
+    let active = true;
+    api.get(`/patients/${routePatientId}`)
+      .then(response => {
+        if (active) {
+          setViewing(response.data.data);
+          setViewingQr(null);
+          setViewModal(true);
+        }
+      })
+      .catch(error => {
+        if (active) alert(error.response?.data?.message || 'Unable to load patient profile');
+      });
+    return () => { active = false; };
+  }, [routePatientId]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -101,12 +143,22 @@ const PatientsPage: React.FC = () => {
             {can('patients:create') ? 'Register and manage patient records' : 'View patient records'}
           </p>
         </div>
-        {can('patients:create') && (
-          <button onClick={openAdd}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-semibold gap-2">
-            <Plus className="w-4 h-4" /> Add Patient
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowScannerModal(true)}
+            className="flex items-center px-4 py-2 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white rounded-xl text-sm font-semibold gap-2 shadow-xs active:scale-95 transition"
+          >
+            <QrCode className="w-4 h-4 text-teal-400" />
+            <span>Scan Patient QR</span>
           </button>
-        )}
+          {can('patients:create') && (
+            <button onClick={openAdd}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-semibold gap-2">
+              <Plus className="w-4 h-4" /> Add Patient
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="relative">
@@ -277,7 +329,15 @@ const PatientsPage: React.FC = () => {
                 </div>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">{viewing.first_name} {viewing.last_name}</h2>
               </div>
-              <button onClick={() => setViewModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              <button
+                onClick={() => {
+                  setViewModal(false);
+                  if (routePatientId) navigate('/patients');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <div className="p-6 grid grid-cols-2 gap-4 text-sm">
               {([
@@ -307,9 +367,25 @@ const PatientsPage: React.FC = () => {
                   <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">{viewing.medical_history}</p>
                 </div>
               )}
+              <div className="col-span-2">
+                <PatientQRCode
+                  key={viewing.id}
+                  patientId={viewing.id}
+                  initialQr={viewingQr}
+                />
+              </div>
             </div>
           </div>
         </div>
+      )}
+      {/* ── QR Scanner Modal ── */}
+      {showScannerModal && (
+        <WristbandScannerModal
+          isOpen={showScannerModal}
+          onClose={() => setShowScannerModal(false)}
+          onPatientVerified={handlePatientScanVerified}
+          continueLabel="Open Patient Record"
+        />
       )}
     </div>
   );
