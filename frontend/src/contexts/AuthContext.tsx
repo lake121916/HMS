@@ -8,6 +8,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   mustChangePassword?: boolean;
+  profilePhotoUpdatedAt?: string | null;
 }
 
 export const DEMO_USERS: Record<string, User> = {

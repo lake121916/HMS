@@ -8,6 +8,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import PatientQuickSearchModal from './PatientQuickSearchModal';
 import api from '../services/api';
 import OfflineStatusBanner from './OfflineStatusBanner';
+import ProfileAvatar from './ProfileAvatar';
 import {
   LayoutDashboard, Users, UserPlus, Stethoscope, Calendar, Clock, LogOut, Menu, X,
   Activity, Pill, FlaskConical, Bed, FileText, Shield, ShieldCheck,
@@ -38,8 +39,17 @@ interface Notification {
   created_at: string;
 }
 
+const SAMPLE_PROFILE_PHOTOS = [
+  { id: 'doctor-1', name: 'Portrait 1', src: '/images/profile-samples/doctor-1.jpg' },
+  { id: 'doctor-2', name: 'Portrait 2', src: '/images/profile-samples/doctor-2.jpg' },
+  { id: 'doctor-3', name: 'Portrait 3', src: '/images/profile-samples/doctor-3.jpg' },
+  { id: 'doctor-4', name: 'Portrait 4', src: '/images/profile-samples/doctor-4.jpg' },
+  { id: 'doctor-5', name: 'Portrait 5', src: '/images/profile-samples/doctor-5.jpg' },
+  { id: 'doctor-6', name: 'Portrait 6', src: '/images/profile-samples/doctor-6.jpg' }
+];
+
 const Layout: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, setUser } = useAuth();
   const { t, language } = useLanguage();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
@@ -51,6 +61,9 @@ const Layout: React.FC = () => {
   const [themeOpen, setThemeOpen] = React.useState(false);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [profileModalOpen, setProfileModalOpen] = React.useState(false);
+  const [profilePhotoUploading, setProfilePhotoUploading] = React.useState(false);
+  const [profilePhotoError, setProfilePhotoError] = React.useState('');
+  const profilePhotoInputRef = React.useRef<HTMLInputElement>(null);
   const [changePasswordModalOpen, setChangePasswordModalOpen] = React.useState(false);
   const [boardDropdownOpen, setBoardDropdownOpen] = React.useState(() => {
     return location.pathname.startsWith('/board');
@@ -125,6 +138,61 @@ const Layout: React.FC = () => {
   const [passwordLoading, setPasswordLoading] = React.useState(false);
   const [passwordError, setPasswordError] = React.useState('');
   const [passwordSuccess, setPasswordSuccess] = React.useState('');
+
+  const handleProfilePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+    setProfilePhotoError('');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setProfilePhotoError('Choose a JPEG, PNG, or WebP image.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setProfilePhotoError('Profile photo must be 2 MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('photo', file);
+    await saveProfilePhoto(formData);
+    event.target.value = '';
+  };
+
+  const saveProfilePhoto = async (formData: FormData) => {
+    if (!user) return;
+    setProfilePhotoUploading(true);
+    try {
+      const response = await api.put('/auth/profile-photo', formData);
+      const updatedUser = {
+        ...user,
+        profilePhotoUpdatedAt: response.data.data.profilePhotoUpdatedAt
+      };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    } catch (error: any) {
+      setProfilePhotoError(
+        error.response?.data?.message ||
+        (error.request ? 'Unable to reach the server. Check your connection and try again.' : 'Failed to update profile photo.')
+      );
+    } finally {
+      setProfilePhotoUploading(false);
+    }
+  };
+
+  const handleSampleProfilePhoto = async (src: string) => {
+    setProfilePhotoError('');
+    try {
+      const response = await fetch(src);
+      if (!response.ok) throw new Error('Unable to load sample photo.');
+      const formData = new FormData();
+      formData.append('photo', await response.blob(), 'sample-profile.jpg');
+      await saveProfilePhoto(formData);
+    } catch (error) {
+      setProfilePhotoError(error instanceof Error ? error.message : 'Failed to use sample photo.');
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -925,9 +993,13 @@ const Layout: React.FC = () => {
 
             {/* Staff Full Name & Primary Role Badge (Phase 4.1) */}
             <div className="hidden md:flex items-center gap-2 pl-2 pr-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
-              <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0">
-                {(user?.firstName?.[0] || 'U').toUpperCase()}
-              </div>
+              <ProfileAvatar
+                userId={user?.id || 0}
+                hasPhoto={!!user?.profilePhotoUpdatedAt}
+                photoVersion={user?.profilePhotoUpdatedAt}
+                initials={(user?.firstName?.[0] || 'U').toUpperCase()}
+                className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0"
+              />
               <div className="text-left leading-tight min-w-0">
                 <span className="block text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[120px]">
                   {user?.firstName} {user?.lastName}
@@ -1103,11 +1175,22 @@ const Layout: React.FC = () => {
                   style={{ opacity: 1, visibility: 'visible' }}
                 >
                   <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 mb-1">
-                    <p className="text-xs font-black truncate text-slate-900 dark:text-white">{user?.firstName} {user?.lastName}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{user?.email}</p>
-                    <span className={`mt-1.5 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider inline-block ${getRoleColor(user?.role || 'patient')}`}>
-                      {formatRoleName(user?.role)}
-                    </span>
+                    <div className="flex items-center gap-2.5">
+                      <ProfileAvatar
+                        userId={user?.id || 0}
+                        hasPhoto={!!user?.profilePhotoUpdatedAt}
+                        photoVersion={user?.profilePhotoUpdatedAt}
+                        initials={(user?.firstName?.[0] || 'U').toUpperCase()}
+                        className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-sm shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-black truncate text-slate-900 dark:text-white">{user?.firstName} {user?.lastName}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{user?.email}</p>
+                        <span className={`mt-1.5 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider inline-block ${getRoleColor(user?.role || 'patient')}`}>
+                          {formatRoleName(user?.role)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   <button
@@ -1267,9 +1350,13 @@ const Layout: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full shadow-2xl overflow-hidden">
             <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 p-6 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-black text-lg shadow-md">
-                  {(user?.firstName?.[0] || 'U').toUpperCase()}
-                </div>
+                <ProfileAvatar
+                  userId={user?.id || 0}
+                  hasPhoto={!!user?.profilePhotoUpdatedAt}
+                  photoVersion={user?.profilePhotoUpdatedAt}
+                  initials={(user?.firstName?.[0] || 'U').toUpperCase()}
+                  className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-black text-lg shadow-md"
+                />
                 <div>
                   <h3 className="font-extrabold text-base leading-tight">{user?.firstName} {user?.lastName}</h3>
                   <p className="text-xs text-slate-400">{user?.email}</p>
@@ -1285,6 +1372,48 @@ const Layout: React.FC = () => {
             </div>
 
             <div className="p-6 space-y-4 text-xs">
+              {user && (
+                <div className="space-y-2">
+                  <input
+                    ref={profilePhotoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={handleProfilePhotoChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => profilePhotoInputRef.current?.click()}
+                    disabled={profilePhotoUploading}
+                    className="w-full px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-bold rounded-xl transition"
+                  >
+                    {profilePhotoUploading ? 'Uploading photo…' : user?.profilePhotoUpdatedAt ? 'Change photo from gallery' : 'Choose photo from gallery'}
+                  </button>
+                  {profilePhotoError && (
+                    <p role="alert" className="text-xs text-red-600 dark:text-red-400">{profilePhotoError}</p>
+                  )}
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Choose a JPEG, PNG, or WebP image from your device gallery. Maximum size: 2 MB.</p>
+                  <div className="space-y-2 pt-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Or choose a sample photo</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {SAMPLE_PROFILE_PHOTOS.map(photo => (
+                        <button
+                          key={photo.id}
+                          type="button"
+                          onClick={() => handleSampleProfilePhoto(photo.src)}
+                          disabled={profilePhotoUploading}
+                          aria-label={`Use ${photo.name} sample photo`}
+                          title={photo.name}
+                          className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 hover:border-emerald-500 focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 transition"
+                        >
+                          <img src={photo.src} alt="" className="w-full aspect-[4/3] object-cover" />
+                          <span className="block px-2 py-1 text-[10px] font-semibold text-slate-600 dark:text-slate-300">{photo.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">

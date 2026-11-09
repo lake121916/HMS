@@ -39,6 +39,9 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL CHECK (role IN ('super_admin', 'admin', 'receptionist', 'doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier', 'hospital_manager', 'patient')),
     is_active BOOLEAN DEFAULT true,
+    profile_photo BYTEA,
+    profile_photo_mime_type VARCHAR(30),
+    profile_photo_updated_at TIMESTAMP WITH TIME ZONE,
     last_login TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -466,4 +469,3 @@ INSERT INTO beds (ward, bed_number, bed_type, status, daily_rate) VALUES
 ('Pediatric Ward', 'PD101','pediatric','available',200.00),
 ('Pediatric Ward', 'PD102','pediatric','available',200.00)
 ON CONFLICT (ward, bed_number) DO NOTHING;
-

@@ -1,0 +1,4 @@
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS profile_photo BYTEA,
+  ADD COLUMN IF NOT EXISTS profile_photo_mime_type VARCHAR(30),
+  ADD COLUMN IF NOT EXISTS profile_photo_updated_at TIMESTAMP WITH TIME ZONE;

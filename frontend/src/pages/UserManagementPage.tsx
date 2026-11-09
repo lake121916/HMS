@@ -9,6 +9,7 @@ import {
 import RoleGuard from '../components/RoleGuard';
 import { useAuth } from '../contexts/AuthContext';
 import { useRoleAccess } from '../hooks/useRoleAccess';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 interface User {
   id: number;
@@ -31,6 +32,8 @@ interface User {
   license_number?: string;
   consultation_fee?: number;
   experience_years?: number;
+  has_profile_photo?: boolean;
+  profile_photo_updated_at?: string | null;
 }
 
 interface Department {
@@ -397,10 +400,13 @@ const UserManagementPage: React.FC = () => {
                       <tr key={user.id} className="hover:bg-gray-50/70 dark:hover:bg-gray-750 transition-colors">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-sm flex items-center justify-center flex-shrink-0 border border-blue-100 dark:border-blue-800">
-                              {(user.first_name?.[0] || user.email[0]).toUpperCase()}
-                              {(user.last_name?.[0] || '').toUpperCase()}
-                            </div>
+                            <ProfileAvatar
+                              userId={user.id}
+                              hasPhoto={!!user.has_profile_photo}
+                              photoVersion={user.profile_photo_updated_at}
+                              initials={`${(user.first_name?.[0] || user.email[0]).toUpperCase()}${(user.last_name?.[0] || '').toUpperCase()}`}
+                              className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-sm flex items-center justify-center flex-shrink-0 border border-blue-100 dark:border-blue-800"
+                            />
                             <div>
                               <div className="font-semibold text-gray-900 dark:text-white text-sm">
                                 {user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email.split('@')[0]}

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import ProfileAvatar from '../components/ProfileAvatar';
 import {
   CalendarDays, FileText, FlaskConical, Pill, Receipt, RefreshCw, Bell,
-  User, AlertTriangle, Printer, Activity
+  AlertTriangle, Printer, Activity
 } from 'lucide-react';
 
 interface PortalData {
@@ -77,6 +79,7 @@ type TabKey = 'overview' | 'appointments' | 'labs' | 'prescriptions' | 'billing'
 const card = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900';
 
 const PatientPortalPage: React.FC = () => {
+  const { user } = useAuth();
   const [data, setData] = useState<PortalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -111,9 +114,13 @@ const PatientPortalPage: React.FC = () => {
       {/* ── Top Header & Patient Identity Card ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-teal-700 via-teal-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-teal-300 shadow-inner">
-            <User className="w-8 h-8" />
-          </div>
+          <ProfileAvatar
+            userId={user?.id || 0}
+            hasPhoto={!!user?.profilePhotoUpdatedAt}
+            photoVersion={user?.profilePhotoUpdatedAt}
+            initials={`${patient?.first_name?.[0] || 'P'}${patient?.last_name?.[0] || ''}`}
+            className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-teal-300 shadow-inner text-xl font-bold"
+          />
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-teal-400/20 text-teal-200 border border-teal-300/30">

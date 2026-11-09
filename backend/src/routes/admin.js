@@ -12,6 +12,7 @@ router.get('/users', authenticate, authorize('super_admin', 'admin'), handleAsyn
   const { role, search } = req.query;
   let q = `
     SELECT u.id, u.email, u.role, u.is_active, u.last_login, u.created_at,
+      (u.profile_photo IS NOT NULL) AS has_profile_photo, u.profile_photo_updated_at,
       u.phone, u.gender, u.address, u.emergency_contact,
       COALESCE(
         u.first_name || ' ' || u.last_name,

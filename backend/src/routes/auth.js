@@ -1,9 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
+const multer = require('multer');
 const authController = require('../controllers/authController');
 const validate = require('../middleware/validation');
 const { authenticate, authorize } = require('../middleware/auth');
+const { sendError } = require('../utils/response');
+const profilePhotoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 }
+}).single('photo');
 
 // ── Public ──────────────────────────────────────────────────────────────────
 
@@ -50,6 +56,20 @@ router.post(
 // ── Authenticated ────────────────────────────────────────────────────────────
 
 router.post('/logout', authenticate, authController.logout);
+
+router.put('/profile-photo', authenticate, (req, res, next) => {
+  profilePhotoUpload(req, res, (error) => {
+    if (error) {
+      const message = error.code === 'LIMIT_FILE_SIZE'
+        ? 'Profile photo must be 2 MB or smaller'
+        : 'Unable to process profile photo upload';
+      return sendError(res, message, 400);
+    }
+    next();
+  });
+}, authController.updateProfilePhoto);
+
+router.get('/profile-photo/:userId', authenticate, authController.getProfilePhoto);
 
 router.post(
   '/change-password',

@@ -3,6 +3,24 @@ const jwt = require('jsonwebtoken');
 const pool = require('../config/database');
 const { sendSuccess, sendError, handleAsync } = require('../utils/response');
 
+const ACTOR_ROLES = [
+  'super_admin', 'admin', 'receptionist', 'doctor', 'nurse',
+  'lab_technician', 'pharmacist', 'cashier', 'hospital_manager', 'patient'
+];
+
+const getImageMimeType = (buffer) => {
+  if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+    return 'image/png';
+  }
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return 'image/jpeg';
+  }
+  if (buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') {
+    return 'image/webp';
+  }
+  return null;
+};
+
 const generateTokens = (user) => {
   const token = jwt.sign(
     { id: user.id, email: user.email, role: user.role },
@@ -193,10 +211,64 @@ const login = handleAsync(async (req, res) => {
     role: user.role,
     firstName,
     lastName,
-    mustChangePassword
+    mustChangePassword,
+    profilePhotoUpdatedAt: user.profile_photo_updated_at || null
   };
 
   sendSuccess(res, { token, refreshToken, user: userData, mustChangePassword }, 'Login successful');
+});
+
+const updateProfilePhoto = handleAsync(async (req, res) => {
+  if (!ACTOR_ROLES.includes(req.user.role)) {
+    return sendError(res, 'This account cannot manage a profile photo', 403);
+  }
+  if (!req.file) {
+    return sendError(res, 'Choose a profile photo to upload', 400);
+  }
+
+  const mimeType = getImageMimeType(req.file.buffer);
+  if (!mimeType) {
+    return sendError(res, 'Profile photo must be a valid JPEG, PNG, or WebP image', 400);
+  }
+
+  const result = await pool.query(
+    `UPDATE users
+     SET profile_photo = $1, profile_photo_mime_type = $2, profile_photo_updated_at = CURRENT_TIMESTAMP
+     WHERE id = $3 AND role = ANY($4::varchar[])
+     RETURNING profile_photo_updated_at`,
+    [req.file.buffer, mimeType, req.user.id, ACTOR_ROLES]
+  );
+  if (!result.rows.length) {
+    return sendError(res, 'Staff account not found', 404);
+  }
+
+  sendSuccess(res, {
+    profilePhotoUpdatedAt: result.rows[0].profile_photo_updated_at
+  }, 'Profile photo updated successfully');
+});
+
+const getProfilePhoto = handleAsync(async (req, res) => {
+  const userId = Number(req.params.userId);
+  if (!Number.isInteger(userId) || userId < 1) {
+    return sendError(res, 'Invalid staff account ID', 400);
+  }
+
+  const result = await pool.query(
+    `SELECT profile_photo, profile_photo_mime_type
+     FROM users
+     WHERE id = $1 AND role = ANY($2::varchar[])`,
+    [userId, ACTOR_ROLES]
+  );
+  if (!result.rows.length || !result.rows[0].profile_photo) {
+    return sendError(res, 'Profile photo not found', 404);
+  }
+
+  res.set({
+    'Content-Type': result.rows[0].profile_photo_mime_type,
+    'Cache-Control': 'private, max-age=300',
+    'X-Content-Type-Options': 'nosniff'
+  });
+  res.send(result.rows[0].profile_photo);
 });
 
 // ── Logout ────────────────────────────────────────────────────────────────────
@@ -283,4 +355,6 @@ module.exports = {
   changePassword,
   changeRole,
   toggleActive,
+  updateProfilePhoto,
+  getProfilePhoto,
 };
