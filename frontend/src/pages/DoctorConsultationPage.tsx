@@ -382,6 +382,70 @@ const DoctorConsultationPage: React.FC = () => {
     showToast('success', `Applied ${pred.disease} (${pred.icdCode}) to assessment`);
   };
 
+  const CLINICAL_TEST_SCENARIOS = [
+    {
+      name: 'Malaria',
+      badge: 'B50.9',
+      complaint: 'High intermittent fever, severe rigors, body chills, profuse sweating, and intense headache',
+      vitals: { temperature: 39.4, bloodPressureSystolic: 118, bloodPressureDiastolic: 76, heartRate: 104, respiratoryRate: 20, oxygenSaturation: 97 }
+    },
+    {
+      name: 'Pneumonia',
+      badge: 'J18.9',
+      complaint: 'Productive cough with rust-colored purulent sputum, sharp pleuritic chest pain on inspiration, fever, and shortness of breath',
+      vitals: { temperature: 39.2, bloodPressureSystolic: 122, bloodPressureDiastolic: 80, heartRate: 110, respiratoryRate: 28, oxygenSaturation: 90 }
+    },
+    {
+      name: 'Asthma',
+      badge: 'J45.9',
+      complaint: 'Acute wheezing, chest tightness, shortness of breath, and dry nocturnal cough',
+      vitals: { temperature: 37.1, bloodPressureSystolic: 126, bloodPressureDiastolic: 82, heartRate: 98, respiratoryRate: 26, oxygenSaturation: 91 }
+    },
+    {
+      name: 'Hypertension',
+      badge: 'I10',
+      complaint: 'Severe throbbing occipital morning headache, dizziness, neck stiffness, blurred vision, and chest palpitations',
+      vitals: { temperature: 36.9, bloodPressureSystolic: 168, bloodPressureDiastolic: 104, heartRate: 88, respiratoryRate: 16, oxygenSaturation: 98 }
+    },
+    {
+      name: 'Typhoid',
+      badge: 'A01.0',
+      complaint: 'Prolonged step-ladder fever, persistent frontal headache, severe abdominal cramps, and constipation for 6 days',
+      vitals: { temperature: 39.0, bloodPressureSystolic: 110, bloodPressureDiastolic: 70, heartRate: 82, respiratoryRate: 18, oxygenSaturation: 98 }
+    }
+  ];
+
+  const testQuickScenario = async (scenario: typeof CLINICAL_TEST_SCENARIOS[0]) => {
+    if (!activeEncounter || isFinalized) return;
+    setActiveEncounter((prev: any) => ({
+      ...prev,
+      chief_complaint: scenario.complaint,
+      temperature: scenario.vitals.temperature,
+      blood_pressure_systolic: scenario.vitals.bloodPressureSystolic,
+      blood_pressure_diastolic: scenario.vitals.bloodPressureDiastolic,
+      oxygen_saturation: scenario.vitals.oxygenSaturation,
+      heart_rate: scenario.vitals.heartRate,
+      respiratory_rate: scenario.vitals.respiratoryRate
+    }));
+
+    setAiAnalyzing(true);
+    setAiError(null);
+    try {
+      const res = await api.post('/ai/predict-disease', {
+        patientId: activeEncounter.patient_id,
+        symptoms: [scenario.complaint],
+        vitals: scenario.vitals
+      });
+      const preds = res.data?.data?.predictions || res.data?.predictions || [];
+      setAiPredictions(preds);
+      showToast('success', `Simulated Scenario: ${scenario.name} (${preds[0]?.disease || 'Evaluated'})`);
+    } catch (err: any) {
+      setAiError('Failed to evaluate scenario.');
+    } finally {
+      setAiAnalyzing(false);
+    }
+  };
+
   // Complete consultation (finalizes record)
   const completeConsultation = async () => {
     if (!activeEncounter) return;
@@ -1007,6 +1071,29 @@ const DoctorConsultationPage: React.FC = () => {
                       )}
                     </button>
                   </div>
+
+                  {/* Defense Clinical Simulation Chips */}
+                  {!isFinalized && (
+                    <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-blue-200/50 dark:border-blue-900/40">
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <Sparkles className="h-3 w-3 text-amber-500" /> Defense Scenarios:
+                      </span>
+                      {CLINICAL_TEST_SCENARIOS.map(sc => (
+                        <button
+                          key={sc.name}
+                          type="button"
+                          disabled={aiAnalyzing}
+                          onClick={() => testQuickScenario(sc)}
+                          className="text-[11px] px-2 py-0.5 rounded-lg border border-blue-200 dark:border-blue-800/80 bg-white/90 dark:bg-slate-800/90 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-700 dark:text-slate-300 font-medium transition shadow-2xs flex items-center gap-1"
+                        >
+                          <span>{sc.name}</span>
+                          <span className="text-[9px] px-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-mono font-bold">
+                            {sc.badge}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   {aiError && (
                     <div className="text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-2.5 flex items-center gap-2">
