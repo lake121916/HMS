@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, User, Phone, Calendar, ShieldAlert, ArrowRight, X, Loader2 } from 'lucide-react';
+import { Search, User, Phone, Calendar, ShieldAlert, ArrowRight, X, Loader2, Scan } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getRolePatientWorkflowUrl } from '../utils/roleWorkflowRouting';
 
 interface PatientQuickSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenScanner?: () => void;
 }
 
-export const PatientQuickSearchModal: React.FC<PatientQuickSearchModalProps> = ({ isOpen, onClose }) => {
+export const PatientQuickSearchModal: React.FC<PatientQuickSearchModalProps> = ({ isOpen, onClose, onOpenScanner }) => {
   const { user } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
@@ -66,33 +68,10 @@ export const PatientQuickSearchModal: React.FC<PatientQuickSearchModalProps> = (
     return () => clearTimeout(timer);
   }, [query, isOpen]);
 
-  // Navigate according to active role
+  // Navigate according to active role workbench
   const handleSelectPatient = (patient: any) => {
     onClose();
-    const role = user?.role || '';
-    switch (role) {
-      case 'doctor':
-        navigate(`/consultation?patient_id=${patient.id}`);
-        break;
-      case 'nurse':
-        navigate(`/nurse?patient_id=${patient.id}`);
-        break;
-      case 'receptionist':
-        navigate(`/reception-workflow?patient_id=${patient.id}`);
-        break;
-      case 'cashier':
-        navigate(`/cashier-workflow?patient_id=${patient.id}`);
-        break;
-      case 'lab_technician':
-        navigate(`/lab-dashboard?patient_id=${patient.id}`);
-        break;
-      case 'pharmacist':
-        navigate(`/pharmacy?patient_id=${patient.id}`);
-        break;
-      default:
-        navigate(`/patients`);
-        break;
-    }
+    navigate(getRolePatientWorkflowUrl(user?.role || '', patient.id));
   };
 
   // Keyboard navigation
@@ -147,6 +126,20 @@ export const PatientQuickSearchModal: React.FC<PatientQuickSearchModalProps> = (
               className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
             >
               <X className="w-4 h-4" />
+            </button>
+          )}
+          {onOpenScanner && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenScanner();
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 dark:hover:bg-teal-900 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 text-xs font-bold transition shrink-0"
+              title="Switch to camera QR scanning"
+            >
+              <Scan className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Scan QR</span>
             </button>
           )}
           <kbd className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-mono font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">

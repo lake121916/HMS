@@ -8,8 +8,10 @@
  * - Order prescriptions, lab tests, radiology, procedures with auto-billing
  */
 import React, { useEffect, useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { DoctorEmergencyQueue } from '../components/DoctorEmergencyQueue';
 import WristbandScannerModal from '../components/WristbandScannerModal';
+import PatientJourneyHandoff from '../components/workflow/PatientJourneyHandoff';
 import api from '../services/api';
 import {
   Stethoscope, FlaskConical, Scan, Pill, Syringe,
@@ -131,6 +133,19 @@ const DoctorConsultationPage: React.FC = () => {
   const [queue, setQueue] = useState<EncounterSummary[]>([]);
   const [activeEncounter, setActiveEncounter] = useState<FullEncounter | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('consult');
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const urlPatientId = searchParams.get('patient_id');
+
+  useEffect(() => {
+    if (urlPatientId && queue.length > 0) {
+      const pid = parseInt(urlPatientId, 10);
+      const matchingEnc = queue.find(q => q.patient_id === pid);
+      if (matchingEnc && activeEncounter?.id !== matchingEnc.id) {
+        openEncounter(matchingEnc);
+      }
+    }
+  }, [urlPatientId, queue]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -990,6 +1005,46 @@ const DoctorConsultationPage: React.FC = () => {
 
           {/* ── Tab Content ─────────────────────────────────────────── */}
           <div className="flex-1 overflow-y-auto p-6">
+            {/* Active Patient Journey Handoff & Prominence */}
+            <div className="mb-5 max-w-4xl">
+              <PatientJourneyHandoff
+                currentStage={isFinalized ? 'orders' : 'consultation'}
+                patient={{
+                  id: activeEncounter.patient_id,
+                  mrn: (activeEncounter as any).mrn || `ETH-PAT-${activeEncounter.patient_id}`,
+                  first_name: activeEncounter.first_name,
+                  last_name: activeEncounter.last_name,
+                  gender: activeEncounter.gender,
+                  date_of_birth: activeEncounter.date_of_birth,
+                  blood_type: activeEncounter.blood_type,
+                  allergies: activeEncounter.allergies,
+                  priority: activeEncounter.priority,
+                  encounter_number: activeEncounter.encounter_number
+                }}
+                nextActionLabel={isFinalized ? 'Proceed to Laboratory' : 'Finalize Consultation & Bill'}
+                nextActionDescription={
+                  isFinalized
+                    ? 'Clinical consultation is finalized & locked. Lab requests and prescriptions dispatched.'
+                    : 'Review AI differential and vitals. Enter ICD-10 diagnosis and finalize to dispatch orders.'
+                }
+                onNextAction={
+                  isFinalized
+                    ? () => navigate(`/lab-dashboard?patient_id=${activeEncounter.patient_id}`)
+                    : completeConsultation
+                }
+                nextActionLoading={submitting}
+                secondaryAction={
+                  isFinalized
+                    ? {
+                        label: 'Open Pharmacy Queue',
+                        icon: Pill,
+                        onClick: () => navigate(`/pharmacy?patient_id=${activeEncounter.patient_id}`)
+                      }
+                    : undefined
+                }
+              />
+            </div>
+
             {/* 1. CONSULTATION TAB */}
             {activeTab === 'consult' && (
               <div className="max-w-3xl space-y-4">

@@ -5,6 +5,7 @@
  * - Enter and submit results
  */
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { FlaskConical, RefreshCw, CheckCircle2, Search, AlertCircle, Printer, QrCode } from 'lucide-react';
 import WristbandScannerModal from '../components/WristbandScannerModal';
@@ -32,6 +33,7 @@ const priorityColors: Record<string, string> = {
 };
 
 const LabTechDashboard: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [tests, setTests] = useState<LabTest[]>([]);
   const [selected, setSelected] = useState<LabTest | null>(null);
   const [loading, setLoading] = useState(false);
@@ -40,6 +42,29 @@ const LabTechDashboard: React.FC = () => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'pending'|'in_progress'|'completed'|'all'>('pending');
   const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const urlPatientId = searchParams.get('patient_id');
+
+  useEffect(() => {
+    if (urlPatientId) {
+      loadPatientForLab(parseInt(urlPatientId, 10));
+    }
+  }, [urlPatientId]);
+
+  const loadPatientForLab = async (pid: number) => {
+    try {
+      const res = await api.get(`/patients/${pid}`);
+      if (res.data?.success && res.data.data) {
+        const p = res.data.data;
+        const fullName = `${p.first_name} ${p.last_name}`;
+        setSearch(fullName);
+        setFilter('all');
+        showToast('success', `Identified patient: ${fullName}. Displaying lab orders.`);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const handlePatientScanVerified = (result: any) => {
     setShowScannerModal(false);
@@ -85,7 +110,7 @@ const LabTechDashboard: React.FC = () => {
     setSubmitting(true);
     try {
       await api.post(`/lab-tests/${selected.id}/result`, resultForm);
-      showToast('success', `Results recorded for ${selected.test_name}!`);
+      showToast('success', `Results recorded for ${selected.test_name}! Dispatched to doctor chart and cashier billing.`);
       setSelected(null);
       setResultForm({ results: '', reference_range: '', is_abnormal: false, notes: '' });
       fetchTests();

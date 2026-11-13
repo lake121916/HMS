@@ -9,6 +9,7 @@
  *  5. Digital Verify — Telebirr / CBE reference verification + pending list
  */
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import {
   Receipt, CreditCard, DollarSign, CheckCircle2,
@@ -21,6 +22,7 @@ import ZReportView from '../components/cashier/ZReportView';
 import ThermalReceiptPrint from '../components/cashier/ThermalReceiptPrint';
 import DigitalPaymentVerifier from '../components/cashier/DigitalPaymentVerifier';
 import WristbandScannerModal from '../components/WristbandScannerModal';
+import PatientJourneyHandoff from '../components/workflow/PatientJourneyHandoff';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -67,6 +69,7 @@ const statusColors: Record<string, string> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const CashierWorkflow: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>('billing');
   const [activeShiftId, setActiveShiftId] = useState<number | null>(null);
 
@@ -74,6 +77,18 @@ const CashierWorkflow: React.FC = () => {
   const [encounters, setEncounters] = useState<PendingEncounter[]>([]);
   const [selected, setSelected] = useState<PendingEncounter | null>(null);
   const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const urlPatientId = searchParams.get('patient_id');
+
+  useEffect(() => {
+    if (urlPatientId && encounters.length > 0) {
+      const pid = parseInt(urlPatientId, 10);
+      const match = encounters.find(e => (e as any).patient_id === pid);
+      if (match) {
+        openEncounter(match);
+      }
+    }
+  }, [urlPatientId, encounters]);
 
   const handlePatientScanVerified = (result: any) => {
     setShowScannerModal(false);
@@ -307,6 +322,29 @@ const CashierWorkflow: React.FC = () => {
             {/* Invoice detail + payment form */}
             {selected && invoiceDetail ? (
               <div className="space-y-4">
+                <PatientJourneyHandoff
+                  currentStage={parseFloat(invoiceDetail.invoice.amount_paid || 0) >= parseFloat(invoiceDetail.invoice.total_amount || 0) ? 'completed' : 'billing'}
+                  patient={{
+                    id: (selected as any).patient_id || selected.id,
+                    mrn: (selected as any).mrn || `ETH-PAT-${(selected as any).patient_id || selected.id}`,
+                    first_name: selected.first_name,
+                    last_name: selected.last_name,
+                    phone: selected.phone,
+                    encounter_number: selected.encounter_number
+                  }}
+                  nextActionLabel={parseFloat(invoiceDetail.invoice.amount_paid || 0) >= parseFloat(invoiceDetail.invoice.total_amount || 0) ? 'Print Stamped Receipt' : 'Collect Payment (ETB)'}
+                  nextActionDescription={
+                    parseFloat(invoiceDetail.invoice.amount_paid || 0) >= parseFloat(invoiceDetail.invoice.total_amount || 0)
+                      ? 'Invoice is fully paid! Patient clinical journey is complete and cleared for discharge.'
+                      : `Outstanding balance of ${(parseFloat(invoiceDetail.invoice.total_amount || 0) - parseFloat(invoiceDetail.invoice.amount_paid || 0)).toLocaleString()} ETB for Invoice #${invoiceDetail.invoice.id}. Collect payment via Cash, Telebirr, or CBE Birr.`
+                  }
+                  onNextAction={
+                    parseFloat(invoiceDetail.invoice.amount_paid || 0) >= parseFloat(invoiceDetail.invoice.total_amount || 0)
+                      ? () => setShowReceipt(true)
+                      : undefined
+                  }
+                />
+
                 {/* Invoice header */}
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
                   <div className="flex items-center justify-between mb-4">

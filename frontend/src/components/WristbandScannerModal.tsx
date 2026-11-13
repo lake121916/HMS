@@ -1,11 +1,12 @@
 import React from 'react';
-import { X, QrCode } from 'lucide-react';
+import { X, QrCode, Search } from 'lucide-react';
 import PatientQRScanner, { VerifiedPatient } from './PatientQRScanner';
 
 export interface WristbandScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPatientVerified?: (patientData: any) => void;
+  onOpenSearch?: () => void;
   qrOnly?: boolean;
   continueLabel?: string;
 }
@@ -14,6 +15,7 @@ const WristbandScannerModal: React.FC<WristbandScannerModalProps> = ({
   isOpen,
   onClose,
   onPatientVerified,
+  onOpenSearch,
   qrOnly = false,
   continueLabel
 }) => {
@@ -50,14 +52,30 @@ const WristbandScannerModal: React.FC<WristbandScannerModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close scanner modal"
-            className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onOpenSearch && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenSearch();
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 hover:text-white text-xs font-bold transition border border-teal-500/30"
+                title="Switch to manual search by patient name or phone number"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Search by Name</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close scanner modal"
+              className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body with PatientQRScanner */}

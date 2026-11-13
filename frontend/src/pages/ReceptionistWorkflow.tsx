@@ -5,6 +5,7 @@
  * - Send to triage queue
  */
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import {
   Search, UserPlus, ClipboardList, ArrowRight, RefreshCw,
@@ -13,6 +14,7 @@ import {
 import QueueTokenTicket, { QueueTicketData } from '../components/queue/QueueTokenTicket';
 import PatientWristbandModal from '../components/PatientWristbandModal';
 import WristbandScannerModal from '../components/WristbandScannerModal';
+import PatientJourneyHandoff from '../components/workflow/PatientJourneyHandoff';
 
 interface Patient {
   id: number;
@@ -68,6 +70,7 @@ const statusLabels: Record<string, string> = {
 };
 
 const ReceptionistWorkflow: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [encounters, setEncounters] = useState<Encounter[]>([]);
   const [search, setSearch] = useState('');
@@ -78,6 +81,34 @@ const ReceptionistWorkflow: React.FC = () => {
   const [printTicket, setPrintTicket] = useState<QueueTicketData | null>(null);
   const [wristbandPatient, setWristbandPatient] = useState<any | null>(null);
   const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const urlPatientId = searchParams.get('patient_id');
+
+  useEffect(() => {
+    if (urlPatientId) {
+      const pid = parseInt(urlPatientId, 10);
+      if (!isNaN(pid)) {
+        loadPatientById(pid);
+      }
+    }
+  }, [urlPatientId]);
+
+  const loadPatientById = async (id: number) => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/patients/${id}`);
+      if (res.data?.success && res.data.data) {
+        setSelectedPatient(res.data.data);
+        setActiveTab('search');
+        setSearch(`${res.data.data.first_name} ${res.data.data.last_name}`);
+        showToast('success', `Identified patient: ${res.data.data.first_name} ${res.data.data.last_name} (${res.data.data.mrn || 'ID #' + id})`);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handlePatientScanVerified = async (result: any) => {
     setShowScannerModal(false);
@@ -333,56 +364,63 @@ const ReceptionistWorkflow: React.FC = () => {
           {/* Patient Action Panel */}
           <div className="space-y-4">
             {selectedPatient ? (
-              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Selected Patient</h2>
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-900 rounded-xl p-4 mb-5">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
-                      {selectedPatient.first_name[0]}{selectedPatient.last_name[0]}
-                    </div>
-                    <div>
-                      <div className="font-bold text-slate-900 dark:text-white">
-                        {selectedPatient.first_name} {selectedPatient.last_name}
-                      </div>
-                      <div className="text-sm text-slate-500">
-                        ID: #{selectedPatient.id} · {selectedPatient.gender} ·{' '}
-                        {selectedPatient.date_of_birth
-                          ? `${Math.floor((Date.now() - new Date(selectedPatient.date_of_birth).getTime()) / 3.154e10)} yrs`
-                          : 'Age N/A'}
-                      </div>
-                      <div className="text-xs text-slate-400">{selectedPatient.phone} · {selectedPatient.email}</div>
-                    </div>
-                  </div>
-                </div>
+              <div className="space-y-4">
+                <PatientJourneyHandoff
+                  currentStage="register"
+                  patient={{
+                    id: selectedPatient.id,
+                    mrn: (selectedPatient as any).mrn || `PAT-${String(selectedPatient.id).padStart(4, '0')}`,
+                    first_name: selectedPatient.first_name,
+                    last_name: selectedPatient.last_name,
+                    gender: selectedPatient.gender,
+                    date_of_birth: selectedPatient.date_of_birth,
+                    blood_type: selectedPatient.blood_type,
+                    phone: selectedPatient.phone,
+                    allergies: (selectedPatient as any).allergies
+                  }}
+                  nextActionLabel="Send Outpatient to Triage"
+                  nextActionDescription="Patient verified at Reception desk. Create visit and route to Triage & Vitals desk."
+                  onNextAction={() => createEncounterAndSendToTriage(selectedPatient.id, 'outpatient')}
+                  nextActionLoading={loading}
+                  secondaryAction={{
+                    label: 'Print Wristband',
+                    icon: Printer,
+                    onClick: () => setWristbandPatient(selectedPatient)
+                  }}
+                />
 
-                <div className="space-y-3">
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Create Encounter & Send to Triage:</p>
-                  {(['outpatient', 'emergency', 'inpatient'] as const).map(type => (
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Create Visit by Acuity / Department:
+                    </p>
                     <button
-                      key={type}
-                      onClick={() => createEncounterAndSendToTriage(selectedPatient.id, type)}
-                      disabled={loading}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border font-medium text-sm transition disabled:opacity-50
-                        ${type === 'emergency'
-                          ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
-                          : type === 'inpatient'
-                            ? 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100'
-                            : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
-                        }`}
+                      onClick={() => setSelectedPatient(null)}
+                      className="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                     >
-                      <span className="capitalize">{type} Visit</span>
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs opacity-70">Create & Send to Triage</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </div>
+                      Clear Selection
                     </button>
-                  ))}
-                  <button
-                    onClick={() => setSelectedPatient(null)}
-                    className="w-full text-sm text-slate-500 hover:text-slate-700 py-2"
-                  >
-                    ✕ Clear selection
-                  </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {(['outpatient', 'emergency', 'inpatient'] as const).map(type => (
+                      <button
+                        key={type}
+                        onClick={() => createEncounterAndSendToTriage(selectedPatient.id, type)}
+                        disabled={loading}
+                        className={`min-h-[44px] flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border font-bold text-xs transition disabled:opacity-50
+                          ${type === 'emergency'
+                            ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:border-red-900 dark:text-red-300'
+                            : type === 'inpatient'
+                              ? 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-950/40 dark:border-purple-900 dark:text-purple-300'
+                              : 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 dark:bg-teal-950/40 dark:border-teal-900 dark:text-teal-300'
+                          }`}
+                      >
+                        <span className="capitalize">{type}</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : (

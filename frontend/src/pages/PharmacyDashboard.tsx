@@ -12,6 +12,7 @@
  */
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
@@ -137,11 +138,40 @@ interface PrescriptionLabelData {
 
 export const PharmacyDashboard: React.FC = () => {
   const { language } = useLanguage();
+  const [searchParams] = useSearchParams();
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState<
     'prescriptions' | 'pos' | 'catalog' | 'batches' | 'controlled' | 'alerts' | 'analytics'
   >('prescriptions');
+
+  const urlPatientId = searchParams.get('patient_id');
+
+  useEffect(() => {
+    if (urlPatientId) {
+      loadPatientForPharmacy(parseInt(urlPatientId, 10));
+    }
+  }, [urlPatientId]);
+
+  const loadPatientForPharmacy = async (pid: number) => {
+    try {
+      const res = await api.get(`/patients/${pid}`);
+      if (res.data?.success && res.data.data) {
+        const p = res.data.data;
+        const fullName = `${p.first_name} ${p.last_name}`;
+        setRxSearch(fullName);
+        setActiveTab('prescriptions');
+        setRxFilter('all');
+        if (p.allergies) {
+          showToast('warning', `Identified patient ${fullName}. Documented Allergies: ${p.allergies}`);
+        } else {
+          showToast('success', `Identified patient ${fullName}. Filtering prescriptions.`);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   // General Loading & Feedback
   const [loading, setLoading] = useState(false);

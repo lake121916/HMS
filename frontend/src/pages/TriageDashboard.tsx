@@ -6,6 +6,7 @@
  * 3. Completed (triage_completed / routing completed)
  */
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import {
   Activity, Heart, Thermometer, Wind,
@@ -14,6 +15,7 @@ import {
   ChevronRight, Eye, Search, FileText, QrCode
 } from 'lucide-react';
 import WristbandScannerModal from '../components/WristbandScannerModal';
+import PatientJourneyHandoff from '../components/workflow/PatientJourneyHandoff';
 
 interface TriageEncounter {
   id: number;
@@ -141,6 +143,7 @@ const fallbackEncounters: TriageEncounter[] = [
 ];
 
 const TriageDashboard: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [stageTab, setStageTab] = useState<'waiting' | 'in_triage' | 'completed'>('waiting');
   const [encounters, setEncounters] = useState<TriageEncounter[]>(fallbackEncounters);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -153,6 +156,20 @@ const TriageDashboard: React.FC = () => {
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [showScannerModal, setShowScannerModal] = useState(false);
+
+  const urlPatientId = searchParams.get('patient_id');
+
+  useEffect(() => {
+    if (urlPatientId && encounters.length > 0) {
+      const pid = parseInt(urlPatientId, 10);
+      const match = encounters.find(e => e.patient_id === pid);
+      if (match) {
+        selectPatient(match);
+        setStageTab('in_triage');
+        showToast('success', `Identified patient ${match.first_name} ${match.last_name}. Triage assessment opened.`);
+      }
+    }
+  }, [urlPatientId, encounters]);
 
   const handleScanVerified = (result: any) => {
     setShowScannerModal(false);
@@ -552,7 +569,28 @@ const TriageDashboard: React.FC = () => {
           {/* Assessment Form Area */}
           <div className="lg:col-span-2">
             {selected ? (
-              <form onSubmit={submitTriage} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm space-y-5">
+              <div className="space-y-4">
+                <PatientJourneyHandoff
+                  currentStage="triage"
+                  patient={{
+                    id: selected.patient_id,
+                    mrn: (selected as any).mrn || `ETH-PAT-${selected.patient_id}`,
+                    first_name: selected.first_name,
+                    last_name: selected.last_name,
+                    gender: selected.gender,
+                    date_of_birth: selected.date_of_birth,
+                    blood_type: selected.blood_type,
+                    allergies: selected.allergies,
+                    priority: vitals.priority,
+                    encounter_number: selected.encounter_number
+                  }}
+                  nextActionLabel="Submit Vitals & Route to Doctor"
+                  nextActionDescription="Record vitals and chief complaint. Patient will be immediately routed to the attending physician."
+                  onNextAction={submitTriage as any}
+                  nextActionLoading={submitting}
+                />
+
+                <form onSubmit={submitTriage} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm space-y-5">
                 <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700">
                   <div>
                     <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Active Patient Assessment</span>
@@ -833,6 +871,7 @@ const TriageDashboard: React.FC = () => {
                       : '✓ Complete Triage Assessment & Send to Vitals Queue'}
                 </button>
               </form>
+              </div>
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-12 text-center text-gray-400">
                 <Stethoscope className="w-12 h-12 mx-auto mb-3 opacity-30 text-blue-500" />

@@ -10,6 +10,7 @@ import api from '../services/api';
 import OfflineStatusBanner from './OfflineStatusBanner';
 import ProfileAvatar from './ProfileAvatar';
 import WristbandScannerModal from './WristbandScannerModal';
+import { getRolePatientWorkflowUrl, getRoleWorkflowLabel } from '../utils/roleWorkflowRouting';
 import {
   LayoutDashboard, Users, UserPlus, Stethoscope, Calendar, Clock, LogOut, Menu, X,
   Activity, Pill, FlaskConical, Bed, FileText, Shield, ShieldCheck,
@@ -543,13 +544,7 @@ const Layout: React.FC = () => {
   ].includes(user.role);
   const handlePatientQrVerified = (result: { patient: { id: number } }) => {
     const patientId = result.patient.id;
-    if (can('patients:view')) {
-      navigate(`/patients/${patientId}`);
-    } else if (user?.role === 'cashier') {
-      navigate(`/invoices?patient_id=${patientId}`);
-    } else if (user?.role === 'pharmacist') {
-      navigate(`/prescriptions?patient_id=${patientId}`);
-    }
+    navigate(getRolePatientWorkflowUrl(user?.role || '', patientId));
   };
   const navigation = getNavigationByRole(user?.role || 'patient')
     .filter(item => {
@@ -985,31 +980,38 @@ const Layout: React.FC = () => {
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Universal Patient Quick Search Trigger (Phase 5) */}
-            <button
-              onClick={() => setQuickSearchOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs transition-colors"
-              title="Search patients (Ctrl + K)"
-            >
-              <Search className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span className="truncate max-w-[140px] sm:max-w-xs">
-                {language === 'am' ? 'ታካሚ ፈልግ... (Ctrl + K)' : 'Search patient... (Ctrl + K)'}
-              </span>
-              <kbd className="hidden sm:inline-block font-mono text-[10px] bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-400">
-                Ctrl+K
-              </kbd>
-            </button>
-            {canScanPatientQr && (
+            {/* Consolidated Patient Search & Scanner Launcher */}
+            <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 p-0.5 shadow-2xs hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
               <button
                 type="button"
-                onClick={() => setPatientScannerOpen(true)}
-                className="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800 hover:bg-teal-100 dark:border-teal-900 dark:bg-teal-950/40 dark:text-teal-300 dark:hover:bg-teal-950"
-                title="Scan a patient QR code"
+                onClick={() => setQuickSearchOpen(true)}
+                className="flex items-center gap-2 px-2.5 py-1 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 text-xs transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                title="Search patient by Name, Phone, or MRN (Ctrl + K)"
               >
-                <Scan className="h-4 w-4" />
-                <span className="hidden sm:inline">Scan patient</span>
+                <Search className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                <span className="truncate max-w-[130px] sm:max-w-xs font-medium">
+                  {language === 'am' ? 'ታካሚ ፈልግ...' : 'Find patient...'}
+                </span>
+                <kbd className="hidden sm:inline-block font-mono text-[10px] bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-400">
+                  Ctrl+K
+                </kbd>
               </button>
-            )}
+
+              {canScanPatientQr && (
+                <>
+                  <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-0.5" />
+                  <button
+                    type="button"
+                    onClick={() => setPatientScannerOpen(true)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/50 rounded-lg transition"
+                    title="Scan Patient QR Wristband or ID Card"
+                  >
+                    <Scan className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+                    <span className="hidden md:inline">Scan QR</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
@@ -1293,20 +1295,16 @@ const Layout: React.FC = () => {
       <PatientQuickSearchModal
         isOpen={quickSearchOpen}
         onClose={() => setQuickSearchOpen(false)}
+        onOpenScanner={canScanPatientQr ? () => setPatientScannerOpen(true) : undefined}
       />
       {canScanPatientQr && (
         <WristbandScannerModal
           isOpen={patientScannerOpen}
           onClose={() => setPatientScannerOpen(false)}
           onPatientVerified={handlePatientQrVerified}
-          qrOnly={!can('patients:view')}
-          continueLabel={
-            user?.role === 'cashier'
-              ? 'Open Patient Invoices'
-              : user?.role === 'pharmacist'
-                ? 'Open Patient Prescriptions'
-                : 'Open Patient Profile'
-          }
+          onOpenSearch={() => setQuickSearchOpen(true)}
+          qrOnly={false}
+          continueLabel={`Open in ${getRoleWorkflowLabel(user?.role || '')}`}
         />
       )}
 
