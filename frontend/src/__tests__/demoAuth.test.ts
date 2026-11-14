@@ -7,7 +7,7 @@ describe('demo auth', () => {
 
     expect(user).not.toBeNull();
     expect(user?.role).toBe('nurse');
-    expect(user?.firstName).toBe('Demo');
-    expect(user?.lastName).toBe('Nurse');
+    expect(user?.firstName).toBe('Nurse');
+    expect(user?.lastName).toBe('Bethlehem');
   });
 });
