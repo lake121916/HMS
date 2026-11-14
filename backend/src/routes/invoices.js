@@ -208,7 +208,7 @@ router.post('/', authenticate, authorize('cashier', 'admin', 'super_admin'), asy
 });
 
 // PUT update invoice
-router.put('/:id', authenticate, authorize('admin', 'cashier', 'super_admin'), async (req, res) => {
+router.put('/:id', authenticate, authorize('admin', 'cashier', 'super_admin', 'receptionist'), async (req, res) => {
   try {
     const { subtotal, tax, discount, status, notes, due_date } = req.body;
     const total_amount = subtotal && (parseFloat(subtotal) + parseFloat(tax || 0) - parseFloat(discount || 0));

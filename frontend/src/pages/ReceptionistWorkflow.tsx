@@ -5,11 +5,12 @@
  * - Send to triage queue
  */
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import {
   Search, UserPlus, ClipboardList, ArrowRight, RefreshCw,
-  CheckCircle2, User, Printer, QrCode
+  CheckCircle2, User, Printer, QrCode, DollarSign, Receipt,
+  ShieldCheck
 } from 'lucide-react';
 import QueueTokenTicket, { QueueTicketData } from '../components/queue/QueueTokenTicket';
 import PatientWristbandModal from '../components/PatientWristbandModal';
@@ -25,6 +26,19 @@ interface Patient {
   phone?: string;
   email?: string;
   blood_type?: string;
+}
+
+interface InvoiceSummary {
+  id: number;
+  patient_id: number;
+  patient_name?: string;
+  patient_phone?: string;
+  total_amount: string | number;
+  amount_paid?: string | number;
+  status: string;
+  notes?: string;
+  created_at: string;
+  invoice_date?: string;
 }
 
 interface Encounter {
@@ -70,13 +84,16 @@ const statusLabels: Record<string, string> = {
 };
 
 const ReceptionistWorkflow: React.FC = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [encounters, setEncounters] = useState<Encounter[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
+  const [selectedPatientInvoice, setSelectedPatientInvoice] = useState<InvoiceSummary | null>(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [activeTab, setActiveTab] = useState<'search' | 'encounters'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'encounters' | 'billing'>('search');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [printTicket, setPrintTicket] = useState<QueueTicketData | null>(null);
   const [wristbandPatient, setWristbandPatient] = useState<any | null>(null);
@@ -93,12 +110,54 @@ const ReceptionistWorkflow: React.FC = () => {
     }
   }, [urlPatientId]);
 
+  const fetchPatientInvoice = async (patientId: number) => {
+    try {
+      const res = await api.get(`/invoices?patient_id=${patientId}&limit=5`);
+      const list = res.data?.data?.invoices || [];
+      const pendingInv = list.find((i: any) => i.status === 'pending' || i.status === 'partial') || list[0] || null;
+      setSelectedPatientInvoice(pendingInv);
+    } catch {
+      setSelectedPatientInvoice(null);
+    }
+  };
+
+  const fetchInvoices = async () => {
+    try {
+      const res = await api.get('/invoices?status=pending&limit=50');
+      const list = res.data?.data?.invoices || [];
+      setInvoices(Array.isArray(list) ? list : []);
+    } catch {
+      // ignore
+    }
+  };
+
+  const applyCbhiWaiver = async (invoiceId: number) => {
+    try {
+      setLoading(true);
+      await api.put(`/invoices/${invoiceId}`, {
+        status: 'paid',
+        discount: 50.00,
+        notes: 'CBHI Member Card Verified - 100% Intake Card Fee Covered (Waiver Applied)'
+      });
+      showToast('success', 'CBHI Verification Applied! 50 ETB card fee waived.');
+      fetchInvoices();
+      if (selectedPatient) {
+        fetchPatientInvoice(selectedPatient.id);
+      }
+    } catch {
+      showToast('error', 'Failed to apply CBHI waiver');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadPatientById = async (id: number) => {
     try {
       setLoading(true);
       const res = await api.get(`/patients/${id}`);
       if (res.data?.success && res.data.data) {
         setSelectedPatient(res.data.data);
+        fetchPatientInvoice(res.data.data.id);
         setActiveTab('search');
         setSearch(`${res.data.data.first_name} ${res.data.data.last_name}`);
         showToast('success', `Identified patient: ${res.data.data.first_name} ${res.data.data.last_name} (${res.data.data.mrn || 'ID #' + id})`);
@@ -117,11 +176,13 @@ const ReceptionistWorkflow: React.FC = () => {
     try {
       const res = await api.get(`/patients/${scannedPatient.id}`);
       setSelectedPatient(res.data.data);
+      fetchPatientInvoice(res.data.data.id);
       setSearch(`${scannedPatient.first_name} ${scannedPatient.last_name}`);
       setActiveTab('search');
       showToast('success', `Identified patient: ${scannedPatient.first_name} ${scannedPatient.last_name} (${scannedPatient.mrn || 'ID #' + scannedPatient.id})`);
     } catch {
       setSelectedPatient(scannedPatient);
+      fetchPatientInvoice(scannedPatient.id);
       setActiveTab('search');
     }
   };
@@ -134,7 +195,10 @@ const ReceptionistWorkflow: React.FC = () => {
     emergency_contact_name: '', emergency_contact_phone: ''
   });
 
-  useEffect(() => { fetchEncounters(); }, []);
+  useEffect(() => {
+    fetchEncounters();
+    fetchInvoices();
+  }, []);
 
   const showToast = (type: 'success' | 'error', msg: string) => {
     setToast({ type, msg });
@@ -180,8 +244,10 @@ const ReceptionistWorkflow: React.FC = () => {
         throw new Error('Patient record was not returned by the server');
       }
 
-      showToast('success', `Patient ${patient.first_name} ${patient.last_name} registered successfully! Invoice generated automatically.`);
+      showToast('success', `Patient ${patient.first_name} ${patient.last_name} registered successfully! 50 ETB Card Invoice created.`);
       setSelectedPatient(patient);
+      fetchPatientInvoice(patient.id);
+      fetchInvoices();
       setShowRegForm(false);
       setRegForm({
         first_name: '', last_name: '', date_of_birth: '', gender: 'male',
@@ -274,14 +340,18 @@ const ReceptionistWorkflow: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 w-fit">
-        {[{ key: 'search', label: 'Patient Search' }, { key: 'encounters', label: `Active Encounters (${encounters.length})` }].map(t => (
+      <div className="flex flex-wrap gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 w-fit">
+        {[
+          { key: 'search', label: 'Patient Search' },
+          { key: 'encounters', label: `Active Encounters (${encounters.length})` },
+          { key: 'billing', label: `Billing Hand-off (${invoices.length})` }
+        ].map(t => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key as any)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all
               ${activeTab === t.key
-                ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm'
+                ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm font-semibold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
           >
@@ -340,7 +410,10 @@ const ReceptionistWorkflow: React.FC = () => {
               {filteredPatients.slice(0, 10).map(p => (
                 <div
                   key={p.id}
-                  onClick={() => setSelectedPatient(p)}
+                  onClick={() => {
+                    setSelectedPatient(p);
+                    fetchPatientInvoice(p.id);
+                  }}
                   className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition
                     ${selectedPatient?.id === p.id
                       ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20'
@@ -389,6 +462,65 @@ const ReceptionistWorkflow: React.FC = () => {
                   }}
                 />
 
+                {/* Registration Fee & Intake Billing Status */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+                        <Receipt className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                          Intake Card Fee (50 ETB)
+                        </h3>
+                        <p className="text-[11px] text-slate-500">Registration fee & cashier clearance status</p>
+                      </div>
+                    </div>
+                    {selectedPatientInvoice ? (
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                        selectedPatientInvoice.status === 'paid'
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                          : (selectedPatientInvoice.notes || '').includes('CBHI')
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300'
+                            : 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
+                      }`}>
+                        {selectedPatientInvoice.status === 'paid'
+                          ? 'Paid ✓'
+                          : (selectedPatientInvoice.notes || '').includes('CBHI')
+                            ? 'CBHI Waived ✓'
+                            : 'Pending Cashier'}
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                        Free / Exempt
+                      </span>
+                    )}
+                  </div>
+
+                  {selectedPatientInvoice && selectedPatientInvoice.status !== 'paid' && !(selectedPatientInvoice.notes || '').includes('CBHI') && (
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/cashier?patient_id=${selectedPatient.id}`)}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 rounded-xl text-xs font-semibold transition"
+                      >
+                        <DollarSign className="h-3.5 w-3.5" />
+                        <span>Send to Cashier (Pay 50 ETB)</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => applyCbhiWaiver(selectedPatientInvoice.id)}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/80 rounded-xl text-xs font-semibold transition"
+                        title="Verify Ethiopian CBHI insurance card and waive 50 ETB fee"
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        <span>Apply CBHI Waiver</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -431,14 +563,24 @@ const ReceptionistWorkflow: React.FC = () => {
             )}
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
                 <div className="text-2xl font-bold text-slate-900 dark:text-white">{patients.length}</div>
                 <div className="text-xs text-slate-500 mt-1">Search Results</div>
               </div>
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                <div className="text-2xl font-bold text-amber-600">{encounters.filter(e => e.status === 'waiting_for_triage').length}</div>
+                <div className="text-2xl font-bold text-teal-600">{encounters.filter(e => e.status === 'waiting_for_triage').length}</div>
                 <div className="text-xs text-slate-500 mt-1">Waiting for Triage</div>
+              </div>
+              <div
+                onClick={() => setActiveTab('billing')}
+                className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 cursor-pointer hover:border-amber-400 hover:shadow-sm transition"
+              >
+                <div className="text-2xl font-bold text-amber-600">{invoices.length}</div>
+                <div className="text-xs text-slate-500 mt-1 flex items-center justify-between">
+                  <span>Pending Card Fees</span>
+                  <span className="text-amber-600 font-bold">→</span>
+                </div>
               </div>
             </div>
           </div>
@@ -494,6 +636,111 @@ const ReceptionistWorkflow: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Billing Hand-off Tab */}
+      {activeTab === 'billing' && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="p-5 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-amber-500" />
+                <h2 className="font-bold text-slate-900 dark:text-white text-lg">Intake & Registration Billing Hand-off</h2>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Outstanding 50 ETB card registration fees waiting for Cashier collection or CBHI exemption verification.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchInvoices}
+                className="p-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                title="Refresh invoices"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => navigate('/cashier')}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition"
+              >
+                <span>Full Cashier Desk</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
+            {invoices.length === 0 ? (
+              <div className="p-12 text-center">
+                <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">All Intake Fees Cleared</p>
+                <p className="text-xs text-slate-500 mt-1">No pending registration or intake invoices in the queue.</p>
+              </div>
+            ) : (
+              invoices.map(inv => (
+                <div key={inv.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900 dark:text-white text-sm">
+                        {inv.patient_name || `Patient #${inv.patient_id}`}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-mono bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                        Inv #{inv.id}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                      <span>Phone: {inv.patient_phone || 'N/A'}</span>
+                      <span>•</span>
+                      <span>Created: {new Date(inv.created_at || inv.invoice_date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>•</span>
+                      <span className="text-slate-600 dark:text-slate-300 italic">{inv.notes || 'Intake Card Fee'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 self-end md:self-auto">
+                    <div className="text-right">
+                      <div className="text-sm font-black text-amber-600 dark:text-amber-400">
+                        {Number(inv.total_amount).toFixed(2)} ETB
+                      </div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                        {inv.status}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={async () => {
+                          await loadPatientById(inv.patient_id);
+                          setActiveTab('search');
+                        }}
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition"
+                        title="Load patient details in action panel"
+                      >
+                        Select & Triage
+                      </button>
+                      <button
+                        onClick={() => navigate(`/cashier?patient_id=${inv.patient_id}`)}
+                        className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-lg text-xs font-semibold transition flex items-center gap-1"
+                        title="Hand off patient to Cashier desk for payment"
+                      >
+                        <DollarSign className="h-3 w-3" />
+                        <span>Send to Cashier</span>
+                      </button>
+                      <button
+                        onClick={() => applyCbhiWaiver(inv.id)}
+                        disabled={loading}
+                        className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-lg text-xs font-semibold transition"
+                        title="Apply Ethiopian CBHI insurance card waiver"
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
