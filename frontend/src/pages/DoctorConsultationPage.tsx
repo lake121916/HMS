@@ -771,8 +771,8 @@ const DoctorConsultationPage: React.FC = () => {
       )}
 
       {/* ── Left Panel — Queue ────────────────────────────────────── */}
-      <div className="w-80 flex-shrink-0 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+      <div className={`border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col ${activeEncounter ? 'hidden lg:flex lg:w-80 lg:flex-shrink-0' : 'w-full lg:w-80 lg:flex-shrink-0'}`}>
+        <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
               <Stethoscope className="h-4 w-4 text-blue-600" /> My Patient Queue
@@ -860,17 +860,25 @@ const DoctorConsultationPage: React.FC = () => {
 
       {/* ── Main Content Area ───────────────────────────────────────── */}
       {activeEncounter ? (
-        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900">
+        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900 w-full min-w-0">
           {/* Patient Top Banner */}
-          <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 shadow-sm">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-black text-lg shadow-md">
+          <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-3 sm:px-6 py-3 sm:py-4 shadow-sm">
+            {/* Mobile Back Button to Queue */}
+            <button
+              type="button"
+              onClick={() => setActiveEncounter(null)}
+              className="lg:hidden flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 pb-2 mb-2 border-b border-slate-100 dark:border-slate-700 w-full"
+            >
+              ← Back to Patient Queue ({queue.length})
+            </button>
+            <div className="flex items-center justify-between flex-wrap gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-blue-600 flex items-center justify-center text-white font-black text-base sm:text-lg shadow-md shrink-0">
                   {activeEncounter.first_name[0]}{activeEncounter.last_name[0]}
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="font-black text-base text-slate-900 dark:text-white">
+                    <h2 className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
                       {activeEncounter.first_name} {activeEncounter.last_name}
                     </h2>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${priorityColors[activeEncounter.priority || 'normal']}`}>
@@ -1004,7 +1012,7 @@ const DoctorConsultationPage: React.FC = () => {
           </div>
 
           {/* ── Tab Content ─────────────────────────────────────────── */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-6">
             {/* Active Patient Journey Handoff & Prominence */}
             <div className="mb-5 max-w-4xl">
               <PatientJourneyHandoff
@@ -1718,7 +1726,7 @@ const DoctorConsultationPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-900 text-center text-slate-400">
+        <div className="hidden lg:flex flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900 text-center text-slate-400">
           <div>
             <Stethoscope className="h-16 w-16 mx-auto mb-3 opacity-20" />
             <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Select a patient from the queue</p>

@@ -443,17 +443,17 @@ export const QueueCommandCenter: React.FC = () => {
   }, [hourlyCurve]);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 p-4 lg:p-6 space-y-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 p-2.5 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
 
       {/* ── Top Command Bar ────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
         <div className="flex items-center space-x-3">
-          <div className="p-2.5 bg-cyan-600 rounded-xl text-white shadow-md shadow-cyan-600/20">
-            <Radio className="w-6 h-6 animate-pulse" />
+          <div className="p-2.5 bg-cyan-600 rounded-xl text-white shadow-md shadow-cyan-600/20 shrink-0">
+            <Radio className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <div className="flex items-center space-x-2 flex-wrap">
+              <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                 {locationName}
               </h1>
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${

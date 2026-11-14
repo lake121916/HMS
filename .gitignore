@@ -45,3 +45,6 @@ coverage/
 Thumbs.db
 .idea/
 .system_generated/
+
+.vercel
+.env*

@@ -191,31 +191,31 @@ const CashierWorkflow: React.FC = () => {
       )}
 
       {/* Page header */}
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4 mb-6">
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-2">
             <ShieldCheck className="h-3 w-3" />
             Cashier Station
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Billing & Payment Processing</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Billing & Payment Processing</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Shift-based payment collection, receipt printing, and digital payment verification
             {activeShiftId && (
               <span className="ml-2 text-emerald-600 font-medium">· Shift #{activeShiftId} Active</span>
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setShowScannerModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition text-sm font-semibold shadow-sm active:scale-95"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition text-xs sm:text-sm font-semibold shadow-sm active:scale-95"
           >
             <QrCode className="h-4 w-4" />
-            <span>Scan Patient QR</span>
+            <span>Scan QR</span>
           </button>
           <button onClick={fetchQueue} disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition text-sm text-slate-600">
+            className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition text-xs sm:text-sm text-slate-600">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
@@ -228,7 +228,7 @@ const CashierWorkflow: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition
+            className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition
               ${activeTab === tab.id
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
@@ -249,7 +249,7 @@ const CashierWorkflow: React.FC = () => {
       {activeTab === 'billing' && (
         <div className="space-y-4">
           {/* Stats row */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {[
               { label: 'Pending Payments', value: encounters.length, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-100' },
               { label: 'Outstanding Balance', value: `${totalPending.toLocaleString()} ETB`, color: 'text-red-600', bg: 'bg-red-50 border-red-100' },

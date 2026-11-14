@@ -39,9 +39,9 @@ if (dbUrl) {
     connectionString: dbUrl,
     ssl: { rejectUnauthorized: false },
     max: 20,
-    idleTimeoutMillis: 30000,
-    // Increase connection timeout to avoid short network hiccups causing failures
-    connectionTimeoutMillis: parseInt(process.env.DB_CONN_TIMEOUT || '10000', 10),
+    idleTimeoutMillis: 60000,
+    // Increase connection timeout to 30s to allow serverless Postgres (Neon) wake up smoothly
+    connectionTimeoutMillis: parseInt(process.env.DB_CONN_TIMEOUT || '30000', 10),
   });
 } else {
   // Fallback to individual env vars for local development
@@ -52,8 +52,8 @@ if (dbUrl) {
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || '',
     max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: parseInt(process.env.DB_CONN_TIMEOUT || '10000', 10),
+    idleTimeoutMillis: 60000,
+    connectionTimeoutMillis: parseInt(process.env.DB_CONN_TIMEOUT || '30000', 10),
   });
 }
 

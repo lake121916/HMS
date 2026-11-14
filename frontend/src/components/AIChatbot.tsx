@@ -107,25 +107,25 @@ const AIChatbot: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-[9999] bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-2xl transition-all duration-200 hover:scale-110 group"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3.5 sm:p-4 shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95 group"
           aria-label="Open AI Chat"
         >
           <div className="relative">
-            <MessageSquare className="w-6 h-6" />
+            <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
             <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-yellow-400 animate-pulse" />
           </div>
           {/* Tooltip — sits above the button, never overlaps content */}
-          <span className="absolute bottom-full right-0 mb-2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+          <span className="hidden sm:inline-block absolute bottom-full right-0 mb-2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
             AI Assistant
           </span>
         </button>
       )}
 
-      {/* Chat Window — portal-rendered, always on top, anchored above the trigger */}
+      {/* Chat Window — portal-rendered, always on top, responsive for mobile phones */}
       {isOpen && (
         <div
-          className="fixed bottom-[5.5rem] right-6 z-[9999] w-[24rem] max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-          style={{ maxHeight: 'min(600px, calc(100vh - 7rem))' }}
+          className="fixed inset-x-2 bottom-16 sm:inset-x-auto sm:bottom-[5.5rem] sm:right-6 z-[9999] sm:w-[24rem] max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200"
+          style={{ maxHeight: 'min(580px, calc(100vh - 5rem))' }}
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 flex items-center justify-between">

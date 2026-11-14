@@ -365,42 +365,42 @@ const VitalsPage: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-950 px-3 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider mb-1">
+          <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-950 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[11px] sm:text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wider mb-1">
             Clinical Nursing Station · Stage 3
           </span>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Activity className="w-7 h-7 text-blue-600" /> Patient Vitals & Clinical Measurements
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Activity className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 shrink-0" /> Patient Vitals & Clinical Measurements
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             Measure and record physiological vitals, pain score, and BMI. On completion, automatically forward to OPD Coordinator.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setShowScannerModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-95"
           >
             <QrCode className="w-3.5 h-3.5" />
-            <span>Scan Patient QR</span>
+            <span>Scan QR</span>
           </button>
 
           <button
             onClick={fetchVitalsQueue}
             disabled={queueLoading}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition"
+            className="flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${queueLoading ? 'animate-spin' : ''}`} />
-            Refresh
+            <span className="hidden xs:inline">Refresh</span>
           </button>
 
           {can('vitals:create') && (
             <button
               onClick={openAddStandalone}
-              className="flex items-center px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-xs font-bold gap-2 shadow-sm transition"
+              className="flex items-center px-3.5 py-2 sm:px-4 sm:py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-xs font-bold gap-1.5 sm:gap-2 shadow-sm transition"
             >
               <Plus className="w-4 h-4" /> Manual Record
             </button>
@@ -409,7 +409,7 @@ const VitalsPage: React.FC = () => {
       </div>
 
       {/* Tab Switcher */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('queue')}
           className={`flex items-center gap-2 pb-3 px-3 text-sm font-bold border-b-2 transition-all ${
@@ -617,10 +617,10 @@ const VitalsPage: React.FC = () => {
 
       {/* Record / Edit Vitals Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto border border-slate-200 dark:border-slate-700">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-2.5 sm:p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto border border-slate-200 dark:border-slate-700">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
                   {selectedEncounter ? 'Stage 3: Vitals Assessment' : 'Clinical Recording'}
@@ -647,7 +647,7 @@ const VitalsPage: React.FC = () => {
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-3.5 sm:space-y-4">
               {!selectedEncounter && !editing && (
                 <div>
                   <label className={lbl}>Patient ID *</label>

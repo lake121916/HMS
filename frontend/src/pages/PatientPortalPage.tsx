@@ -112,30 +112,30 @@ const PatientPortalPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* ── Top Header & Patient Identity Card ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-teal-700 via-teal-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-teal-700 via-teal-800 to-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 text-white shadow-xl">
+        <div className="flex items-center gap-3 sm:gap-4">
           <ProfileAvatar
             userId={user?.id || 0}
             hasPhoto={!!user?.profilePhotoUpdatedAt}
             photoVersion={user?.profilePhotoUpdatedAt}
             initials={`${patient?.first_name?.[0] || 'P'}${patient?.last_name?.[0] || ''}`}
-            className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-teal-300 shadow-inner text-xl font-bold"
+            className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-teal-300 shadow-inner text-base sm:text-xl font-bold shrink-0"
           />
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-teal-400/20 text-teal-200 border border-teal-300/30">
+              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-teal-400/20 text-teal-200 border border-teal-300/30">
                 Patient Health Portal
               </span>
               {patient?.blood_type && (
-                <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-200 border border-rose-400/30">
+                <span className="text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-200 border border-rose-400/30">
                   🩸 Blood: {patient.blood_type}
                 </span>
               )}
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black mt-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black mt-1 truncate">
               Welcome, {fullName}
             </h1>
-            <p className="text-xs text-teal-100/80 mt-0.5">
+            <p className="text-xs text-teal-100/80 mt-0.5 truncate">
               MRN / ID: <span className="font-mono font-bold text-white">#ETH-PT-{patient?.id || '0000'}</span> ·
               {patient?.insurance_number ? (
                 <span className="ml-2 font-medium">Policy: {patient.insurance_number}</span>
@@ -144,17 +144,17 @@ const PatientPortalPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start md:self-auto">
+        <div className="flex items-center gap-2 self-start md:self-auto flex-wrap">
           <button
             onClick={printHealthSummary}
-            className="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-2 text-xs font-bold text-white transition shadow-sm"
+            className="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3 sm:px-3.5 py-2 text-xs font-bold text-white transition shadow-sm"
           >
-            <Printer className="h-4 w-4" /> Print Summary
+            <Printer className="h-4 w-4" /> Print
           </button>
           <button
             onClick={loadPortal}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-xl bg-teal-500 hover:bg-teal-400 px-4 py-2 text-xs font-bold text-slate-950 transition shadow-md disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl bg-teal-500 hover:bg-teal-400 px-3.5 sm:px-4 py-2 text-xs font-bold text-slate-950 transition shadow-md disabled:opacity-60"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </button>

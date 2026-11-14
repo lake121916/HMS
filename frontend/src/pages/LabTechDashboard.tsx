@@ -133,48 +133,48 @@ const LabTechDashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <span className="inline-flex items-center rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-700 uppercase tracking-wider">
             Laboratory
           </span>
-          <h1 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">Lab Technician Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Process lab orders and record results</p>
+          <h1 className="mt-1 sm:mt-2 text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Lab Technician Dashboard</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">Process lab orders and record results</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setShowScannerModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm shadow-sm transition active:scale-95"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs sm:text-sm shadow-sm transition active:scale-95"
           >
             <QrCode className="h-4 w-4" />
-            <span>Scan Patient QR</span>
+            <span>Scan QR</span>
           </button>
           <button onClick={fetchTests} disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition text-sm text-slate-600">
+            className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition text-xs sm:text-sm text-slate-600">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
         </div>
       </div>
 
-      <div className="flex gap-4 items-center flex-wrap">
-        <div className="flex gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+      <div className="flex gap-3 sm:gap-4 items-center flex-wrap">
+        <div className="flex gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 overflow-x-auto max-w-full">
           {(['pending','in_progress','completed','all'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition capitalize
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition capitalize whitespace-nowrap
                 ${filter === f ? 'bg-white dark:bg-slate-700 text-cyan-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
               {f.replace('_',' ')}
             </button>
           ))}
         </div>
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="w-64 pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300" />
+            placeholder="Search tests or patients..."
+            className="w-full sm:w-64 pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300" />
         </div>
-        <div className="ml-auto flex gap-4">
+        <div className="w-full sm:w-auto sm:ml-auto flex justify-around sm:justify-end gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
           {[
             { label: 'Pending', count: tests.filter(t=>t.status==='pending').length, color: 'text-amber-600' },
             { label: 'In Progress', count: tests.filter(t=>t.status==='in_progress').length, color: 'text-blue-600' },

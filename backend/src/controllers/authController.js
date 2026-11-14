@@ -24,13 +24,13 @@ const getImageMimeType = (buffer) => {
 const generateTokens = (user) => {
   const token = jwt.sign(
     { id: user.id, email: user.email, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE }
+    process.env.JWT_SECRET || 'hms_jwt_secret_alem_ketema_enat_2024_change_in_production',
+    { expiresIn: process.env.JWT_EXPIRE || '7d' }
   );
   const refreshToken = jwt.sign(
     { id: user.id },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRE }
+    process.env.JWT_REFRESH_SECRET || 'hms_refresh_secret_alem_ketema_enat_2024_change_in_production',
+    { expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d' }
   );
   return { token, refreshToken };
 };

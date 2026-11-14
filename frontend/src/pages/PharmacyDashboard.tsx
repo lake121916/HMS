@@ -714,7 +714,7 @@ export const PharmacyDashboard: React.FC = () => {
   const lowStockCount = medicines.filter(m => (m.stock_quantity || 0) <= (m.reorder_level || 20)).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 p-4 lg:p-6 space-y-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 p-2.5 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
 
       {/* ── Toast Notification ────────────────────────────────────────── */}
       {toast && (
@@ -727,7 +727,7 @@ export const PharmacyDashboard: React.FC = () => {
       )}
 
       {/* ── 1. Top Header & Pharmacy Overview ─────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
         <div>
           <div className="flex items-center space-x-2">
             <span className="p-2 bg-gradient-to-tr from-cyan-600 to-blue-600 rounded-xl text-white shadow-md shadow-cyan-600/20">

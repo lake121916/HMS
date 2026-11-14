@@ -601,8 +601,10 @@ const Layout: React.FC = () => {
     return null;
   };
 
-  // isExpanded = full sidebar visible
-  const isExpanded = !sidebarCollapsed || sidebarHovered;
+  // isDesktopExpanded = full sidebar visible on desktop
+  const isDesktopExpanded = !sidebarCollapsed || sidebarHovered;
+  // On mobile drawer (sidebarOpen), it is always expanded so labels and sections are clearly readable
+  const isExpanded = sidebarOpen || isDesktopExpanded;
 
   const getRoleColor = (role: string) => {
     const colors: Record<string, string> = {
@@ -636,7 +638,7 @@ const Layout: React.FC = () => {
         onMouseLeave={() => setSidebarHovered(false)}
         className={`fixed inset-y-0 left-0 z-50 bg-secondary text-white transform transition-all duration-300 ease-in-out lg:translate-x-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          ${isExpanded ? 'w-64' : 'w-16'}
+          w-72 max-w-[85vw] lg:max-w-none ${isDesktopExpanded ? 'lg:w-64' : 'lg:w-16'}
           ${sidebarCollapsed && sidebarHovered ? 'shadow-[4px_0_32px_rgba(0,0,0,0.45)]' : 'shadow-2xl'}`}
       >
         <div className="flex flex-col h-full">
@@ -967,17 +969,44 @@ const Layout: React.FC = () => {
               );
             })}
           </nav>
+
+          {/* Mobile User Profile & Quick Sign Out Footer in Drawer */}
+          <div className="lg:hidden p-3 border-t border-white/10 bg-black/20 flex-shrink-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <ProfileAvatar
+                  userId={user?.id || 0}
+                  hasPhoto={!!user?.profilePhotoUpdatedAt}
+                  photoVersion={user?.profilePhotoUpdatedAt}
+                  initials={(user?.firstName?.[0] || 'U').toUpperCase()}
+                  className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shrink-0"
+                />
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white truncate">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-[10px] text-white/60 uppercase font-semibold tracking-wider truncate">{formatRoleName(user?.role)}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setSidebarOpen(false); logout(); }}
+                className="p-2 rounded-lg text-rose-300 hover:text-white hover:bg-rose-500/20 transition-colors shrink-0"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Main content wrapper */}
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'}`}>
         {/* Top Navigation Bar (Phase 4 & Phase 5) */}
-        <div className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm lg:px-8">
-          <div className="flex items-center gap-3">
+        <div className="sticky top-0 z-30 flex items-center justify-between h-14 px-2 sm:px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm lg:px-8">
+          <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="lg:hidden p-1.5 sm:p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 shrink-0"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -987,14 +1016,14 @@ const Layout: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setQuickSearchOpen(true)}
-                className="flex items-center gap-2 px-2.5 py-1 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 text-xs transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 text-xs transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
                 title="Search patient by Name, Phone, or MRN (Ctrl + K)"
               >
                 <Search className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span className="truncate max-w-[130px] sm:max-w-xs font-medium">
+                <span className="hidden sm:inline truncate max-w-[130px] sm:max-w-xs font-medium">
                   {language === 'am' ? 'ታካሚ ፈልግ...' : 'Find patient...'}
                 </span>
-                <kbd className="hidden sm:inline-block font-mono text-[10px] bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-400">
+                <kbd className="hidden md:inline-block font-mono text-[10px] bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-400">
                   Ctrl+K
                 </kbd>
               </button>
@@ -1005,7 +1034,7 @@ const Layout: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setPatientScannerOpen(true)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/50 rounded-lg transition"
+                    className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1 text-xs font-bold text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/50 rounded-lg transition"
                     title="Scan Patient QR Wristband or ID Card"
                   >
                     <Scan className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
@@ -1016,7 +1045,7 @@ const Layout: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
             {/* Authoritative Duty Status Pill (Phase 4.2) */}
             {['doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier'].includes(user?.role || '') && (
               <button
@@ -1070,15 +1099,15 @@ const Layout: React.FC = () => {
             <div className="relative" data-theme-panel>
               <button
                 onClick={() => setThemeOpen(!themeOpen)}
-                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                className="p-1.5 sm:p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                 aria-label="Customize Colors"
                 title="Customize Theme"
               >
-                <Palette className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-pulse" />
+                <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
               </button>
 
               {themeOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 z-50">
+                <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-xs sm:w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 z-50">
                   <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-700 mb-3">
                     <span className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
                       <Palette className="w-4 h-4 text-blue-600" /> Customize Theme
@@ -1169,19 +1198,19 @@ const Layout: React.FC = () => {
             <div className="relative" data-notif-panel>
               <button
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                className="relative p-1.5 sm:p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                 aria-label="Notifications"
               >
-                <Bell className="w-5 h-5" />
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold leading-none">
+                  <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold leading-none">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+                <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-sm sm:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                     <span className="text-sm font-semibold text-gray-900 dark:text-white">Notifications</span>
                     {unreadCount > 0 && (
@@ -1211,7 +1240,7 @@ const Layout: React.FC = () => {
                   e.stopPropagation();
                   setSettingsOpen(prev => !prev);
                 }}
-                className={`w-9 h-9 rounded-xl border transition-colors flex items-center justify-center cursor-pointer select-none shrink-0 ${
+                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border transition-colors flex items-center justify-center cursor-pointer select-none shrink-0 ${
                   settingsOpen
                     ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 text-emerald-600 dark:text-emerald-400 shadow-sm'
                     : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
@@ -1219,12 +1248,12 @@ const Layout: React.FC = () => {
                 title={language === 'am' ? 'መቼቶች' : 'Settings (Profile, Change Password, Sign Out)'}
                 aria-label="Account Settings"
               >
-                <Settings className={`w-5 h-5 transition-transform duration-200 ${settingsOpen ? 'rotate-90 text-emerald-500' : ''}`} />
+                <Settings className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 ${settingsOpen ? 'rotate-90 text-emerald-500' : ''}`} />
               </button>
 
               {settingsOpen && (
                 <div
-                  className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2 z-50 text-slate-800 dark:text-white"
+                  className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-xs sm:w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2 z-50 text-slate-800 dark:text-white"
                   style={{ opacity: 1, visibility: 'visible' }}
                 >
                   <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 mb-1">
@@ -1292,7 +1321,7 @@ const Layout: React.FC = () => {
         {/* Page content */}
         <CriticalAlertChimeModal />
         <OfflineStatusBanner />
-        <main className="p-4 lg:p-8">
+        <main className="p-2.5 sm:p-4 lg:p-8">
           <Outlet />
         </main>
       </div>

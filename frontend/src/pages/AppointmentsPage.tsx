@@ -127,24 +127,24 @@ const AppointmentsPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Calendar className="w-6 h-6 text-purple-600" /> Appointments
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" /> Appointments
           </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             {user?.role === 'patient' ? 'Your appointment history' : 'Manage patient appointments'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button onClick={() => refetch()} disabled={isLoading}
             className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors disabled:opacity-50">
-            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           {can('appointments:create') && (
             <button onClick={handleBook}
-              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 text-sm font-semibold gap-2">
+              className="flex items-center px-3.5 sm:px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 text-xs sm:text-sm font-semibold gap-1.5 sm:gap-2 shadow-sm">
               <Plus className="w-4 h-4" /> Book Appointment
             </button>
           )}

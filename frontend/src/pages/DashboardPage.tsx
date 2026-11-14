@@ -146,15 +146,15 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2.5 sm:gap-4">
         {statCards.map((stat) => (
-          <div key={stat.name} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between mb-3">
-              <div className={`p-2.5 rounded-xl ${stat.color} shadow-sm`}>
-                <stat.icon className="w-4 h-4 text-white" />
+          <div key={stat.name} className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 sm:p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-2 sm:mb-3">
+              <div className={`p-2 sm:p-2.5 rounded-xl ${stat.color} shadow-sm`}>
+                <stat.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
               </div>
               {stat.trend && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                   stat.trendUp ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                 }`}>
@@ -162,16 +162,16 @@ const DashboardPage: React.FC = () => {
                 </span>
               )}
             </div>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">
+            <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
               {loading ? <span className="animate-pulse bg-gray-200 dark:bg-gray-600 rounded h-6 w-12 inline-block" /> : stat.value}
             </p>
-            <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{stat.name}</p>
+            <p className="text-[10px] sm:text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{stat.name}</p>
           </div>
         ))}
       </div>
 
       {/* Revenue Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Revenue Overview</h2>
           <div className="flex gap-2">
@@ -217,10 +217,10 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Appointment Status Pie */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Appointment Status</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">Appointment Status</h2>
           {loading || appointmentData.length === 0 ? (
             <div className="h-56 flex items-center justify-center text-gray-400 dark:text-gray-500">
               <div className="text-center">
@@ -241,8 +241,8 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Patient Registrations Bar Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">New Patients (Last 6 Months)</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">New Patients (Last 6 Months)</h2>
           {loading || patientMonthly.length === 0 ? (
             <div className="h-56 flex items-center justify-center text-gray-400 dark:text-gray-500">
               <div className="text-center">
@@ -266,19 +266,19 @@ const DashboardPage: React.FC = () => {
 
       {/* Top Diseases */}
       {diseaseData.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Diagnoses</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Diagnoses</h2>
           <div className="space-y-3">
             {diseaseData.slice(0, 8).map((d: any, i: number) => {
               const maxCount = parseInt(diseaseData[0]?.count || 1);
               const pct = (parseInt(d.count) / maxCount) * 100;
               return (
-                <div key={i} className="flex items-center gap-4">
-                  <div className="w-40 text-sm text-gray-700 dark:text-gray-300 truncate">{d.disease_name}</div>
+                <div key={i} className="flex items-center gap-2.5 sm:gap-4">
+                  <div className="w-28 sm:w-40 text-xs sm:text-sm text-gray-700 dark:text-gray-300 truncate">{d.disease_name}</div>
                   <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                     <div className="h-2 rounded-full bg-blue-500" style={{ width: `${pct}%` }} />
                   </div>
-                  <div className="w-8 text-sm font-medium text-gray-700 dark:text-gray-300 text-right">{d.count}</div>
+                  <div className="w-8 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-right">{d.count}</div>
                 </div>
               );
             })}

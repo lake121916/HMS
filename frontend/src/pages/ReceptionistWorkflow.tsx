@@ -326,15 +326,15 @@ const ReceptionistWorkflow: React.FC = () => {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 uppercase tracking-wider">
             Receptionist Desk
           </span>
-          <h1 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">Patient Registration & Check-in</h1>
-          <p className="text-sm text-slate-500 mt-1">Search, register, and send patients to triage</p>
+          <h1 className="mt-1 sm:mt-2 text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Patient Registration & Check-in</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">Search, register, and send patients to triage</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setShowScannerModal(true)}
@@ -614,7 +614,7 @@ const ReceptionistWorkflow: React.FC = () => {
             {encounters.length === 0 ? (
               <div className="p-8 text-center text-sm text-slate-500">No active encounters</div>
             ) : encounters.map(enc => (
-              <div key={enc.id} className="p-4 flex items-center justify-between">
+              <div key={enc.id} className="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div>
                   <div className="font-medium text-slate-900 dark:text-white text-sm">
                     {enc.first_name} {enc.last_name}
@@ -623,7 +623,7 @@ const ReceptionistWorkflow: React.FC = () => {
                     {enc.encounter_number} · {new Date(enc.created_at).toLocaleTimeString()}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     onClick={() => printOrReprintTicket(enc.patient_id, enc.id)}
                     className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1 transition"

@@ -167,17 +167,18 @@ export const RoleDemoSwitcher: React.FC = () => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-teal-500/40 bg-teal-50/70 hover:bg-teal-100 dark:bg-teal-950/40 dark:hover:bg-teal-900/50 text-teal-800 dark:text-teal-200 text-xs font-bold transition-all shadow-xs"
+        className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-teal-500/40 bg-teal-50/70 hover:bg-teal-100 dark:bg-teal-950/40 dark:hover:bg-teal-900/50 text-teal-800 dark:text-teal-200 text-[11px] sm:text-xs font-bold transition-all shadow-xs"
         title="Switch between all 10 hospital roles instantly for defense demo"
       >
-        <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 animate-spin" style={{ animationDuration: '4s' }} />
-        <span className="hidden sm:inline">Demo Switcher:</span>
-        <span className="underline decoration-teal-500/50 underline-offset-2 capitalize">{currentRoleConfig.title}</span>
-        <ChevronDown className="w-3 h-3 text-teal-600 dark:text-teal-400 ml-0.5" />
+        <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 animate-spin shrink-0" style={{ animationDuration: '4s' }} />
+        <span className="hidden md:inline">Demo:</span>
+        <span className="hidden sm:inline underline decoration-teal-500/50 underline-offset-2 capitalize truncate max-w-[120px]">{currentRoleConfig.title}</span>
+        <span className="sm:hidden underline decoration-teal-500/50 underline-offset-2 capitalize truncate max-w-[55px]">{currentRoleConfig.title.split(' ')[0]}</span>
+        <ChevronDown className="w-3 h-3 text-teal-600 dark:text-teal-400 ml-0.5 shrink-0" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-84 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-3 z-50 animate-in fade-in-50 duration-150">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-sm sm:w-96 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-2.5 sm:p-3 z-50 animate-in fade-in-50 duration-150">
           <div className="flex items-center justify-between px-2 pb-2.5 mb-2 border-b border-slate-100 dark:border-slate-800">
             <div>
               <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">

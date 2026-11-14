@@ -393,7 +393,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
     <RoleGuard allowedRoles={['super_admin']}>
     <div className="space-y-6">
       {/* ── Priority 1: Header Command Banner & Quick Actions ── */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 rounded-3xl text-white shadow-xl">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-4 sm:p-6 rounded-2xl sm:rounded-3xl text-white shadow-xl">
         <div className="space-y-1.5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center border border-blue-400/30">

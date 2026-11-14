@@ -367,22 +367,22 @@ const TriageDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setShowScannerModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold rounded-lg shadow-sm transition active:scale-95"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm transition active:scale-95"
           >
             <QrCode className="w-4 h-4" />
-            <span>Scan Patient QR</span>
+            <span>Scan QR</span>
           </button>
 
           <button
             onClick={fetchAllData}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-sm font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-xs sm:text-sm font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh queue
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </button>
         </div>
       </div>
@@ -590,7 +590,7 @@ const TriageDashboard: React.FC = () => {
                   nextActionLoading={submitting}
                 />
 
-                <form onSubmit={submitTriage} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm space-y-5">
+                <form onSubmit={submitTriage} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-3.5 sm:p-6 shadow-sm space-y-4 sm:space-y-5">
                 <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700">
                   <div>
                     <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Active Patient Assessment</span>

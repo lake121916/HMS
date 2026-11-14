@@ -241,10 +241,10 @@ const OPDCoordinatorDashboard: React.FC = () => {
       )}
 
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-blue-700 rounded-3xl p-6 text-white shadow-lg">
+      <div className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-blue-700 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="bg-white/20 backdrop-blur-md px-3 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider">
                 Outpatient Department Workflow
               </span>
@@ -252,7 +252,7 @@ const OPDCoordinatorDashboard: React.FC = () => {
                 Stage 4: Coordinator Assignment
               </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight">
               OPD Coordinator Dashboard
             </h1>
             <p className="text-indigo-100 text-sm mt-1 max-w-2xl">
@@ -431,7 +431,7 @@ const OPDCoordinatorDashboard: React.FC = () => {
           {selected ? (
             <div className="space-y-5">
               {/* Detailed Clinical Review Card */}
-              <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold text-lg">

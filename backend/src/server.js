@@ -14,6 +14,9 @@ const auditLog = require('./middleware/auditLog');
 
 const app = express();
 
+// Trust proxy for Vercel / reverse proxy deployment
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 // CORS origin resolver for development, staging, and cloud production
@@ -39,8 +42,10 @@ app.use(cors({
   origin: getCorsOrigins(),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Cache-Control', 'Pragma', 'Origin'],
+  optionsSuccessStatus: 200,
 }));
+app.options('*', cors());
 
 // Rate limiting — general API limiter
 const limiter = rateLimit({

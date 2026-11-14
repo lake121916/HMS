@@ -10,22 +10,18 @@
           "service": "ml-service",
           "format": "url",
           "env": "ML_SERVICE_URL"
-        },
-        {
-          "type": "service",
-          "service": "image-analysis-service",
-          "format": "url",
-          "env": "IMAGE_ANALYSIS_URL"
         }
       ]
     },
     "frontend": {
       "root": "frontend",
-      "framework": "vite"
-    },
-    "image-analysis-service": {
-      "root": "image-analysis-service",
-      "framework": "fastapi"
+      "framework": "vite",
+      "rewrites": [
+        {
+          "source": "/(.*)",
+          "destination": "/index.html"
+        }
+      ]
     },
     "ml-service": {
       "root": "ml-service",

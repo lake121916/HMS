@@ -42,7 +42,7 @@ interface DoctorDashboardData {
   }>;
 }
 
-const cardClass = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800';
+const cardClass = 'rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800';
 
 const DoctorDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -118,24 +118,24 @@ const DoctorDashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-sky-600">Doctor portal</p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Doctor dashboard</h1>
+          <p className="text-xs sm:text-sm font-medium uppercase tracking-[0.2em] text-sky-600">Doctor portal</p>
+          <h1 className="mt-0.5 sm:mt-1 text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Doctor dashboard</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setShowScannerModal(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 shadow-sm active:scale-95 transition"
+            className="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl bg-teal-600 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-teal-700 shadow-sm active:scale-95 transition"
           >
             <QrCode className="h-4 w-4" />
-            Scan Patient QR
+            Scan QR
           </button>
           <button
             onClick={fetchDoctorDashboard}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl bg-sky-600 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -149,16 +149,16 @@ const DoctorDashboardPage: React.FC = () => {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
         {doctorCards.map(({ label, value, icon: Icon, color }) => (
           <div key={label} className={cardClass}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
-                <p className="mt-3 text-3xl font-bold text-slate-900 dark:text-white">{loading ? '—' : value}</p>
+                <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
+                <p className="mt-1 sm:mt-3 text-xl sm:text-3xl font-bold text-slate-900 dark:text-white">{loading ? '—' : value}</p>
               </div>
-              <div className={`rounded-xl p-3 text-white ${color}`}>
-                <Icon className="h-5 w-5" />
+              <div className={`rounded-xl p-2 sm:p-3 text-white ${color} shrink-0`}>
+                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
             </div>
           </div>

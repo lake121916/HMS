@@ -130,14 +130,14 @@ const ActorWorkbenchesPage: React.FC = () => {
   return (
     <div className="space-y-8 p-2">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white rounded-3xl p-8 shadow-2xl relative overflow-hidden border border-slate-800">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-2xl relative overflow-hidden border border-slate-800">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
           <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
               <Zap className="w-3.5 h-3.5 fill-current text-amber-400" />
               All Actors & Clinical Workbenches Directory
             </div>
-            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white">
+            <h1 className="text-xl sm:text-2xl md:text-4xl font-black tracking-tight text-white">
               Hospital Actors Workbench Launcher
             </h1>
             <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
@@ -145,16 +145,16 @@ const ActorWorkbenchesPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 text-center min-w-[200px]">
+          <div className="bg-white/10 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/20 text-center w-full md:w-auto min-w-0 md:min-w-[200px]">
             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-300">Active User Role</p>
-            <p className="text-lg font-extrabold text-white uppercase mt-0.5">{user?.role?.replace('_', ' ') || 'Guest'}</p>
+            <p className="text-base sm:text-lg font-extrabold text-white uppercase mt-0.5">{user?.role?.replace('_', ' ') || 'Guest'}</p>
             <p className="text-[11px] text-slate-300 truncate mt-0.5">{user?.email || 'N/A'}</p>
           </div>
         </div>
       </div>
 
       {/* Grid of All Actor Workbenches */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {actorDesks.map((desk) => {
           const Icon = desk.icon;
           const isActiveUserDesk = user?.role === desk.role;
@@ -163,7 +163,7 @@ const ActorWorkbenchesPage: React.FC = () => {
           return (
             <div
               key={desk.role}
-              className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between hover:shadow-2xl hover:border-emerald-500/40 transition-all duration-300 group"
+              className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between hover:shadow-2xl hover:border-emerald-500/40 transition-all duration-300 group"
             >
               <div>
                 {/* Header Icon & Role Badge */}

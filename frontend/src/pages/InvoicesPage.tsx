@@ -145,17 +145,17 @@ const InvoicesPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Invoices</h1>
-          <p className="mt-1 text-gray-600 dark:text-gray-400">Manage billing and invoices</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Invoices</h1>
+          <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400">Manage billing and invoices</p>
         </div>
         {can('invoices:create') && (
           <button onClick={() => {
               navigate('/invoices/new');
               setFormData({ patient_id: '', subtotal: '', tax: '0', discount: '0', due_date: '', notes: '', admission_id: '' });
             }}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm font-semibold self-start sm:self-auto">
             <Plus className="w-4 h-4 mr-2" /> New Invoice
           </button>
         )}
@@ -233,19 +233,19 @@ const InvoicesPage: React.FC = () => {
 
       {/* Create Invoice Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">New Invoice</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">New Invoice</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5 sm:w-6 sm:h-6" /></button>
             </div>
-            <form onSubmit={handleSubmitInvoice} className="p-6 space-y-4">
+            <form onSubmit={handleSubmitInvoice} className="p-4 sm:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Patient ID *</label>
                 <input type="number" required value={formData.patient_id} onChange={e => setFormData({ ...formData, patient_id: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500" placeholder="Enter patient ID" />
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subtotal ($) *</label>
                   <input type="number" step="0.01" required value={formData.subtotal} onChange={e => setFormData({ ...formData, subtotal: e.target.value })}

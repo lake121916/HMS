@@ -72,7 +72,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className = '', var
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="true"
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shadow-sm ${
+        className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs font-bold transition-all border shadow-sm ${
           isOpen
             ? 'bg-blue-50 dark:bg-slate-700 border-blue-400 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/20'
             : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60'
@@ -80,7 +80,8 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className = '', var
       >
         <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
         <span className="text-sm leading-none">{currentLang.flag}</span>
-        <span className="font-semibold">{currentLang.label}</span>
+        <span className="hidden sm:inline font-semibold">{currentLang.label}</span>
+        <span className="sm:hidden font-bold uppercase text-[10px]">{currentLang.code}</span>
         <ChevronDown
           className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
             isOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''
@@ -92,8 +93,8 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className = '', var
         <div
           role="menu"
           aria-orientation="vertical"
-          className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2 z-[100]"
-          style={{ minWidth: '13rem' }}
+          className="absolute right-0 top-full mt-2 w-48 sm:w-52 max-w-[calc(100vw-24px)] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2 z-[100]"
+          style={{ minWidth: '11rem' }}
         >
           <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-700/60 mb-1">
             Language / ቋንቋ ምረጥ
