@@ -1,0 +1,28 @@
+{
+  "name": "hospital-management-system",
+  "version": "1.0.0",
+  "description": "AI-Based Smart Hospital Management System for Alem Ketema Enat Hospital",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "build": "npm --prefix backend install",
+    "backend": "npm --prefix backend start",
+    "backend:dev": "npm --prefix backend run dev",
+    "backend:test": "npm --prefix backend test",
+    "frontend": "npm --prefix frontend dev",
+    "frontend:build": "npm --prefix frontend run build",
+    "test": "npm --prefix backend test"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "hospital",
+    "healthcare",
+    "ai",
+    "triage",
+    "ethiopia"
+  ],
+  "author": "Lake Awraris",
+  "license": "ISC"
+}

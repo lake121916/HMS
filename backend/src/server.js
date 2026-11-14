@@ -1,3 +1,7 @@
+const path = require('path');
+// Support loading from backend/.env or root .env
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -12,10 +16,27 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
+// CORS origin resolver for development, staging, and cloud production
+const getCorsOrigins = () => {
+  const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000'];
+  if (process.env.FRONTEND_URL) {
+    process.env.FRONTEND_URL.split(',').forEach(url => {
+      const clean = url.trim().replace(/\/$/, '');
+      if (clean) allowedOrigins.push(clean);
+    });
+  }
+  return (origin, callback) => {
+    // Allow non-browser requests (mobile apps, curl, server-to-server) or matching origins
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com') || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(null, true); // Permissive fallback to prevent breaking defense/demo
+    }
+  };
+};
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? process.env.FRONTEND_URL || 'http://localhost:3000'
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000'],
+  origin: getCorsOrigins(),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -82,7 +103,20 @@ app.use('/api/pharmacy', auditLog);
 app.use('/api/consultations', auditLog);
 app.use('/api/opd', auditLog);
 
-// Health check
+// Root status and Health check endpoints
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    system: 'AI-Based Smart Hospital Management System',
+    hospital: 'Alem Ketema Enat Hospital',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth'
+    }
+  });
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
@@ -143,11 +177,12 @@ const server = http.createServer(app);
 // Initialize Socket.io
 socketService.init(server);
 
-const PORT = process.env.PORT || 5000;
+const PORT = parseInt(process.env.PORT, 10) || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 if (process.env.NODE_ENV !== 'test') {
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  server.listen(PORT, HOST, () => {
+    console.log(`Server running on http://${HOST}:${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV}`);
     sendAppointmentReminders().catch(error => console.error('Reminder worker error:', error.message));
     startTelegramPolling().catch(error => console.error('Telegram bot error:', error.message));

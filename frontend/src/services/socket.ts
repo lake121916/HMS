@@ -4,9 +4,12 @@ let socket: Socket | null = null;
 
 export function getHospitalSocket(user?: { id: number; role: string } | null): Socket {
   if (!socket) {
-    const socketUrl = ((window as any).REACT_APP_API_URL || window.location.origin)
-      .replace(':3000', ':5000')
-      .replace('/api', '');
+    const envUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+    const socketUrl = envUrl
+      ? envUrl.replace(/\/api\/?$/, '')
+      : ((window as any).REACT_APP_API_URL || window.location.origin)
+          .replace(':3000', ':5000')
+          .replace('/api', '');
 
     socket = io(socketUrl, {
       transports: ['websocket', 'polling'],

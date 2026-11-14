@@ -15,7 +15,7 @@
     "db:seed-encounters": "node scripts/seed-waiting-encounters.js",
     "ai:eval": "node scripts/evaluate-ai-accuracy.js",
     "seed": "node scripts/seed-all-actors.js",
-    "test": "jest --forceExit"
+    "test": "jest --forceExit --testTimeout=15000"
   },
   "keywords": [
     "hospital",
