@@ -385,6 +385,22 @@ router.post('/payments/process', authenticate, authorize('cashier', 'admin', 'su
 
     await client.query('UPDATE invoices SET status = $1, updated_at = NOW() WHERE id = $2', [newStatus, invoice_id]);
 
+    // Automatically authorize patient to proceed to Triage when registration invoice is settled in full
+    if (newStatus === 'paid' && invoice.encounter_id) {
+      const encRes = await client.query('SELECT id, status FROM patient_encounters WHERE id = $1', [invoice.encounter_id]);
+      if (encRes.rows.length && (String(encRes.rows[0].status).toLowerCase() === 'registered' || !encRes.rows[0].status)) {
+        await client.query(
+          `UPDATE patient_encounters SET status = 'waiting_for_triage', billing_status = 'paid', updated_at = NOW() WHERE id = $1`,
+          [invoice.encounter_id]
+        );
+        await client.query(
+          `INSERT INTO workflow_status_history (entity_type, entity_id, from_status, to_status, changed_by, notes)
+           VALUES ('encounter', $1, 'registered', 'waiting_for_triage', $2, 'Payment settled at Cashier; automatically authorized to proceed to Triage')`,
+          [invoice.encounter_id, req.user.id]
+        );
+      }
+    }
+
     // 8. Record financial audit event
     await logFinancialAudit(client, {
       entityType: 'PAYMENT',

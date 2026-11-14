@@ -209,11 +209,18 @@ router.post('/', authenticate, authorize('cashier', 'admin', 'super_admin'), asy
 
 // PUT update invoice
 router.put('/:id', authenticate, authorize('admin', 'cashier', 'super_admin', 'receptionist'), async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { subtotal, tax, discount, status, notes, due_date } = req.body;
+    await client.query('BEGIN');
+    const { subtotal, tax, discount, status, notes, due_date, intake_pathway, waiver_reason } = req.body;
     const total_amount = subtotal && (parseFloat(subtotal) + parseFloat(tax || 0) - parseFloat(discount || 0));
 
-    const result = await pool.query(
+    const isWaiver = (intake_pathway === 'cbhi' || (notes && String(notes).toLowerCase().includes('cbhi')) || (notes && String(notes).toLowerCase().includes('waiver')));
+    const waiverReasonText = waiver_reason || (isWaiver ? 'CBHI Membership Card Verified' : null);
+    const waivedBy = isWaiver ? req.user.id : null;
+    const waivedAt = isWaiver ? new Date() : null;
+
+    const result = await client.query(
       `UPDATE invoices SET 
         subtotal = COALESCE($1, subtotal),
         tax = COALESCE($2, tax),
@@ -222,16 +229,48 @@ router.put('/:id', authenticate, authorize('admin', 'cashier', 'super_admin', 'r
         status = COALESCE($5, status),
         notes = COALESCE($6, notes),
         due_date = COALESCE($7, due_date),
+        intake_pathway = COALESCE($8, intake_pathway),
+        waiver_reason = COALESCE($9, waiver_reason),
+        waived_by = COALESCE($10, waived_by),
+        waived_at = COALESCE($11, waived_at),
         updated_at = NOW()
-       WHERE id = $8 RETURNING *`,
-      [subtotal || null, tax || null, discount || null, total_amount || null, status || null, notes || null, due_date || null, req.params.id]
+       WHERE id = $12 RETURNING *`,
+      [subtotal || null, tax || null, discount || null, total_amount || null, status || null, notes || null, due_date || null,
+       intake_pathway || (isWaiver ? 'cbhi' : null), waiverReasonText, waivedBy, waivedAt, req.params.id]
     );
 
-    if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Invoice not found' });
-    res.json({ success: true, data: { invoice: result.rows[0] } });
+    if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Invoice not found' });
+    }
+
+    const updatedInvoice = result.rows[0];
+
+    // If waived or paid, automatically advance linked encounter to waiting_for_triage if currently registered
+    if ((updatedInvoice.status === 'paid' || updatedInvoice.status === 'waived') && updatedInvoice.encounter_id) {
+      const enc = await client.query('SELECT id, status FROM patient_encounters WHERE id = $1', [updatedInvoice.encounter_id]);
+      if (enc.rows.length && (String(enc.rows[0].status).toLowerCase() === 'registered' || !enc.rows[0].status)) {
+        const newBillingStatus = isWaiver ? 'waived' : 'paid';
+        await client.query(
+          `UPDATE patient_encounters SET status = 'waiting_for_triage', billing_status = $1, updated_at = NOW() WHERE id = $2`,
+          [newBillingStatus, updatedInvoice.encounter_id]
+        );
+        await client.query(
+          `INSERT INTO workflow_status_history (entity_type, entity_id, from_status, to_status, changed_by, notes)
+           VALUES ('encounter', $1, 'registered', 'waiting_for_triage', $2, $3)`,
+          [updatedInvoice.encounter_id, req.user.id, isWaiver ? 'CBHI fee waiver approved; automatically authorized for Triage' : 'Registration invoice settled; authorized for Triage']
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, data: { invoice: updatedInvoice } });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Error updating invoice:', error);
     res.status(500).json({ success: false, message: 'Server error' });
+  } finally {
+    client.release();
   }
 });
 

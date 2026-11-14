@@ -10,7 +10,7 @@ import api from '../services/api';
 import {
   Search, UserPlus, ClipboardList, ArrowRight, RefreshCw,
   CheckCircle2, User, Printer, QrCode, DollarSign, Receipt,
-  ShieldCheck
+  ShieldCheck, AlertCircle
 } from 'lucide-react';
 import QueueTokenTicket, { QueueTicketData } from '../components/queue/QueueTokenTicket';
 import PatientWristbandModal from '../components/PatientWristbandModal';
@@ -187,12 +187,15 @@ const ReceptionistWorkflow: React.FC = () => {
     }
   };
 
-  // New patient form
+  // New patient form with 3 Intake Pathways
   const [showRegForm, setShowRegForm] = useState(false);
   const [regForm, setRegForm] = useState({
     first_name: '', last_name: '', date_of_birth: '', gender: 'male',
     phone: '', email: '', blood_type: '', address: '', allergies: '',
-    emergency_contact_name: '', emergency_contact_phone: ''
+    emergency_contact_name: '', emergency_contact_phone: '',
+    intake_pathway: 'self_pay' as 'self_pay' | 'cbhi' | 'emergency',
+    insurance_number: '',
+    waiver_reason: 'CBHI Membership Booklet Verified'
   });
 
   useEffect(() => {
@@ -244,15 +247,26 @@ const ReceptionistWorkflow: React.FC = () => {
         throw new Error('Patient record was not returned by the server');
       }
 
-      showToast('success', `Patient ${patient.first_name} ${patient.last_name} registered successfully! 50 ETB Card Invoice created.`);
+      let successMsg = `Patient ${patient.first_name} ${patient.last_name} registered successfully!`;
+      if (regForm.intake_pathway === 'cbhi') {
+        successMsg += ' CBHI 50 ETB fee waived & authorized for Triage queue.';
+      } else if (regForm.intake_pathway === 'emergency') {
+        successMsg += ' Emergency intake priority activated; billing deferred.';
+      } else {
+        successMsg += ' 50 ETB Card Invoice created for Cashier clearance.';
+      }
+
+      showToast('success', successMsg);
       setSelectedPatient(patient);
       fetchPatientInvoice(patient.id);
       fetchInvoices();
+      fetchEncounters();
       setShowRegForm(false);
       setRegForm({
         first_name: '', last_name: '', date_of_birth: '', gender: 'male',
         phone: '', email: '', blood_type: '', address: '', allergies: '',
-        emergency_contact_name: '', emergency_contact_phone: ''
+        emergency_contact_name: '', emergency_contact_phone: '',
+        intake_pathway: 'self_pay', insurance_number: '', waiver_reason: 'CBHI Membership Booklet Verified'
       });
       // Also add newly registered patient to the search list
       setPatients(prev => [patient, ...prev.filter(p => p.id !== patient.id)]);
@@ -756,6 +770,119 @@ const ReceptionistWorkflow: React.FC = () => {
               <button onClick={() => setShowRegForm(false)} className="text-slate-400 hover:text-slate-600 text-2xl">×</button>
             </div>
             <form onSubmit={handleRegisterPatient} className="space-y-4">
+              {/* 3 Patient Intake Pathways */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  Select Intake Pathway *
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* 1. Self-Pay */}
+                  <div
+                    onClick={() => setRegForm(prev => ({ ...prev, intake_pathway: 'self_pay' }))}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                      regForm.intake_pathway === 'self_pay'
+                        ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-xs text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                        <DollarSign className="h-4 w-4" /> 1. Self-Pay
+                      </span>
+                      <input
+                        type="radio"
+                        name="intake_pathway"
+                        checked={regForm.intake_pathway === 'self_pay'}
+                        onChange={() => setRegForm(prev => ({ ...prev, intake_pathway: 'self_pay' }))}
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      50 ETB card registration fee at Cashier desk before triage.
+                    </p>
+                  </div>
+
+                  {/* 2. CBHI / Indigent */}
+                  <div
+                    onClick={() => setRegForm(prev => ({ ...prev, intake_pathway: 'cbhi' }))}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                      regForm.intake_pathway === 'cbhi'
+                        ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/30'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-xs text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
+                        <ShieldCheck className="h-4 w-4" /> 2. CBHI / Indigent
+                      </span>
+                      <input
+                        type="radio"
+                        name="intake_pathway"
+                        checked={regForm.intake_pathway === 'cbhi'}
+                        onChange={() => setRegForm(prev => ({ ...prev, intake_pathway: 'cbhi' }))}
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      1-Click Fee Waiver with Kebele Booklet verification.
+                    </p>
+                  </div>
+
+                  {/* 3. Emergency */}
+                  <div
+                    onClick={() => setRegForm(prev => ({ ...prev, intake_pathway: 'emergency' }))}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                      regForm.intake_pathway === 'emergency'
+                        ? 'border-red-500 bg-red-50/70 dark:bg-red-950/30'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-xs text-red-800 dark:text-red-300 flex items-center gap-1.5">
+                        <AlertCircle className="h-4 w-4" /> 3. Emergency
+                      </span>
+                      <input
+                        type="radio"
+                        name="intake_pathway"
+                        checked={regForm.intake_pathway === 'emergency'}
+                        onChange={() => setRegForm(prev => ({ ...prev, intake_pathway: 'emergency' }))}
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      Immediate clinical care · Zero upfront payment · Deferred billing.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Conditional CBHI details */}
+                {regForm.intake_pathway === 'cbhi' && (
+                  <div className="p-3 bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/80 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-blue-900 dark:text-blue-300 mb-1">
+                        CBHI Booklet / Policy Number *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. AMH-KB-40291"
+                        value={regForm.insurance_number}
+                        onChange={e => setRegForm(prev => ({ ...prev, insurance_number: e.target.value }))}
+                        className="w-full px-3 py-1.5 text-xs rounded-lg border border-blue-200 dark:border-blue-700 dark:bg-slate-800 focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-blue-900 dark:text-blue-300 mb-1">
+                        Waiver Justification / Audit Reason
+                      </label>
+                      <input
+                        type="text"
+                        value={regForm.waiver_reason}
+                        onChange={e => setRegForm(prev => ({ ...prev, waiver_reason: e.target.value }))}
+                        className="w-full px-3 py-1.5 text-xs rounded-lg border border-blue-200 dark:border-blue-700 dark:bg-slate-800 focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { key: 'first_name', label: 'First Name', required: true },

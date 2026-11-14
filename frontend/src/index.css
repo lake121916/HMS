@@ -29,75 +29,56 @@ body.font-amharic {
     --blue-800: var(--theme-hue) var(--theme-saturation) 37%;
     --blue-900: var(--theme-hue) var(--theme-saturation) 28%;
 
-    /* Site color palette (medical/professional) */
-    /* Main Background: #F5F9FC */
-    --background: 207 53% 97.5%;
-    /* Main Text: #263238 */
-    --foreground: 200 19% 18.5%;
-    /* Cards: #FFFFFF */
+    /* Site color palette (medical/professional exact tokens) */
+    /* Light Mode: #F8FAFC canvas, #FFFFFF cards, #E2E8F0 borders, #0B2545 sidebar, #0D9488 primary teal */
+    --background: 210 40% 98%;
+    --foreground: 222.2 47.4% 11.2%;
     --card: 0 0% 100%;
-    --card-foreground: 200 19% 18.5%;
+    --card-foreground: 222.2 47.4% 11.2%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    
-    /* Primary Blue: #1976D2 */
-    --primary: 210 79% 46%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+    --primary: 173 80% 32%;
     --primary-foreground: 210 40% 98%;
-    
-    /* Sidebar / Accent: #0F4C75 */
-    --secondary: 204 77% 26%;
+    --secondary: 212 72% 16%;
     --secondary-foreground: 210 40% 98%;
-    
-    /* Secondary text: #607D8B */
-    --muted: 199.6 18% 46%;
-    --muted-foreground: 199.6 18% 46%;
-    
-    --accent: 210 79% 46%;
+    --muted: 215.4 16.3% 46.9%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 173 80% 32%;
     --accent-foreground: 210 40% 98%;
-    
-    /* Error: #D32F2F */
-    --destructive: 0 65% 50.5%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
-    
-    --border: 210 20% 92%;
-    --input: 210 20% 92%;
-    --ring: 210 79% 46%;
-    /* Success / Warning / Error tokens */
-    --success: 123.1 46% 33.5%; /* #2E7D32 */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 173 80% 32%;
+    --success: 152 76% 36%;
     --success-foreground: 210 40% 98%;
-    --warning: 27.1 98% 46.8%; /* #ED6C02 */
+    --warning: 38 92% 50%;
     --warning-foreground: 210 40% 98%;
-    --error: 0 65% 50.5%; /* #D32F2F */
+    --error: 0 72% 51%;
     --error-foreground: 210 40% 98%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222.2 47.4% 11.2%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 217.2 32.6% 17.5%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 217.2 32.6% 17.5%;
     --popover-foreground: 210 40% 98%;
-    
-    --primary: var(--theme-hue) var(--theme-saturation) 59.8%;
+    --primary: 173 80% 40%;
     --primary-foreground: 222.2 47.4% 11.2%;
-    
-    --secondary: var(--theme-hue) 32.6% 17.5%;
+    --secondary: 222.2 84% 4.9%;
     --secondary-foreground: 210 40% 98%;
-    
-    --muted: var(--theme-hue) 32.6% 17.5%;
-    --muted-foreground: var(--theme-hue) 20.2% 65.1%;
-    
-    --accent: var(--theme-hue) 32.6% 17.5%;
+    --muted: 215 20.2% 65.1%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 173 80% 40%;
     --accent-foreground: 210 40% 98%;
-    
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    
-    --border: var(--theme-hue) 32.6% 17.5%;
-    --input: var(--theme-hue) 32.6% 17.5%;
-    --ring: var(--theme-hue) 76.3% 48%;
+    --border: 215.3 25% 26.7%;
+    --input: 215.3 25% 26.7%;
+    --ring: 173 80% 40%;
   }
 }
 

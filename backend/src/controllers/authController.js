@@ -345,6 +345,80 @@ const toggleActive = handleAsync(async (req, res) => {
   sendSuccess(res, { user: result.rows[0] }, msg);
 });
 
+// ── 1-Click Role Switcher Demo Mode (Academic Defense & Evaluation) ─────────
+const demoSwitch = handleAsync(async (req, res) => {
+  const { role } = req.body;
+  const validRoles = [
+    'super_admin', 'admin', 'hospital_manager', 'doctor', 'nurse',
+    'receptionist', 'cashier', 'lab_technician', 'pharmacist', 'patient'
+  ];
+
+  if (!role || !validRoles.includes(role)) {
+    return sendError(res, `Invalid role. Must be one of: ${validRoles.join(', ')}`, 400);
+  }
+
+  const roleEmailMap = {
+    super_admin: 'superadmin@hospital.com',
+    admin: 'admin@hospital.com',
+    hospital_manager: 'manager@hospital.com',
+    doctor: 'doctor@hospital.com',
+    nurse: 'nurse@hospital.com',
+    receptionist: 'receptionist@hospital.com',
+    cashier: 'cashier@hospital.com',
+    lab_technician: 'lab@hospital.com',
+    pharmacist: 'pharmacist@hospital.com',
+    patient: 'patient@hospital.com'
+  };
+
+  const primaryEmail = roleEmailMap[role];
+  let userRes = await pool.query('SELECT * FROM users WHERE email = $1 AND is_active = true LIMIT 1', [primaryEmail]);
+
+  if (!userRes.rows.length) {
+    userRes = await pool.query('SELECT * FROM users WHERE role = $1 AND is_active = true ORDER BY id ASC LIMIT 1', [role]);
+  }
+
+  if (!userRes.rows.length) {
+    return sendError(res, `No active account found for role "${role}"`, 404);
+  }
+
+  const user = userRes.rows[0];
+  const { token, refreshToken } = generateTokens(user);
+
+  let firstName = null;
+  let lastName = null;
+  try {
+    const roleTableMap = { doctor: 'doctors', nurse: 'nurses', patient: 'patients' };
+    const profileTable = roleTableMap[user.role];
+    if (profileTable) {
+      const profileRes = await pool.query(
+        `SELECT first_name, last_name FROM ${profileTable} WHERE user_id = $1 LIMIT 1`,
+        [user.id]
+      );
+      if (profileRes.rows.length > 0) {
+        firstName = profileRes.rows[0].first_name;
+        lastName = profileRes.rows[0].last_name;
+      }
+    }
+  } catch (_) {}
+
+  if (!firstName) {
+    const prefix = user.email.split('@')[0];
+    firstName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+  }
+
+  const userData = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    firstName,
+    lastName,
+    mustChangePassword: false,
+    profilePhotoUpdatedAt: user.profile_photo_updated_at || null
+  };
+
+  sendSuccess(res, { token, refreshToken, user: userData }, `Switched role to ${role}`);
+});
+
 module.exports = {
   registerPatient,
   createStaff,
@@ -357,4 +431,5 @@ module.exports = {
   toggleActive,
   updateProfilePhoto,
   getProfilePhoto,
+  demoSwitch,
 };

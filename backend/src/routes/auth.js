@@ -46,6 +46,14 @@ router.post(
   authController.refreshToken
 );
 
+// 1-Click Role Switcher (Academic Defense & Evaluation Demo Mode)
+router.post(
+  '/demo-switch',
+  [body('role').notEmpty().withMessage('Role is required')],
+  validate,
+  authController.demoSwitch
+);
+
 router.post(
   '/reset-password',
   [body('email').isEmail().withMessage('Valid email is required')],

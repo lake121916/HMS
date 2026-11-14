@@ -147,6 +147,7 @@ const registerPatient = handleAsync(async (req, res) => {
     first_name, last_name, date_of_birth, gender, phone, email,
     address, blood_type, allergies, emergency_contact_name,
     emergency_contact_phone, insurance_number, medical_history,
+    intake_pathway = 'self_pay', waiver_reason,
     password  // optional: admin may supply a real password
   } = data;
 
@@ -199,15 +200,33 @@ const registerPatient = handleAsync(async (req, res) => {
       req
     });
 
-    // ── AUTOMATIC INVOICE GENERATION ──────────────────────────────────────────
-    // Automatically generate Patient Registration Fee invoice (50 ETB) in 'pending' status
+    // ── AUTOMATIC INVOICE & ENCOUNTER GENERATION (3 INTAKE PATHWAYS) ────────
     let autoInvoice = null;
+    let initialEncounter = null;
     try {
+      const pathway = String(intake_pathway || 'self_pay').toLowerCase().trim();
+      let invStatus = 'pending';
+      let invNotes = 'Automatic Patient Registration Fee';
+      let waiverReasonText = null;
+      let waivedById = null;
+      let waivedAtDate = null;
+
+      if (pathway === 'cbhi') {
+        invStatus = 'waived';
+        invNotes = `CBHI Registration Fee Waiver - Verified Member: ${insurance_number || 'Kebele Booklet'}. Reason: ${waiver_reason || 'CBHI Membership Card Verified'}`;
+        waiverReasonText = waiver_reason || 'CBHI Membership Card Verified';
+        waivedById = req.user.id;
+        waivedAtDate = new Date();
+      } else if (pathway === 'emergency') {
+        invStatus = 'deferred';
+        invNotes = 'Emergency Intake - Card Fee Deferred until Clinical Stabilization';
+      }
+
       const autoInvoiceRes = await client.query(
-        `INSERT INTO invoices (patient_id, subtotal, tax, discount, total_amount, status, notes)
-         VALUES ($1, 50.00, 0.00, 0.00, 50.00, 'pending', 'Automatic Patient Registration Fee')
+        `INSERT INTO invoices (patient_id, subtotal, tax, discount, total_amount, status, notes, intake_pathway, waiver_reason, waived_by, waived_at)
+         VALUES ($1, 50.00, 0.00, 0.00, 50.00, $2, $3, $4, $5, $6, $7)
          RETURNING *`,
-        [patientRow.id]
+        [patientRow.id, invStatus, invNotes, pathway, waiverReasonText, waivedById, waivedAtDate]
       );
       if (autoInvoiceRes && autoInvoiceRes.rows && autoInvoiceRes.rows.length) {
         autoInvoice = autoInvoiceRes.rows[0];
@@ -218,8 +237,41 @@ const registerPatient = handleAsync(async (req, res) => {
           [autoInvoice.id, patientRow.id, autoInvoice.id]
         );
       }
+
+      // Automatically create the initial clinical encounter based on pathway
+      const encType = pathway === 'emergency' ? 'emergency' : 'outpatient';
+      // Emergency and CBHI proceed directly to Triage queue; Self-Pay awaits cashier clearance or triage authorization
+      const encStatus = pathway === 'emergency' ? 'waiting_for_triage' : (pathway === 'cbhi' ? 'waiting_for_triage' : 'registered');
+      const billStatus = pathway === 'cbhi' ? 'waived' : (pathway === 'emergency' ? 'deferred' : 'pending');
+
+      const encRes = await client.query(
+        `INSERT INTO patient_encounters (patient_id, encounter_type, status, created_by, intake_pathway, billing_status)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [patientRow.id, encType, encStatus, req.user.id, pathway, billStatus]
+      );
+
+      if (encRes.rows.length) {
+        initialEncounter = encRes.rows[0];
+        const encNumber = `ENC-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${String(initialEncounter.id).padStart(4,'0')}`;
+        await client.query(
+          `UPDATE patient_encounters SET encounter_number = $1 WHERE id = $2`,
+          [encNumber, initialEncounter.id]
+        );
+        initialEncounter.encounter_number = encNumber;
+
+        if (autoInvoice) {
+          await client.query('UPDATE invoices SET encounter_id = $1 WHERE id = $2', [initialEncounter.id, autoInvoice.id]);
+          autoInvoice.encounter_id = initialEncounter.id;
+        }
+
+        await client.query(
+          `INSERT INTO workflow_status_history (entity_type, entity_id, from_status, to_status, changed_by, notes)
+           VALUES ('encounter', $1, NULL, $2, $3, $4)`,
+          [initialEncounter.id, encStatus, req.user.id, `Patient registered via ${pathway.toUpperCase()} pathway`]
+        );
+      }
     } catch (invErr) {
-      console.warn('Auto invoice creation deferred:', invErr.message);
+      console.warn('Auto invoice/encounter creation deferred:', invErr.message);
     }
 
     await client.query('COMMIT');
@@ -230,6 +282,7 @@ const registerPatient = handleAsync(async (req, res) => {
       patient: patientRow,
       invoice: autoInvoice,
       registration_invoice: autoInvoice,
+      encounter: initialEncounter,
       qr: qrIdentity
     };
     if (!password) {

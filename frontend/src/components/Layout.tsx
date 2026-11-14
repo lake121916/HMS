@@ -10,6 +10,8 @@ import api from '../services/api';
 import OfflineStatusBanner from './OfflineStatusBanner';
 import ProfileAvatar from './ProfileAvatar';
 import WristbandScannerModal from './WristbandScannerModal';
+import RoleDemoSwitcher from './RoleDemoSwitcher';
+import CriticalAlertChimeModal from './CriticalAlertChimeModal';
 import { getRolePatientWorkflowUrl, getRoleWorkflowLabel } from '../utils/roleWorkflowRouting';
 import {
   LayoutDashboard, Users, UserPlus, Stethoscope, Calendar, Clock, LogOut, Menu, X,
@@ -1058,6 +1060,9 @@ const Layout: React.FC = () => {
               </div>
             </div>
 
+            {/* 1-Click Role Switcher Demo Mode (Academic Defense) */}
+            <RoleDemoSwitcher />
+
             {/* Language Switcher */}
             <LanguageSwitcher variant="pill" />
 
@@ -1285,6 +1290,7 @@ const Layout: React.FC = () => {
         </div>
 
         {/* Page content */}
+        <CriticalAlertChimeModal />
         <OfflineStatusBanner />
         <main className="p-4 lg:p-8">
           <Outlet />

@@ -33,6 +33,7 @@ export const getDemoAuthUser = (email: string, password: string): User | null =>
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<User>;
+  demoSwitchRole: (role: string) => Promise<User>;
   logout: () => void;
   isAuthenticated: boolean;
   loading: boolean;
@@ -77,6 +78,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const demoSwitchRole = async (role: string): Promise<User> => {
+    const response = await api.post('/auth/demo-switch', { role });
+    const { token, refreshToken, user: userData } = response.data.data;
+    localStorage.setItem('token', token);
+    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+    return userData;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
@@ -85,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, loading, setUser }}>
+    <AuthContext.Provider value={{ user, login, demoSwitchRole, logout, isAuthenticated: !!user, loading, setUser }}>
       {children}
     </AuthContext.Provider>
   );

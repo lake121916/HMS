@@ -61,6 +61,19 @@ exports.orderLabTest = async (req, res) => {
       );
     }
 
+    // Realtime notification to Laboratory
+    try {
+      socketService.emitToRole('lab_technician', 'new-lab-order', {
+        labTest,
+        patientId: patient_id,
+        testName: test_name,
+        priority: priority || 'routine',
+        timestamp: new Date().toISOString()
+      });
+    } catch (sockErr) {
+      console.warn('Laboratory socket notification warning:', sockErr.message);
+    }
+
     res.status(201).json({
       success: true,
       data: { labTest, invoiceBilled: !alreadyExisted, invoice }

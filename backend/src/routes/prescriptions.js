@@ -8,6 +8,7 @@ const allergySafetyService = require('../services/allergySafetyService');
 const notificationService = require('../services/notificationService');
 const billingService = require('../services/billingService');
 const dispensingService = require('../services/dispensingService');
+const socketService = require('../services/socketService');
 
 // ── Prescription validators ─────────────────────────────────────────────────
 const prescriptionCreateRules = [
@@ -457,6 +458,19 @@ router.post('/', authenticate, authorize('doctor', 'super_admin', 'admin'), pres
          WHERE id = $1 AND status = 'in_consultation'`,
         [encounter_id]
       );
+    }
+
+    // Realtime notification to Pharmacy
+    try {
+      socketService.emitToRole('pharmacist', 'new-prescription-order', {
+        prescription,
+        patientId: patient_id,
+        medicationName: medication_name,
+        quantity: parseInt(quantity, 10) || 1,
+        timestamp: new Date().toISOString()
+      });
+    } catch (sockErr) {
+      console.warn('Pharmacy socket notification warning:', sockErr.message);
     }
 
     res.status(201).json({
