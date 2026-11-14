@@ -289,24 +289,29 @@ router.post('/payments/process', authenticate, authorize('cashier', 'admin', 'su
     }
 
     // 3. Invoice lock and balance validation
-    const invoiceRes = await client.query(
-      `SELECT i.total_amount,
-              COALESCE(SUM(CASE WHEN p.verification_status != 'REJECTED' THEN p.amount ELSE 0 END), 0) AS amount_paid,
-              i.status
-       FROM invoices i 
-       LEFT JOIN payments p ON p.invoice_id = i.id
-       WHERE i.id = $1 
-       GROUP BY i.id
-       FOR UPDATE`,
+    // First lock the invoice row with FOR UPDATE (PostgreSQL forbids FOR UPDATE with GROUP BY/aggregates)
+    const lockRes = await client.query(
+      `SELECT id, total_amount, status, encounter_id FROM invoices WHERE id = $1 FOR UPDATE`,
       [invoice_id]
     );
 
-    if (!invoiceRes.rows.length) {
+    if (!lockRes.rows.length) {
       await client.query('ROLLBACK');
       return res.status(404).json({ success: false, message: 'Invoice not found' });
     }
 
-    const invoice = invoiceRes.rows[0];
+    // Then calculate the verified amount paid without FOR UPDATE
+    const paidRes = await client.query(
+      `SELECT COALESCE(SUM(CASE WHEN verification_status != 'REJECTED' THEN amount ELSE 0 END), 0) AS amount_paid
+       FROM payments
+       WHERE invoice_id = $1`,
+      [invoice_id]
+    );
+
+    const invoice = {
+      ...lockRes.rows[0],
+      amount_paid: paidRes.rows[0]?.amount_paid || 0,
+    };
     const balance = Number(invoice.total_amount) - Number(invoice.amount_paid);
 
     if (String(invoice.status).toLowerCase() === 'paid') {
