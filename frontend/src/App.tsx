@@ -98,7 +98,7 @@ const ALL_PAGES = [
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  super_admin:      ALL_PAGES,
+  super_admin: ALL_PAGES,
   admin: [
     'dashboard', 'doctor-dashboard', 'patients', 'doctors', 'appointments',
     'vitals', 'prescriptions', 'lab-tests', 'admissions', 'invoices', 'payments',
@@ -107,8 +107,8 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
     'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
     'services-admin', 'shifts', 'queue-management', 'qr-scanner', 'qr-audit', 'opd', 'opd-dashboard',
-  'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
-  'training', 'board-members', 'board-meetings', 'board-reports'
+    'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
+    'training', 'board-members', 'board-meetings', 'board-reports'
   ],
   hospital_manager: [
     'dashboard',
@@ -174,10 +174,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; page?: string }> = (
     if (!allowed.includes(page)) {
       const fallback =
         user.role === 'patient' ? '/patient-portal' :
-        user.role === 'nurse' ? '/nurse' :
-        user.role === 'doctor' ? '/doctor' :
-        user.role === 'receptionist' ? '/reception' :
-        '/dashboard';
+          user.role === 'nurse' ? '/nurse' :
+            user.role === 'doctor' ? '/doctor' :
+              user.role === 'receptionist' ? '/reception' :
+                '/dashboard';
       return <Navigate to={fallback} replace />;
     }
   }
@@ -198,140 +198,140 @@ function App() {
         <Router>
           <Suspense fallback={<PageFallback />}>
             <Routes>
-          {/* ── Public website ── */}
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/services" element={<ServicesPage />} />
-          <Route path="/departments" element={<DepartmentsPage />} />
-          <Route path="/our-doctors" element={<DoctorsPublicPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/search" element={<SearchResults />} />
-          <Route path="/gallery" element={<GalleryPage />} />
-          <Route path="/news" element={<NewsPage />} />
+              {/* ── Public website ── */}
+              <Route path="/home" element={<HomePage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/services" element={<ServicesPage />} />
+              <Route path="/departments" element={<DepartmentsPage />} />
+              <Route path="/our-doctors" element={<DoctorsPublicPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/search" element={<SearchResults />} />
+              <Route path="/gallery" element={<GalleryPage />} />
+              <Route path="/news" element={<NewsPage />} />
 
-          {/* ── Public Document Verification ── */}
-          <Route path="/verify/:token" element={<DocumentVerificationPage />} />
+              {/* ── Public Document Verification ── */}
+              <Route path="/verify/:token" element={<DocumentVerificationPage />} />
 
-          {/* ── Public OPD Waiting Room TV Display ── */}
-          <Route path="/queue-display" element={<OPDQueueDisplay />} />
-          <Route path="/opd-display" element={<OPDQueueDisplay />} />
+              {/* ── Public OPD Waiting Room TV Display ── */}
+              <Route path="/queue-display" element={<OPDQueueDisplay />} />
+              <Route path="/opd-display" element={<OPDQueueDisplay />} />
 
-          {/* ── Auth ── */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+              {/* ── Auth ── */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-          {/* ── Protected HMS portal (role-guarded with Inactivity Lock) ── */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <InactivityLock timeoutMinutes={5} warningSeconds={60}>
-                <Layout />
-              </InactivityLock>
-            </ProtectedRoute>
-          }>
-            <Route index element={<DefaultLandingRoute />} />
-            <Route path="dashboard" element={
-              <ProtectedRoute page="dashboard"><DashboardPage /></ProtectedRoute>
-            } />
-            <Route path="patient-portal" element={
-              <ProtectedRoute page="patient-portal"><PatientPortalPage /></ProtectedRoute>
-            } />
-            <Route path="doctor" element={
-              <ProtectedRoute page="doctor-dashboard"><DoctorDashboardPage /></ProtectedRoute>
-            } />
-            <Route path="patients" element={
-              <ProtectedRoute page="patients"><PatientsPage /></ProtectedRoute>
-            } />
-            <Route path="patients/new" element={
-              <ProtectedRoute page="patients"><PatientsPage /></ProtectedRoute>
-            } />
-            <Route path="patients/:id" element={
-              <ProtectedRoute page="patients"><PatientsPage /></ProtectedRoute>
-            } />
-            <Route path="doctors" element={
-              <ProtectedRoute page="doctors"><DoctorsPage /></ProtectedRoute>
-            } />
-            <Route path="appointments" element={
-              <ProtectedRoute page="appointments"><AppointmentsPage /></ProtectedRoute>
-            } />
-            <Route path="appointments/new" element={
-              <ProtectedRoute page="appointments"><AppointmentsPage /></ProtectedRoute>
-            } />
-            <Route path="vitals" element={
-              <ProtectedRoute page="vitals"><VitalsPage /></ProtectedRoute>
-            } />
-            <Route path="prescriptions" element={
-              <ProtectedRoute page="prescriptions"><PrescriptionsPage /></ProtectedRoute>
-            } />
-            <Route path="lab-tests" element={
-              <ProtectedRoute page="lab-tests"><LabTestsPage /></ProtectedRoute>
-            } />
-            <Route path="admissions" element={
-              <ProtectedRoute page="admissions"><AdmissionsPage /></ProtectedRoute>
-            } />
-            <Route path="invoices" element={
-              <ProtectedRoute page="invoices"><InvoicesPage /></ProtectedRoute>
-            } />
-            <Route path="invoices/new" element={
-              <ProtectedRoute page="invoices"><InvoicesPage /></ProtectedRoute>
-            } />
-            <Route path="reception" element={
-              <ProtectedRoute page="reception"><ReceptionPage /></ProtectedRoute>
-            } />
-            <Route path="payments" element={
-              <ProtectedRoute page="payments"><PaymentsPage /></ProtectedRoute>
-            } />
-            <Route path="cashier" element={
-              <ProtectedRoute page="cashier"><CashierDashboard /></ProtectedRoute>
-            } />
-            <Route path="cashier-dashboard" element={
-              <ProtectedRoute page="cashier-dashboard"><CashierDashboard /></ProtectedRoute>
-            } />
-            <Route path="insurance" element={
-              <ProtectedRoute page="insurance"><InsurancePage /></ProtectedRoute>
-            } />
-            <Route path="blood-bank" element={
-              <ProtectedRoute page="blood-bank"><BloodBankPage /></ProtectedRoute>
-            } />
-            <Route path="audit" element={
-              <ProtectedRoute page="audit"><AuditPage /></ProtectedRoute>
-            } />
-            <Route path="radiology" element={
-              <ProtectedRoute page="radiology"><RadiologyPage /></ProtectedRoute>
-            } />
-            <Route path="finance-reports" element={
-              <ProtectedRoute page="finance-reports"><FinanceReportsPage /></ProtectedRoute>
-            } />
-            <Route path="medicines" element={
-              <ProtectedRoute page="medicines"><MedicinesPage /></ProtectedRoute>
-            } />
-            <Route path="inventory" element={
-              <ProtectedRoute page="inventory"><InventoryPage /></ProtectedRoute>
-            } />
-            <Route path="beds" element={
-              <ProtectedRoute page="beds"><BedsPage /></ProtectedRoute>
-            } />
-            <Route path="reports" element={
-              <ProtectedRoute page="reports"><ReportsPage /></ProtectedRoute>
-            } />
-            <Route path="admin" element={
-              <ProtectedRoute page="admin"><AdminPage /></ProtectedRoute>
-            } />
-            <Route path="admin/users" element={
-              <ProtectedRoute page="admin"><AdminPage initialTab="users" /></ProtectedRoute>
-            } />
-            <Route path="admin/roles" element={
-              <ProtectedRoute page="admin"><RoleDescriptionsPage /></ProtectedRoute>
-            } />
-            <Route path="user-management" element={
-              <ProtectedRoute page="admin"><AdminPage initialTab="users" /></ProtectedRoute>
-            } />
-            <Route path="user-management/roles" element={
-              <ProtectedRoute page="admin"><RoleDescriptionsPage /></ProtectedRoute>
-            } />
-            <Route path="departments-admin" element={
-              <ProtectedRoute page="departments-admin"><DepartmentsAdminPage /></ProtectedRoute>
-            } />
+              {/* ── Protected HMS portal (role-guarded with Inactivity Lock) ── */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <InactivityLock timeoutMinutes={5} warningSeconds={60}>
+                    <Layout />
+                  </InactivityLock>
+                </ProtectedRoute>
+              }>
+                <Route index element={<DefaultLandingRoute />} />
+                <Route path="dashboard" element={
+                  <ProtectedRoute page="dashboard"><DashboardPage /></ProtectedRoute>
+                } />
+                <Route path="patient-portal" element={
+                  <ProtectedRoute page="patient-portal"><PatientPortalPage /></ProtectedRoute>
+                } />
+                <Route path="doctor" element={
+                  <ProtectedRoute page="doctor-dashboard"><DoctorDashboardPage /></ProtectedRoute>
+                } />
+                <Route path="patients" element={
+                  <ProtectedRoute page="patients"><PatientsPage /></ProtectedRoute>
+                } />
+                <Route path="patients/new" element={
+                  <ProtectedRoute page="patients"><PatientsPage /></ProtectedRoute>
+                } />
+                <Route path="patients/:id" element={
+                  <ProtectedRoute page="patients"><PatientsPage /></ProtectedRoute>
+                } />
+                <Route path="doctors" element={
+                  <ProtectedRoute page="doctors"><DoctorsPage /></ProtectedRoute>
+                } />
+                <Route path="appointments" element={
+                  <ProtectedRoute page="appointments"><AppointmentsPage /></ProtectedRoute>
+                } />
+                <Route path="appointments/new" element={
+                  <ProtectedRoute page="appointments"><AppointmentsPage /></ProtectedRoute>
+                } />
+                <Route path="vitals" element={
+                  <ProtectedRoute page="vitals"><VitalsPage /></ProtectedRoute>
+                } />
+                <Route path="prescriptions" element={
+                  <ProtectedRoute page="prescriptions"><PrescriptionsPage /></ProtectedRoute>
+                } />
+                <Route path="lab-tests" element={
+                  <ProtectedRoute page="lab-tests"><LabTestsPage /></ProtectedRoute>
+                } />
+                <Route path="admissions" element={
+                  <ProtectedRoute page="admissions"><AdmissionsPage /></ProtectedRoute>
+                } />
+                <Route path="invoices" element={
+                  <ProtectedRoute page="invoices"><InvoicesPage /></ProtectedRoute>
+                } />
+                <Route path="invoices/new" element={
+                  <ProtectedRoute page="invoices"><InvoicesPage /></ProtectedRoute>
+                } />
+                <Route path="reception" element={
+                  <ProtectedRoute page="reception"><ReceptionPage /></ProtectedRoute>
+                } />
+                <Route path="payments" element={
+                  <ProtectedRoute page="payments"><PaymentsPage /></ProtectedRoute>
+                } />
+                <Route path="cashier" element={
+                  <ProtectedRoute page="cashier"><CashierDashboard /></ProtectedRoute>
+                } />
+                <Route path="cashier-dashboard" element={
+                  <ProtectedRoute page="cashier-dashboard"><CashierDashboard /></ProtectedRoute>
+                } />
+                <Route path="insurance" element={
+                  <ProtectedRoute page="insurance"><InsurancePage /></ProtectedRoute>
+                } />
+                <Route path="blood-bank" element={
+                  <ProtectedRoute page="blood-bank"><BloodBankPage /></ProtectedRoute>
+                } />
+                <Route path="audit" element={
+                  <ProtectedRoute page="audit"><AuditPage /></ProtectedRoute>
+                } />
+                <Route path="radiology" element={
+                  <ProtectedRoute page="radiology"><RadiologyPage /></ProtectedRoute>
+                } />
+                <Route path="finance-reports" element={
+                  <ProtectedRoute page="finance-reports"><FinanceReportsPage /></ProtectedRoute>
+                } />
+                <Route path="medicines" element={
+                  <ProtectedRoute page="medicines"><MedicinesPage /></ProtectedRoute>
+                } />
+                <Route path="inventory" element={
+                  <ProtectedRoute page="inventory"><InventoryPage /></ProtectedRoute>
+                } />
+                <Route path="beds" element={
+                  <ProtectedRoute page="beds"><BedsPage /></ProtectedRoute>
+                } />
+                <Route path="reports" element={
+                  <ProtectedRoute page="reports"><ReportsPage /></ProtectedRoute>
+                } />
+                <Route path="admin" element={
+                  <ProtectedRoute page="admin"><AdminPage /></ProtectedRoute>
+                } />
+                <Route path="admin/users" element={
+                  <ProtectedRoute page="admin"><AdminPage initialTab="users" /></ProtectedRoute>
+                } />
+                <Route path="admin/roles" element={
+                  <ProtectedRoute page="admin"><RoleDescriptionsPage /></ProtectedRoute>
+                } />
+                <Route path="user-management" element={
+                  <ProtectedRoute page="admin"><AdminPage initialTab="users" /></ProtectedRoute>
+                } />
+                <Route path="user-management/roles" element={
+                  <ProtectedRoute page="admin"><RoleDescriptionsPage /></ProtectedRoute>
+                } />
+                <Route path="departments-admin" element={
+                  <ProtectedRoute page="departments-admin"><DepartmentsAdminPage /></ProtectedRoute>
+                } />
 
             {/* ── New Workflow Routes ──────────────────────────────── */}
             <Route path="reception-workflow" element={
@@ -386,36 +386,36 @@ function App() {
               <ProtectedRoute page="qr-audit"><PatientQRAuditDashboard /></ProtectedRoute>
             } />
 
-            {/* ── Board & Administrative Services Routes ────────── */}
-            <Route path="board/birth-certificates" element={
-              <ProtectedRoute page="birth-certificates"><BirthCertificatesPage /></ProtectedRoute>
-            } />
-            <Route path="board/death-certificates" element={
-              <ProtectedRoute page="death-certificates"><DeathCertificatesPage /></ProtectedRoute>
-            } />
-            <Route path="board/scholarships" element={
-              <ProtectedRoute page="scholarships"><ScholarshipsPage /></ProtectedRoute>
-            } />
-            <Route path="board/specializations" element={
-              <ProtectedRoute page="specializations"><SpecializationPage /></ProtectedRoute>
-            } />
-            <Route path="board/training" element={
-              <ProtectedRoute page="training"><TrainingDevelopmentPage /></ProtectedRoute>
-            } />
-            <Route path="board/members" element={
-              <ProtectedRoute page="board-members"><BoardMembersPage /></ProtectedRoute>
-            } />
-            <Route path="board/meetings" element={
-              <ProtectedRoute page="board-meetings"><BoardMeetingsPage /></ProtectedRoute>
-            } />
-            <Route path="board/reports" element={
-              <ProtectedRoute page="board-reports"><BoardReportsPage /></ProtectedRoute>
-            } />
-          </Route>
-        </Routes>
+                {/* ── Board & Administrative Services Routes ────────── */}
+                <Route path="board/birth-certificates" element={
+                  <ProtectedRoute page="birth-certificates"><BirthCertificatesPage /></ProtectedRoute>
+                } />
+                <Route path="board/death-certificates" element={
+                  <ProtectedRoute page="death-certificates"><DeathCertificatesPage /></ProtectedRoute>
+                } />
+                <Route path="board/scholarships" element={
+                  <ProtectedRoute page="scholarships"><ScholarshipsPage /></ProtectedRoute>
+                } />
+                <Route path="board/specializations" element={
+                  <ProtectedRoute page="specializations"><SpecializationPage /></ProtectedRoute>
+                } />
+                <Route path="board/training" element={
+                  <ProtectedRoute page="training"><TrainingDevelopmentPage /></ProtectedRoute>
+                } />
+                <Route path="board/members" element={
+                  <ProtectedRoute page="board-members"><BoardMembersPage /></ProtectedRoute>
+                } />
+                <Route path="board/meetings" element={
+                  <ProtectedRoute page="board-meetings"><BoardMeetingsPage /></ProtectedRoute>
+                } />
+                <Route path="board/reports" element={
+                  <ProtectedRoute page="board-reports"><BoardReportsPage /></ProtectedRoute>
+                } />
+              </Route>
+            </Routes>
           </Suspense>
-      </Router>
-    </AuthProvider>
+        </Router>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

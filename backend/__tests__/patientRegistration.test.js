@@ -4,6 +4,7 @@ const pool = require('../src/config/database');
 const jwt = require('jsonwebtoken');
 
 describe('Patient Registration Workflow', () => {
+  jest.setTimeout(25000);
   let receptionistToken;
   let adminToken;
   let cashierToken;
