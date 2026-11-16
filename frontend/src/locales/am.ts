@@ -42,6 +42,7 @@ export const am = {
   'nav.login': 'የሰራተኞች መግቢያ',
   'nav.logout': 'ውጣ',
   'nav.dashboard': 'ዳሽቦርድ',
+  'nav.opd_dashboard': 'የተመላላሽ ሕክምና (OPD) ማዕከል',
   'nav.shifts': 'የሰራተኞች ተረኛ ሰንጠረዥ',
   'nav.reception': 'የመስተንግዶና ምዝገባ ዴስክ',
   'nav.triage': 'የትሪያጅና የነርስ ስራዎች',

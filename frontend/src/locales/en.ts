@@ -42,6 +42,7 @@ export const en = {
   'nav.login': 'Staff Login',
   'nav.logout': 'Sign Out',
   'nav.dashboard': 'Dashboard',
+  'nav.opd_dashboard': 'OPD Command Center',
   'nav.shifts': 'Staff Shifts & Rosters',
   'nav.reception': 'Reception & Intake Desk',
   'nav.triage': 'Triage & Nursing Worklist',

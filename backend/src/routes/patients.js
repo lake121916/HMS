@@ -24,6 +24,14 @@ const patientViewRoles = [
 
 router.get('/', authenticate, authorize(...patientViewRoles), patientController.getAllPatients);
 
+// Duplicate Patient Detection (OPD Patient Registration Safety)
+router.post(
+  '/check-duplicate',
+  authenticate,
+  authorize(...patientViewRoles),
+  patientController.checkDuplicatePatient
+);
+
 // Identifier / Wristband lookup (must precede /:id)
 router.post(
   '/lookup-by-identifier',

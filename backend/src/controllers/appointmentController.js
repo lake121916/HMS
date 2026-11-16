@@ -135,6 +135,18 @@ const bookAppointment = handleAsync(async (req, res) => {
     return sendError(res, 'Doctor is not currently available for appointments', 409);
   }
 
+  // Prevent conflicting appointments for the same doctor within 20 minutes (Section 3)
+  const conflictCheck = await pool.query(
+    `SELECT id, appointment_date FROM appointments
+     WHERE doctor_id = $1
+       AND status NOT IN ('cancelled', 'no_show')
+       AND ABS(EXTRACT(EPOCH FROM (appointment_date - $2::timestamp))) < 1200`,
+    [doctorId, appointmentDate]
+  );
+  if (conflictCheck.rows.length) {
+    return sendError(res, 'Doctor already has an appointment scheduled near this time slot. Please select another time.', 409);
+  }
+
   const result = await pool.query(
     `INSERT INTO appointments (patient_id, doctor_id, appointment_date, reason, notes)
      VALUES ($1, $2, $3, $4, $5) RETURNING *`,
@@ -165,6 +177,19 @@ const rescheduleAppointment = handleAsync(async (req, res) => {
   }
   if (existing.rows[0].status === 'cancelled' || existing.rows[0].status === 'completed') {
     return sendError(res, `Cannot reschedule a ${existing.rows[0].status} appointment`, 400);
+  }
+
+  // Prevent conflicting appointments for the same doctor within 20 minutes (Section 3)
+  const conflictCheck = await pool.query(
+    `SELECT id, appointment_date FROM appointments
+     WHERE doctor_id = $1
+       AND id != $2
+       AND status NOT IN ('cancelled', 'no_show')
+       AND ABS(EXTRACT(EPOCH FROM (appointment_date - $3::timestamp))) < 1200`,
+    [existing.rows[0].doctor_id, id, newDate]
+  );
+  if (conflictCheck.rows.length) {
+    return sendError(res, 'Doctor already has an appointment scheduled near this time slot. Please select another time.', 409);
   }
 
   const rescheduleNote = reason ? ` | Rescheduled: ${reason}` : ' | Rescheduled';

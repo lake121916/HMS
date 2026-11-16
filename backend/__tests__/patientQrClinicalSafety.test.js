@@ -28,7 +28,15 @@ describe('Patient QR Security & Two-Identifier Clinical Safety Tests', () => {
     pool.query.mockReset();
     pool.connect.mockResolvedValue(qrClient);
     pool.query.mockResolvedValue({ rows: [] });
-    qrClient.query.mockResolvedValue({ rows: [] });
+    qrClient.query.mockImplementation(async (sql, params) => {
+      if (typeof sql === 'string') {
+        const trimmed = sql.trim().toUpperCase();
+        if (trimmed === 'BEGIN' || trimmed === 'COMMIT' || trimmed === 'ROLLBACK') {
+          return { rows: [] };
+        }
+      }
+      return pool.query(sql, params);
+    });
   });
 
   describe('Cryptographic Token Generation & Storage', () => {
@@ -66,8 +74,7 @@ describe('Patient QR Security & Two-Identifier Clinical Safety Tests', () => {
 
   describe('Token Verification & Status Rejection', () => {
     test('rejects revoked QR identity and logs audit rejection', async () => {
-      qrClient.query
-        .mockResolvedValueOnce({}) // BEGIN
+      pool.query
         .mockResolvedValueOnce({
           rows: [{
             identity_id: 88,
@@ -78,8 +85,7 @@ describe('Patient QR Security & Two-Identifier Clinical Safety Tests', () => {
             last_name: 'Kebede'
           }]
         })
-        .mockResolvedValueOnce({}) // audit log write
-        .mockResolvedValueOnce({}); // COMMIT
+        .mockResolvedValueOnce({}); // audit log write
 
       const response = await request(app)
         .post('/api/patients/scan')
@@ -91,8 +97,7 @@ describe('Patient QR Security & Two-Identifier Clinical Safety Tests', () => {
     });
 
     test('rejects expired QR identity', async () => {
-      qrClient.query
-        .mockResolvedValueOnce({}) // BEGIN
+      pool.query
         .mockResolvedValueOnce({
           rows: [{
             identity_id: 89,
@@ -102,25 +107,23 @@ describe('Patient QR Security & Two-Identifier Clinical Safety Tests', () => {
             last_name: 'Haile'
           }]
         })
-        .mockResolvedValueOnce({}) // audit log write
-        .mockResolvedValueOnce({}); // COMMIT
+        .mockResolvedValueOnce({});
 
       const response = await request(app)
         .post('/api/patients/scan')
         .set('Authorization', `Bearer ${tokenFor('nurse')}`)
         .send({ qrContent: `AKEH:PATIENT:v1:${'e'.repeat(43)}` });
 
-      expect([404, 410]).toContain(response.status);
-      expect(response.body.message).toMatch(/expired|invalid|revoked/i);
+      expect(response.status).toBe(410);
+      expect(response.body.message).toMatch(/expired/i);
     });
 
     test('successfully verifies active token and returns authorized patient clinical summary', async () => {
-      qrClient.query
-        .mockResolvedValueOnce({}) // BEGIN
+      pool.query
         .mockResolvedValueOnce({
           rows: [{
             identity_id: 99,
-            id: 25,
+            patient_id: 25,
             user_id: 125,
             first_name: 'Dawit',
             last_name: 'Kebede',
@@ -129,11 +132,15 @@ describe('Patient QR Security & Two-Identifier Clinical Safety Tests', () => {
             blood_type: 'B+',
             allergies: 'Penicillin',
             phone: '+251911223344',
-            status: 'active'
+            status: 'active',
+            encounter_id: 501,
+            encounter_number: 'ENC-2026-00501',
+            encounter_status: 'waiting_for_doctor',
+            department_name: 'Outpatient Department'
           }]
         })
-        .mockResolvedValueOnce({}) // audit log success
-        .mockResolvedValueOnce({}); // COMMIT
+        .mockResolvedValueOnce({ rows: [] }) // active allergies / encounter
+        .mockResolvedValueOnce({}); // audit log success
 
       const response = await request(app)
         .post('/api/patients/scan')

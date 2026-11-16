@@ -406,6 +406,15 @@ const Layout: React.FC = () => {
     translationKey: 'nav.queue_management'
   };
 
+  const OPD_NAV_ITEM: NavItem = {
+    id: 'opd_dashboard',
+    name: 'OPD Command Center',
+    href: '/opd',
+    icon: Building2,
+    group: 'Daily Workbench',
+    translationKey: 'nav.opd_dashboard'
+  };
+
   const QR_SCANNER_NAV_ITEM: NavItem = {
     id: 'qr_scanner',
     name: 'Patient QR Scanner',
@@ -419,6 +428,7 @@ const Layout: React.FC = () => {
     switch (role) {
       case 'receptionist':
         return [
+          OPD_NAV_ITEM,
           { id: 'reception_workflow', name: 'Reception & Intake Desk', href: '/reception-workflow', icon: UserCheck, group: 'Daily Workbench', translationKey: 'nav.reception' },
           QR_SCANNER_NAV_ITEM,
           QUEUE_NAV_ITEM,
@@ -428,6 +438,7 @@ const Layout: React.FC = () => {
 
       case 'nurse':
         return [
+          OPD_NAV_ITEM,
           { id: 'nurse_worklist', name: 'Triage & Nursing Worklist', href: '/nurse', icon: ClipboardCheck, group: 'Daily Workbench', translationKey: 'nav.triage' },
           QR_SCANNER_NAV_ITEM,
           { id: 'vitals', name: 'Vital Signs & Triage', href: '/vitals', icon: Activity, group: 'Daily Workbench', permission: 'vitals:view', translationKey: 'nav.vitals' },
@@ -441,6 +452,7 @@ const Layout: React.FC = () => {
 
       case 'doctor':
         return [
+          OPD_NAV_ITEM,
           { id: 'consultation', name: 'Clinical Consultations', href: '/consultation', icon: Stethoscope, group: 'Daily Workbench', translationKey: 'nav.consultations' },
           QR_SCANNER_NAV_ITEM,
           QUEUE_NAV_ITEM,
@@ -455,6 +467,7 @@ const Layout: React.FC = () => {
 
       case 'lab_technician':
         return [
+          OPD_NAV_ITEM,
           { id: 'lab_dashboard', name: 'Laboratory Worklist', href: '/lab-dashboard', icon: FlaskConical, group: 'Daily Workbench', translationKey: 'nav.lab' },
           QR_SCANNER_NAV_ITEM,
           { id: 'lab_tests', name: 'Laboratory Orders', href: '/lab-tests', icon: FlaskConical, group: 'Records & Schedule', permission: 'lab_tests:view', translationKey: 'nav.lab_tests' },
@@ -464,6 +477,7 @@ const Layout: React.FC = () => {
 
       case 'pharmacist':
         return [
+          OPD_NAV_ITEM,
           { id: 'pharmacy_dashboard', name: 'Pharmacy & Dispensing', href: '/pharmacy', icon: Pill, group: 'Daily Workbench', translationKey: 'nav.pharmacy' },
           QR_SCANNER_NAV_ITEM,
           QUEUE_NAV_ITEM,
@@ -475,6 +489,7 @@ const Layout: React.FC = () => {
 
       case 'cashier':
         return [
+          OPD_NAV_ITEM,
           { id: 'cashier_pos', name: 'Cashier POS & Register', href: '/cashier-workflow', icon: Receipt, group: 'Daily Workbench', translationKey: 'nav.cashier' },
           QR_SCANNER_NAV_ITEM,
           { id: 'invoices', name: 'Patient Invoices', href: '/invoices', icon: FileText, group: 'Records & Schedule', permission: 'invoices:view', translationKey: 'nav.invoices' },
@@ -485,6 +500,7 @@ const Layout: React.FC = () => {
       case 'hospital_manager':
         return [
           { id: 'dashboard', name: 'Hospital Overview', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
+          OPD_NAV_ITEM,
           QR_SCANNER_NAV_ITEM,
           { id: 'opd_coordinator', name: 'OPD Coordinator Desk', href: '/opd-coordinator', icon: GitBranch, group: 'Daily Workbench', translationKey: 'nav.opd_coordinator' },
           QUEUE_NAV_ITEM,
@@ -500,6 +516,7 @@ const Layout: React.FC = () => {
       case 'admin':
         return [
           { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
+          OPD_NAV_ITEM,
           QR_SCANNER_NAV_ITEM,
           { id: 'opd_coordinator', name: 'OPD Coordinator Desk', href: '/opd-coordinator', icon: GitBranch, group: 'Daily Workbench', translationKey: 'nav.opd_coordinator' },
           QUEUE_NAV_ITEM,
@@ -515,6 +532,7 @@ const Layout: React.FC = () => {
       case 'super_admin':
         return [
           { id: 'dashboard', name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Daily Workbench', translationKey: 'nav.dashboard' },
+          OPD_NAV_ITEM,
           QR_SCANNER_NAV_ITEM,
           { id: 'opd_coordinator', name: 'OPD Coordinator Desk', href: '/opd-coordinator', icon: GitBranch, group: 'Daily Workbench', translationKey: 'nav.opd_coordinator' },
           QUEUE_NAV_ITEM,

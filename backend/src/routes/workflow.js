@@ -33,9 +33,16 @@ router.get('/encounters/:patientId', authenticate, authorize(...clinicalRoles), 
 
 router.post('/referrals', authenticate, authorize('doctor', 'admin', 'super_admin', 'receptionist'), async (req, res) => {
   try {
-    const { patient_id, referring_facility, referring_clinician, clinical_summary, urgency, receiving_department_id, assigned_doctor_id, attachment_url } = req.body;
-    if (!patient_id || !clinical_summary) return res.status(400).json({ success: false, message: 'patient_id and clinical_summary are required' });
-    const result = await pool.query(`INSERT INTO referrals (patient_id, referring_facility, referring_clinician, clinical_summary, urgency, receiving_department_id, assigned_doctor_id, attachment_url, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`, [patient_id, referring_facility || null, referring_clinician || null, clinical_summary, urgency || 'routine', receiving_department_id || null, assigned_doctor_id || null, attachment_url || null, req.user.id]);
+    const { patient_id, referring_facility, referring_clinician, clinical_summary, urgency, receiving_department_id, assigned_doctor_id, reason } = req.body;
+    if (!patient_id || (!clinical_summary && !reason)) return res.status(400).json({ success: false, message: 'patient_id and clinical_summary or reason are required' });
+    const effectiveReason = reason || clinical_summary || 'Clinical OPD Referral';
+    const result = await pool.query(
+      `INSERT INTO opd_referrals (
+        patient_id, receiving_facility, reason, clinical_summary, urgency,
+        receiving_department_id, referring_doctor_id, created_by
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [patient_id, referring_facility || null, effectiveReason, clinical_summary || null, urgency || 'routine', receiving_department_id || null, assigned_doctor_id || null, req.user.id]
+    );
     res.status(201).json({ success: true, data: { referral: result.rows[0] } });
   } catch (error) {
     console.error('Referral error:', error);
@@ -45,7 +52,12 @@ router.post('/referrals', authenticate, authorize('doctor', 'admin', 'super_admi
 
 router.get('/referrals', authenticate, authorize(...clinicalRoles, 'receptionist'), async (req, res) => {
   try {
-    const result = await pool.query(`SELECT r.*, p.first_name || ' ' || p.last_name AS patient_name FROM referrals r JOIN patients p ON p.id = r.patient_id ORDER BY r.created_at DESC`);
+    const result = await pool.query(`
+      SELECT r.*, p.first_name || ' ' || p.last_name AS patient_name
+      FROM opd_referrals r
+      JOIN patients p ON p.id = r.patient_id
+      ORDER BY r.created_at DESC
+    `);
     res.json({ success: true, data: { referrals: result.rows } });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Unable to load referrals' });

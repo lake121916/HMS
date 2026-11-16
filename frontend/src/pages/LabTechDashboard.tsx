@@ -39,9 +39,9 @@ const LabTechDashboard: React.FC = () => {
   const [selected, setSelected] = useState<LabTest | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState<{type:'success'|'error';msg:string}|null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'pending'|'in_progress'|'completed'|'all'>('pending');
+  const [filter, setFilter] = useState<'pending' | 'in_progress' | 'completed' | 'all'>('pending');
   const [showScannerModal, setShowScannerModal] = useState(false);
   const [verifiedPatient, setVerifiedPatient] = useState<any | null>(null);
 
@@ -85,7 +85,7 @@ const LabTechDashboard: React.FC = () => {
 
   useEffect(() => { fetchTests(); }, [filter]);
 
-  const showToast = (type: 'success'|'error', msg: string) => {
+  const showToast = (type: 'success' | 'error', msg: string) => {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 4000);
   };
@@ -185,11 +185,11 @@ const LabTechDashboard: React.FC = () => {
 
       <div className="flex gap-3 sm:gap-4 items-center flex-wrap">
         <div className="flex gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 overflow-x-auto max-w-full">
-          {(['pending','in_progress','completed','all'] as const).map(f => (
+          {(['pending', 'in_progress', 'completed', 'all'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition capitalize whitespace-nowrap
                 ${filter === f ? 'bg-white dark:bg-slate-700 text-cyan-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-              {f.replace('_',' ')}
+              {f.replace('_', ' ')}
             </button>
           ))}
         </div>
@@ -201,9 +201,9 @@ const LabTechDashboard: React.FC = () => {
         </div>
         <div className="w-full sm:w-auto sm:ml-auto flex justify-around sm:justify-end gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
           {[
-            { label: 'Pending', count: tests.filter(t=>t.status==='pending').length, color: 'text-amber-600' },
-            { label: 'In Progress', count: tests.filter(t=>t.status==='in_progress').length, color: 'text-blue-600' },
-            { label: 'Completed', count: tests.filter(t=>t.status==='completed').length, color: 'text-emerald-600' },
+            { label: 'Pending', count: tests.filter(t => t.status === 'pending').length, color: 'text-amber-600' },
+            { label: 'In Progress', count: tests.filter(t => t.status === 'in_progress').length, color: 'text-blue-600' },
+            { label: 'Completed', count: tests.filter(t => t.status === 'completed').length, color: 'text-emerald-600' },
           ].map(s => (
             <div key={s.label} className="text-center">
               <div className={`text-xl font-bold ${s.color}`}>{s.count}</div>
@@ -244,7 +244,7 @@ const LabTechDashboard: React.FC = () => {
                 {test.test_type && <div className="text-xs text-slate-400">{test.test_type}</div>}
                 {test.results && (
                   <div className={`text-xs mt-1 ${test.is_abnormal ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {test.is_abnormal ? '⚠️ Abnormal' : '✓ Normal'} — {test.results.slice(0,60)}
+                    {test.is_abnormal ? '⚠️ Abnormal' : '✓ Normal'} — {test.results.slice(0, 60)}
                   </div>
                 )}
               </div>
@@ -252,7 +252,7 @@ const LabTechDashboard: React.FC = () => {
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize
                   ${test.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
                     test.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {test.status.replace('_',' ')}
+                  {test.status.replace('_', ' ')}
                 </span>
                 {test.status === 'completed' && (
                   <button
@@ -304,7 +304,7 @@ const LabTechDashboard: React.FC = () => {
                   required
                   rows={5}
                   value={resultForm.results}
-                  onChange={e => setResultForm(f => ({...f, results: e.target.value}))}
+                  onChange={e => setResultForm(f => ({ ...f, results: e.target.value }))}
                   placeholder="Enter test results in detail..."
                   className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300"
                 />
@@ -312,12 +312,12 @@ const LabTechDashboard: React.FC = () => {
               <div>
                 <label className="text-xs font-medium text-slate-600">Reference Range</label>
                 <input value={resultForm.reference_range}
-                  onChange={e => setResultForm(f => ({...f, reference_range: e.target.value}))}
+                  onChange={e => setResultForm(f => ({ ...f, reference_range: e.target.value }))}
                   placeholder="e.g. 4.5–11.0 × 10⁹/L"
                   className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300" />
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer"
-                onClick={() => setResultForm(f => ({...f, is_abnormal: !f.is_abnormal}))}>
+                onClick={() => setResultForm(f => ({ ...f, is_abnormal: !f.is_abnormal }))}>
                 <div className={`h-5 w-5 rounded border-2 flex items-center justify-center transition
                   ${resultForm.is_abnormal ? 'border-red-500 bg-red-500' : 'border-slate-300'}`}>
                   {resultForm.is_abnormal && <span className="text-white text-xs">✓</span>}
@@ -331,7 +331,7 @@ const LabTechDashboard: React.FC = () => {
               <div>
                 <label className="text-xs font-medium text-slate-600">Technician Notes</label>
                 <input value={resultForm.notes}
-                  onChange={e => setResultForm(f => ({...f, notes: e.target.value}))}
+                  onChange={e => setResultForm(f => ({ ...f, notes: e.target.value }))}
                   placeholder="Any additional comments..."
                   className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300" />
               </div>

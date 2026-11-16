@@ -141,18 +141,121 @@ const getPatientById = handleAsync(async (req, res) => {
   sendSuccess(res, result.rows[0]);
 });
 
+const checkDuplicatePatient = handleAsync(async (req, res) => {
+  const data = toSnakeCase(req.body);
+  const { phone, first_name, last_name, date_of_birth, insurance_number } = data;
+
+  const params = [];
+  const conditions = [];
+
+  if (phone && String(phone).trim().length >= 8) {
+    const rawPhone = String(phone).trim();
+    let normPhone = rawPhone;
+    if (rawPhone.startsWith('09') || rawPhone.startsWith('07')) {
+      normPhone = `+251${rawPhone.slice(1)}`;
+    } else if (rawPhone.startsWith('+2519') || rawPhone.startsWith('+2517')) {
+      normPhone = `0${rawPhone.slice(5)}`;
+    }
+    params.push(rawPhone);
+    const p1 = `$${params.length}`;
+    params.push(normPhone);
+    const p2 = `$${params.length}`;
+    conditions.push(`(phone = ${p1} OR phone = ${p2} OR phone ILIKE '%' || ${p1} || '%')`);
+  }
+
+  if (first_name && last_name && date_of_birth) {
+    params.push(String(first_name).trim());
+    const fn = `$${params.length}`;
+    params.push(String(last_name).trim());
+    const ln = `$${params.length}`;
+    params.push(date_of_birth);
+    const dob = `$${params.length}`;
+    conditions.push(`(LOWER(first_name) = LOWER(${fn}) AND LOWER(last_name) = LOWER(${ln}) AND date_of_birth = ${dob}::date)`);
+  }
+
+  if (insurance_number && String(insurance_number).trim().length >= 4) {
+    params.push(String(insurance_number).trim());
+    const ins = `$${params.length}`;
+    conditions.push(`(insurance_number = ${ins} AND insurance_number IS NOT NULL AND insurance_number != '')`);
+  }
+
+  if (conditions.length === 0) {
+    return sendSuccess(res, { duplicates: [], count: 0, has_duplicates: false }, 'No search criteria provided');
+  }
+
+  const query = `
+    SELECT id, first_name, last_name, date_of_birth, gender, phone, email,
+           insurance_number, created_at
+    FROM patients
+    WHERE ${conditions.join(' OR ')}
+    LIMIT 5
+  `;
+
+  const result = await pool.query(query, params);
+  const duplicates = result.rows.map(row => {
+    const reasons = [];
+    if (phone && row.phone && (row.phone.includes(phone) || phone.includes(row.phone))) {
+      reasons.push('Phone number match');
+    }
+    if (first_name && last_name && row.first_name.toLowerCase() === first_name.toLowerCase() && row.last_name.toLowerCase() === last_name.toLowerCase()) {
+      reasons.push('Full name match');
+    }
+    if (date_of_birth && row.date_of_birth) {
+      const d1 = new Date(row.date_of_birth).toISOString().slice(0, 10);
+      const d2 = new Date(date_of_birth).toISOString().slice(0, 10);
+      if (d1 === d2) reasons.push('Date of birth match');
+    }
+    if (insurance_number && row.insurance_number === insurance_number) {
+      reasons.push('Insurance/CBHI number match');
+    }
+
+    return {
+      id: row.id,
+      mrn: patientQrService.formatMrn(row.id),
+      first_name: row.first_name,
+      last_name: row.last_name,
+      phone: row.phone,
+      date_of_birth: row.date_of_birth,
+      gender: row.gender,
+      insurance_number: row.insurance_number,
+      created_at: row.created_at,
+      match_reasons: reasons.length ? reasons : ['Demographic similarity']
+    };
+  });
+
+  sendSuccess(res, {
+    duplicates,
+    count: duplicates.length,
+    has_duplicates: duplicates.length > 0
+  }, duplicates.length > 0 ? 'Potential duplicate patient records found' : 'No duplicate records found');
+});
+
 const registerPatient = handleAsync(async (req, res) => {
   const data = toSnakeCase(req.body);
   const {
     first_name, last_name, date_of_birth, gender, phone, email,
     address, blood_type, allergies, emergency_contact_name,
     emergency_contact_phone, insurance_number, medical_history,
-    intake_pathway = 'self_pay', waiver_reason,
+    intake_pathway = 'self_pay', waiver_reason, allow_duplicate,
     password  // optional: admin may supply a real password
   } = data;
 
   if (!first_name || !last_name || !date_of_birth || !gender) {
     return sendError(res, 'first_name, last_name, date_of_birth, and gender are required', 400);
+  }
+
+  // Duplicate patient prevention (when requested or on strict check)
+  if (data.check_duplicate && phone && String(phone).trim().length >= 8) {
+    const dupCheck = await pool.query(
+      `SELECT id, first_name, last_name, phone FROM patients
+       WHERE (phone = $1 OR (LOWER(first_name) = LOWER($2) AND LOWER(last_name) = LOWER($3) AND date_of_birth = $4::date))
+       LIMIT 1`,
+      [phone.trim(), first_name.trim(), last_name.trim(), date_of_birth]
+    );
+    if (dupCheck.rows.length) {
+      const match = dupCheck.rows[0];
+      return sendError(res, `Potential duplicate patient found: ${match.first_name} ${match.last_name} (${patientQrService.formatMrn(match.id)}). Set allow_duplicate=true if this is a distinct individual.`, 409);
+    }
   }
 
   // Handle email: if patient has no email, generate a unique internal clinical account identifier
@@ -585,14 +688,15 @@ const scanPatientQr = handleAsync(async (req, res) => {
       const token = tokenMatch[1];
       const tokenHash = patientQrService.hashToken(token);
       const identityResult = await client.query(
-        `SELECT i.id AS identity_id, i.status, i.revocation_reason, i.revoked_at,
+        `SELECT i.id AS identity_id, i.status, i.is_active, i.expires_at, i.revocation_reason, i.revoked_at,
                 p.id, p.first_name, p.last_name,
                 p.date_of_birth, p.gender, p.blood_type, p.allergies, p.phone,
-                p.is_unidentified, p.temporary_mrn, p.profile_photo_updated_at
+                p.is_unidentified, p.temporary_mrn, p.profile_photo_updated_at,
+                (i.is_active = true) AS is_active_check,
+                (i.expires_at > CURRENT_TIMESTAMP) AS not_expired_check
          FROM patient_qr_identities i
          JOIN patients p ON p.id = i.patient_id
-         WHERE (i.token_hash = $1 OR i.token = $2) AND i.is_active = true
-           AND (i.expires_at IS NULL OR i.expires_at > CURRENT_TIMESTAMP)
+         WHERE (i.token_hash = $1 OR i.token = $2)
          LIMIT 1
          FOR SHARE OF i`,
         [tokenHash, token]
@@ -643,25 +747,12 @@ const scanPatientQr = handleAsync(async (req, res) => {
       row = { ...p, identity_id: identRes.rows[0]?.id || null, status: identRes.rows[0]?.status || 'active' };
     }
 
-    if (row.status === 'revoked' || row.status === 'replaced') {
-      await patientQrService.logQrAction(client, {
-        patientId: row.id,
-        identityId: row.identity_id,
-        actorUserId: req.user.id,
-        action: 'scan_rejected',
-        outcome: 'rejected',
-        rejectionReason: `Attempted scan of ${row.status} QR token`,
-        department,
-        deviceId: device_id,
-        req
-      });
-      await client.query('COMMIT');
-      return sendError(res, `Patient QR code has been revoked. Reason: ${row.revocation_reason || 'Replaced'}`, 404);
-    }
+    const patientId = row.id || row.patient_id;
 
-    if (row.status === 'expired') {
+    const isExpired = row.status === 'expired' || (row.expires_at && new Date(row.expires_at) < new Date());
+    if (isExpired) {
       await patientQrService.logQrAction(client, {
-        patientId: row.id,
+        patientId,
         identityId: row.identity_id,
         actorUserId: req.user.id,
         action: 'scan_rejected',
@@ -672,7 +763,23 @@ const scanPatientQr = handleAsync(async (req, res) => {
         req
       });
       await client.query('COMMIT');
-      return sendError(res, 'Patient QR code is expired, invalid, or revoked', 410);
+      return sendError(res, 'Patient QR code has expired', 410);
+    }
+
+    if (row.status === 'revoked' || row.status === 'replaced' || row.is_active === false) {
+      await patientQrService.logQrAction(client, {
+        patientId,
+        identityId: row.identity_id,
+        actorUserId: req.user.id,
+        action: 'scan_rejected',
+        outcome: 'rejected',
+        rejectionReason: `Attempted scan of ${row.status || 'inactive'} QR token`,
+        department,
+        deviceId: device_id,
+        req
+      });
+      await client.query('COMMIT');
+      return sendError(res, `Patient QR code has been revoked. Reason: ${row.revocation_reason || 'Replaced or deactivated'}`, 404);
     }
 
     await patientQrService.logQrAction(client, {
@@ -698,12 +805,13 @@ const scanPatientQr = handleAsync(async (req, res) => {
   const pharmacyRoles = ['pharmacist'];
   const labRoles = ['lab_technician'];
 
+  const effectiveId = row.id || row.patient_id;
   const effectiveMrn = row.is_unidentified && row.temporary_mrn
     ? row.temporary_mrn
-    : patientQrService.formatMrn(row.id);
+    : patientQrService.formatMrn(effectiveId);
 
   const patient = {
-    id: row.id,
+    id: effectiveId,
     mrn: effectiveMrn,
     first_name: row.first_name,
     last_name: row.last_name
@@ -715,7 +823,7 @@ const scanPatientQr = handleAsync(async (req, res) => {
     patient.blood_type = row.blood_type;
     patient.allergies = row.allergies;
     patient.phone = row.phone;
-    patient.patient_photo_user_id = row.id;
+    patient.patient_photo_user_id = row.user_id || effectiveId;
   } else if (receptionistRoles.includes(req.user.role)) {
     patient.gender = row.gender;
     patient.date_of_birth = row.date_of_birth;
@@ -926,6 +1034,7 @@ const recordWristbandPrinted = handleAsync(async (req, res) => {
 module.exports = {
   getAllPatients,
   getPatientById,
+  checkDuplicatePatient,
   registerPatient,
   updatePatient,
   getPatientHistory,

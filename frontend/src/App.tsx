@@ -82,6 +82,7 @@ const BoardReportsPage = lazy(() => import('./pages/board/BoardReportsPage'));
 const QueueCommandCenter = lazy(() => import('./pages/QueueCommandCenter'));
 const PatientQRScannerPage = lazy(() => import('./pages/PatientQRScannerPage'));
 const PatientQRAuditDashboard = lazy(() => import('./pages/PatientQRAuditDashboard'));
+const OPDDashboardPage = lazy(() => import('./pages/OPDDashboardPage'));
 
 // ── Role permission map ──────────────────────────────────────────────────────
 const ALL_PAGES = [
@@ -91,7 +92,7 @@ const ALL_PAGES = [
   'user-management', 'admin', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
   'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
   'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-  'services-admin', 'shifts', 'queue-management', 'qr-scanner', 'qr-audit',
+  'services-admin', 'shifts', 'queue-management', 'qr-scanner', 'qr-audit', 'opd', 'opd-dashboard',
   'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
   'training', 'board-members', 'board-meetings', 'board-reports'
 ];
@@ -105,7 +106,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'user-management', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'radiology',
     'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
     'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-    'services-admin', 'shifts', 'queue-management', 'qr-scanner', 'qr-audit',
+    'services-admin', 'shifts', 'queue-management', 'qr-scanner', 'qr-audit', 'opd', 'opd-dashboard',
   'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
   'training', 'board-members', 'board-meetings', 'board-reports'
   ],
@@ -114,6 +115,8 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'assignment',
     'opd-coordinator',
     'queue-management',
+    'opd',
+    'opd-dashboard',
     'departments-admin',
     'doctors',
     'admissions',
@@ -126,9 +129,9 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
     'training', 'board-members', 'board-meetings', 'board-reports'
   ],
-  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'reception', 'reception-workflow', 'vitals', 'queue-management', 'qr-scanner'],
-  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines', 'queue-management', 'qr-scanner'],
-  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse', 'assignment', 'opd-coordinator', 'queue-management', 'qr-scanner'],
+  receptionist:     ['dashboard', 'patients', 'appointments', 'admissions', 'reception', 'reception-workflow', 'vitals', 'queue-management', 'qr-scanner', 'opd', 'opd-dashboard'],
+  doctor:           ['dashboard', 'shifts', 'doctor-dashboard', 'patients', 'doctors', 'appointments', 'vitals', 'prescriptions', 'lab-tests', 'admissions', 'radiology', 'consultation', 'medicines', 'queue-management', 'qr-scanner', 'opd', 'opd-dashboard'],
+  nurse:            ['dashboard', 'shifts', 'patients', 'appointments', 'vitals', 'admissions', 'beds', 'triage', 'nurse', 'assignment', 'opd-coordinator', 'queue-management', 'qr-scanner', 'opd', 'opd-dashboard'],
   lab_technician:   ['dashboard', 'shifts', 'lab-tests', 'lab-dashboard', 'patients', 'qr-scanner'],
   pharmacist:       ['dashboard', 'shifts', 'prescriptions', 'medicines', 'inventory', 'pharmacy', 'queue-management', 'qr-scanner'],
   cashier:          ['dashboard', 'invoices', 'payments', 'cashier', 'cashier-dashboard', 'finance-reports', 'cashier-workflow', 'qr-scanner'],
@@ -348,6 +351,12 @@ function App() {
             } />
             <Route path="queue-management" element={
               <ProtectedRoute page="queue-management"><QueueCommandCenter /></ProtectedRoute>
+            } />
+            <Route path="opd" element={
+              <ProtectedRoute page="opd"><OPDDashboardPage /></ProtectedRoute>
+            } />
+            <Route path="opd-dashboard" element={
+              <ProtectedRoute page="opd-dashboard"><OPDDashboardPage /></ProtectedRoute>
             } />
             <Route path="consultation" element={
               <ProtectedRoute page="consultation"><DoctorConsultationPage /></ProtectedRoute>

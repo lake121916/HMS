@@ -107,6 +107,7 @@ app.use('/api/services', auditLog);
 app.use('/api/pharmacy', auditLog);
 app.use('/api/consultations', auditLog);
 app.use('/api/opd', auditLog);
+app.use('/api/referrals', auditLog);
 
 // Root status and Health check endpoints
 app.get('/', (req, res) => {
@@ -162,6 +163,7 @@ app.use('/api/services', require('./routes/services'));
 app.use('/api/pharmacy', require('./routes/pharmacy'));
 app.use('/api/consultations', require('./routes/consultations'));
 app.use('/api/opd', require('./routes/opdQueue'));
+app.use('/api/referrals', auditLog, require('./routes/referrals'));
 app.use('/api/emergency', auditLog, require('./routes/emergency'));
 app.use('/api/documents', require('./routes/documents'));
 app.use('/api/shifts', require('./routes/shifts'));
