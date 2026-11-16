@@ -81,6 +81,7 @@ const BoardMeetingsPage = lazy(() => import('./pages/board/BoardMeetingsPage'));
 const BoardReportsPage = lazy(() => import('./pages/board/BoardReportsPage'));
 const QueueCommandCenter = lazy(() => import('./pages/QueueCommandCenter'));
 const PatientQRScannerPage = lazy(() => import('./pages/PatientQRScannerPage'));
+const PatientQRAuditDashboard = lazy(() => import('./pages/PatientQRAuditDashboard'));
 
 // ── Role permission map ──────────────────────────────────────────────────────
 const ALL_PAGES = [
@@ -90,7 +91,7 @@ const ALL_PAGES = [
   'user-management', 'admin', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'audit', 'radiology',
   'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
   'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-  'services-admin', 'shifts', 'queue-management', 'qr-scanner',
+  'services-admin', 'shifts', 'queue-management', 'qr-scanner', 'qr-audit',
   'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
   'training', 'board-members', 'board-meetings', 'board-reports'
 ];
@@ -104,7 +105,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'user-management', 'departments-admin', 'cashier', 'insurance', 'blood-bank', 'radiology',
     'finance-reports', 'patient-portal', 'reception-workflow', 'triage',
     'assignment', 'opd-coordinator', 'consultation', 'lab-dashboard', 'pharmacy', 'cashier-workflow',
-    'services-admin', 'shifts', 'queue-management', 'qr-scanner',
+    'services-admin', 'shifts', 'queue-management', 'qr-scanner', 'qr-audit',
   'birth-certificates', 'death-certificates', 'scholarships', 'specializations',
   'training', 'board-members', 'board-meetings', 'board-reports'
   ],
@@ -368,6 +369,12 @@ function App() {
             } />
             <Route path="qr-scanner" element={
               <ProtectedRoute page="qr-scanner"><PatientQRScannerPage /></ProtectedRoute>
+            } />
+            <Route path="admin/qr-audit" element={
+              <ProtectedRoute page="qr-audit"><PatientQRAuditDashboard /></ProtectedRoute>
+            } />
+            <Route path="qr-audit" element={
+              <ProtectedRoute page="qr-audit"><PatientQRAuditDashboard /></ProtectedRoute>
             } />
 
             {/* ── Board & Administrative Services Routes ────────── */}

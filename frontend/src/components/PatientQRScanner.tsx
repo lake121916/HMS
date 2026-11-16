@@ -3,12 +3,14 @@ import {
   Camera, CameraOff, RefreshCw, AlertTriangle, ShieldCheck,
   ArrowRight, RotateCw, Smartphone, Monitor,
   AlertCircle, ShieldAlert, Sparkles, Search,
-  Upload, HelpCircle, ChevronDown, ChevronUp, Image as ImageIcon
+  Upload, HelpCircle, ChevronDown, ChevronUp, Image as ImageIcon,
+  Flashlight, FlashlightOff, CheckCircle2, UserCheck
 } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import PatientVerificationDialog, { PatientVerificationRecord } from './PatientVerificationDialog';
 
 export interface CameraOption {
   id: string;
@@ -25,6 +27,9 @@ export interface VerifiedPatient {
   blood_type?: string;
   allergies?: string;
   phone?: string;
+  is_unidentified?: boolean;
+  temporary_mrn?: string;
+  encounter?: any;
   [key: string]: any;
 }
 
@@ -36,6 +41,8 @@ export interface PatientQRScannerProps {
   compact?: boolean;
   allowManualInput?: boolean;
   showHeader?: boolean;
+  department?: string;
+  requireTwoIdentifierVerification?: boolean;
 }
 
 export const isMobileDevice = (): boolean => {
@@ -83,6 +90,8 @@ export const PatientQRScanner: React.FC<PatientQRScannerProps> = ({
   compact = false,
   allowManualInput = true,
   showHeader = true,
+  department = 'Clinical',
+  requireTwoIdentifierVerification = false,
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -98,6 +107,13 @@ export const PatientQRScanner: React.FC<PatientQRScannerProps> = ({
   const [verifiedResult, setVerifiedResult] = useState<{ patient: VerifiedPatient; verified_at?: string } | null>(null);
   const [manualToken, setManualToken] = useState('');
   const [lastScannedPayload, setLastScannedPayload] = useState<string | null>(null);
+
+  // Hardware Torch & Barcode Gun & Two-Identifier States
+  const [torchOn, setTorchOn] = useState(false);
+  const [hasTorch, setHasTorch] = useState(false);
+  const [showVerifyDialog, setShowVerifyDialog] = useState(false);
+  const [twoIdentifierConfirmed, setTwoIdentifierConfirmed] = useState(false);
+  const [mismatchReported, setMismatchReported] = useState(false);
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -154,6 +170,46 @@ export const PatientQRScanner: React.FC<PatientQRScannerProps> = ({
     }
   };
 
+  // Check hardware torch capabilities from video track
+  const checkTorchCapability = () => {
+    try {
+      const videoEl = document.querySelector(`#${regionElementId} video`) as HTMLVideoElement | null;
+      if (videoEl && videoEl.srcObject) {
+        const stream = videoEl.srcObject as MediaStream;
+        const tracks = stream.getVideoTracks();
+        if (tracks.length > 0) {
+          const capabilities = (tracks[0] as any).getCapabilities?.() || {};
+          if ('torch' in capabilities) {
+            setHasTorch(true);
+            return;
+          }
+        }
+      }
+    } catch {
+      // Ignore
+    }
+    setHasTorch(false);
+  };
+
+  const handleToggleTorch = async () => {
+    try {
+      const videoEl = document.querySelector(`#${regionElementId} video`) as HTMLVideoElement | null;
+      if (videoEl && videoEl.srcObject) {
+        const stream = videoEl.srcObject as MediaStream;
+        const tracks = stream.getVideoTracks();
+        if (tracks.length > 0) {
+          const nextTorch = !torchOn;
+          await (tracks[0] as any).applyConstraints({
+            advanced: [{ torch: nextTorch }]
+          });
+          setTorchOn(nextTorch);
+        }
+      }
+    } catch (err) {
+      console.warn('Unable to toggle torch:', err);
+    }
+  };
+
   // Enumerate cameras
   const refreshAvailableCameras = async (scanner?: Html5Qrcode) => {
     try {
@@ -185,6 +241,8 @@ export const PatientQRScanner: React.FC<PatientQRScannerProps> = ({
     const scanner = scannerRef.current;
     scannerRef.current = null;
     setScanning(false);
+    setTorchOn(false);
+    setHasTorch(false);
     if (!scanner) return;
 
     try {
@@ -226,11 +284,16 @@ export const PatientQRScanner: React.FC<PatientQRScannerProps> = ({
     }
 
     try {
-      const response = await api.post('/patients/scan', { qrContent: token });
+      const response = await api.post('/patients/scan', { qrContent: token, department });
       if (response.data.success && response.data.data?.patient) {
         const payload = response.data.data;
         setVerifiedResult(payload);
-        if (onPatientVerified) {
+        setTwoIdentifierConfirmed(false);
+        setMismatchReported(false);
+
+        if (requireTwoIdentifierVerification) {
+          setShowVerifyDialog(true);
+        } else if (onPatientVerified) {
           onPatientVerified(payload);
         }
       } else {
@@ -255,6 +318,41 @@ export const PatientQRScanner: React.FC<PatientQRScannerProps> = ({
       setLoading(false);
     }
   };
+
+  // USB Barcode Scanner hardware listener (detects rapid burst keystrokes)
+  useEffect(() => {
+    let buffer = '';
+    let lastKeyTime = 0;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const now = Date.now();
+      const activeEl = document.activeElement;
+      const isManualInputFocused = activeEl instanceof HTMLInputElement && activeEl.placeholder?.includes('MRN');
+
+      if (e.key === 'Enter') {
+        if (buffer.length >= 3 && now - lastKeyTime < 150) {
+          e.preventDefault();
+          const scannedCode = buffer.trim();
+          buffer = '';
+          void verifyTokenWithBackend(scannedCode);
+        } else {
+          buffer = '';
+        }
+        return;
+      }
+
+      if (e.key.length === 1) {
+        if (now - lastKeyTime > 120 && !isManualInputFocused) {
+          buffer = '';
+        }
+        buffer += e.key;
+        lastKeyTime = now;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [department, requireTwoIdentifierVerification]);
 
   // Start QR scanning
   const startScanner = async (targetCameraId?: string) => {
@@ -323,6 +421,7 @@ export const PatientQRScanner: React.FC<PatientQRScannerProps> = ({
 
       setScanning(true);
       await refreshAvailableCameras(scanner);
+      setTimeout(checkTorchCapability, 600);
     } catch (startErr: any) {
       const errString = String(startErr?.name || startErr?.message || startErr);
       console.error('Camera startup error:', startErr);
@@ -685,6 +784,23 @@ export const PatientQRScanner: React.FC<PatientQRScannerProps> = ({
                   <span className="hidden sm:inline">Switch Camera</span>
                 </button>
               )}
+
+              {/* Hardware Torch / Flashlight Toggle */}
+              {hasTorch && scanning && (
+                <button
+                  type="button"
+                  onClick={() => void handleToggleTorch()}
+                  title={torchOn ? 'Turn Flashlight Off' : 'Turn Flashlight On (Night / Low Light)'}
+                  className={`px-3.5 py-2.5 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 ${
+                    torchOn
+                      ? 'bg-amber-500 text-slate-950 font-black'
+                      : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600'
+                  }`}
+                >
+                  {torchOn ? <FlashlightOff className="w-3.5 h-3.5" /> : <Flashlight className="w-3.5 h-3.5 text-amber-500" />}
+                  <span>{torchOn ? 'Torch On' : 'Torch'}</span>
+                </button>
+              )}
             </div>
 
             {/* Camera Dropdown if Multiple Available */}
@@ -887,15 +1003,59 @@ export const PatientQRScanner: React.FC<PatientQRScannerProps> = ({
                 </div>
               )}
 
+              {/* Mismatch Alert Banner */}
+              {mismatchReported && (
+                <div className="p-4 bg-rose-50 dark:bg-rose-950/60 border-2 border-rose-500 rounded-2xl text-rose-900 dark:text-rose-200 space-y-2">
+                  <div className="flex items-center gap-2 font-black text-rose-700 dark:text-rose-400">
+                    <AlertTriangle className="w-5 h-5 shrink-0" />
+                    <span>IDENTITY MISMATCH FLAGGED — WORKFLOW LOCKED</span>
+                  </div>
+                  <p className="text-xs leading-relaxed">
+                    A discrepancy was observed between the physical individual and this patient record. Clinical workflow has been safely locked. Please refer this case to hospital registration staff.
+                  </p>
+                </div>
+              )}
+
+              {/* Two-Identifier Clinical Verification Status */}
+              {!mismatchReported && (
+                twoIdentifierConfirmed ? (
+                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Two Identifiers Confirmed (Full Name + DOB / Photo)</span>
+                    </div>
+                    <span className="text-[10px] uppercase font-black px-2 py-0.5 bg-emerald-200 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 rounded-md">
+                      Safety Verified
+                    </span>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-xl flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-amber-900 dark:text-amber-200">
+                      <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>Two-Identifier Verification Recommended</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowVerifyDialog(true)}
+                      className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold text-xs rounded-lg transition flex items-center gap-1 shrink-0"
+                    >
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>Verify Patient</span>
+                    </button>
+                  </div>
+                )
+              )}
+
               {/* Primary Action Button */}
               <div className="pt-2 flex flex-col sm:flex-row gap-2">
                 <button
                   type="button"
+                  disabled={mismatchReported}
                   onClick={() => handleRoleNavigation(verifiedResult.patient)}
-                  className="flex-1 py-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-extrabold text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2 active:scale-95"
+                  className="flex-1 py-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2 active:scale-95"
                 >
-                  <span>{getDefaultContinueLabel()}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>{mismatchReported ? 'Workflow Locked (Mismatch)' : getDefaultContinueLabel()}</span>
+                  {!mismatchReported && <ArrowRight className="w-4 h-4" />}
                 </button>
 
                 <button
@@ -1025,6 +1185,30 @@ export const PatientQRScanner: React.FC<PatientQRScannerProps> = ({
         className="hidden"
         onChange={handleFileInputChange}
       />
+
+      {/* Two-Identifier Clinical Safety Verification Dialog */}
+      {showVerifyDialog && verifiedResult && (
+        <PatientVerificationDialog
+          isOpen={showVerifyDialog}
+          patient={verifiedResult.patient as PatientVerificationRecord}
+          department={department}
+          onConfirm={(confirmedPatient) => {
+            setTwoIdentifierConfirmed(true);
+            setShowVerifyDialog(false);
+            if (onPatientVerified) {
+              onPatientVerified({
+                patient: confirmedPatient,
+                verified_at: new Date().toISOString()
+              });
+            }
+          }}
+          onMismatchReported={() => {
+            setMismatchReported(true);
+            setShowVerifyDialog(false);
+          }}
+          onCancel={() => setShowVerifyDialog(false)}
+        />
+      )}
     </div>
   );
 };

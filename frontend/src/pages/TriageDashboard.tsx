@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import WristbandScannerModal from '../components/WristbandScannerModal';
 import PatientJourneyHandoff from '../components/workflow/PatientJourneyHandoff';
+import PatientIdentityBanner from '../components/PatientIdentityBanner';
 
 interface TriageEncounter {
   id: number;
@@ -225,6 +226,15 @@ const TriageDashboard: React.FC = () => {
 
       const raw = qRes.data?.data?.encounters || fallbackEncounters;
       setEncounters(raw.length > 0 ? raw : fallbackEncounters);
+
+      const targetPatientId = searchParams.get('patient_id');
+      if (targetPatientId) {
+        const found = raw.find((e: TriageEncounter) => String(e.patient_id) === String(targetPatientId));
+        if (found) {
+          selectPatient(found);
+          setStageTab(found.status === 'waiting_for_triage' ? 'waiting' : 'in_triage');
+        }
+      }
 
       const depts = deptsRes.data?.data?.departments || deptsRes.data?.departments || [];
       setDepartments(depts.length > 0 ? depts : [{ id: 1, name: 'General Medicine' }, { id: 2, name: 'Cardiology' }, { id: 9, name: 'Emergency' }, { id: 5, name: 'Pediatrics' }]);
@@ -570,6 +580,28 @@ const TriageDashboard: React.FC = () => {
           <div className="lg:col-span-2">
             {selected ? (
               <div className="space-y-4">
+                <PatientIdentityBanner
+                  patient={{
+                    id: selected.patient_id,
+                    mrn: (selected as any).mrn || (selected as any).patient_mrn || `AKEH-PAT-${selected.patient_id}`,
+                    first_name: selected.first_name,
+                    last_name: selected.last_name,
+                    gender: selected.gender,
+                    date_of_birth: selected.date_of_birth,
+                    blood_type: selected.blood_type,
+                    allergies: selected.allergies,
+                    encounter: {
+                      id: selected.id,
+                      encounter_number: selected.encounter_number,
+                      status: selected.status,
+                      priority: vitals.priority || selected.priority,
+                      department_name: selected.department_name
+                    }
+                  }}
+                  onClearContext={() => setSelected(null)}
+                  compact={true}
+                />
+
                 <PatientJourneyHandoff
                   currentStage="triage"
                   patient={{

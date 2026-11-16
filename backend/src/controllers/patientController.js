@@ -557,19 +557,21 @@ const regeneratePatientQr = handleAsync(async (req, res) => {
 });
 
 const scanPatientQr = handleAsync(async (req, res) => {
-  const { qrContent } = req.body;
+  const { qrContent, department, device_id } = req.body;
   if (typeof qrContent !== 'string' || qrContent.length > 128) {
     return sendError(res, 'A valid patient QR code is required', 400);
   }
 
   const raw = qrContent.trim();
-  const tokenMatch = raw.match(/^(?:AKEH:PATIENT:)?([A-Za-z0-9_-]{43})$/);
-  const mrnMatch = raw.match(/^\*?(?:PAT-)?0*(\d+)\*?$/i);
+  const tokenMatch = raw.match(/^(?:AKEH:PATIENT:(?:v1:)?)?([A-Za-z0-9_-]{43,64})$/);
+  const mrnMatch = raw.match(/^\*?(?:PAT-|TEMP-)?0*(\d+)\*?$/i);
 
   if (!tokenMatch && !mrnMatch) {
     await patientQrService.logQrAction(pool, {
       actorUserId: req.user.id,
       action: 'scan_rejected',
+      outcome: 'rejected',
+      rejectionReason: 'Invalid patient QR code',
       req
     });
     return sendError(res, 'Invalid patient QR code', 400);
@@ -580,21 +582,29 @@ const scanPatientQr = handleAsync(async (req, res) => {
   try {
     await client.query('BEGIN');
     if (tokenMatch) {
+      const token = tokenMatch[1];
+      const tokenHash = patientQrService.hashToken(token);
       const identityResult = await client.query(
-        `SELECT i.id AS identity_id, p.id, p.first_name, p.last_name,
-                p.date_of_birth, p.gender, p.blood_type, p.allergies, p.phone
+        `SELECT i.id AS identity_id, i.status, i.revocation_reason, i.revoked_at,
+                p.id, p.first_name, p.last_name,
+                p.date_of_birth, p.gender, p.blood_type, p.allergies, p.phone,
+                p.is_unidentified, p.temporary_mrn, p.profile_photo_updated_at
          FROM patient_qr_identities i
          JOIN patients p ON p.id = i.patient_id
-         WHERE i.token = $1 AND i.is_active = true
+         WHERE (i.token_hash = $1 OR i.token = $2) AND i.is_active = true
            AND (i.expires_at IS NULL OR i.expires_at > CURRENT_TIMESTAMP)
          LIMIT 1
          FOR SHARE OF i`,
-        [tokenMatch[1]]
+        [tokenHash, token]
       );
       if (!identityResult.rows.length) {
         await patientQrService.logQrAction(client, {
           actorUserId: req.user.id,
           action: 'scan_rejected',
+          outcome: 'rejected',
+          rejectionReason: 'Patient QR code is invalid, expired, or revoked',
+          department,
+          deviceId: device_id,
           req
         });
         await client.query('COMMIT');
@@ -605,7 +615,8 @@ const scanPatientQr = handleAsync(async (req, res) => {
       const patientId = parseInt(mrnMatch[1], 10);
       const patientResult = await client.query(
         `SELECT p.id, p.first_name, p.last_name,
-                p.date_of_birth, p.gender, p.blood_type, p.allergies, p.phone
+                p.date_of_birth, p.gender, p.blood_type, p.allergies, p.phone,
+                p.is_unidentified, p.temporary_mrn, p.profile_photo_updated_at
          FROM patients p
          WHERE p.id = $1
          LIMIT 1`,
@@ -615,6 +626,10 @@ const scanPatientQr = handleAsync(async (req, res) => {
         await patientQrService.logQrAction(client, {
           actorUserId: req.user.id,
           action: 'scan_rejected',
+          outcome: 'rejected',
+          rejectionReason: 'Patient record not found for scanned identifier',
+          department,
+          deviceId: device_id,
           req
         });
         await client.query('COMMIT');
@@ -622,10 +637,42 @@ const scanPatientQr = handleAsync(async (req, res) => {
       }
       const p = patientResult.rows[0];
       const identRes = await client.query(
-        `SELECT id FROM patient_qr_identities WHERE patient_id = $1 AND is_active = true LIMIT 1`,
+        `SELECT id, status FROM patient_qr_identities WHERE patient_id = $1 AND is_active = true LIMIT 1`,
         [p.id]
       );
-      row = { ...p, identity_id: identRes.rows[0]?.id || null };
+      row = { ...p, identity_id: identRes.rows[0]?.id || null, status: identRes.rows[0]?.status || 'active' };
+    }
+
+    if (row.status === 'revoked' || row.status === 'replaced') {
+      await patientQrService.logQrAction(client, {
+        patientId: row.id,
+        identityId: row.identity_id,
+        actorUserId: req.user.id,
+        action: 'scan_rejected',
+        outcome: 'rejected',
+        rejectionReason: `Attempted scan of ${row.status} QR token`,
+        department,
+        deviceId: device_id,
+        req
+      });
+      await client.query('COMMIT');
+      return sendError(res, `Patient QR code has been revoked. Reason: ${row.revocation_reason || 'Replaced'}`, 404);
+    }
+
+    if (row.status === 'expired') {
+      await patientQrService.logQrAction(client, {
+        patientId: row.id,
+        identityId: row.identity_id,
+        actorUserId: req.user.id,
+        action: 'scan_rejected',
+        outcome: 'rejected',
+        rejectionReason: 'Token expired',
+        department,
+        deviceId: device_id,
+        req
+      });
+      await client.query('COMMIT');
+      return sendError(res, 'Patient QR code is expired, invalid, or revoked', 410);
     }
 
     await patientQrService.logQrAction(client, {
@@ -633,6 +680,9 @@ const scanPatientQr = handleAsync(async (req, res) => {
       identityId: row.identity_id,
       actorUserId: req.user.id,
       action: 'scan_succeeded',
+      outcome: 'success',
+      department: department || (req.user?.role ? req.user.role.toUpperCase() : 'GENERAL'),
+      deviceId: device_id || 'DEFAULT',
       req
     });
     await client.query('COMMIT');
@@ -648,48 +698,223 @@ const scanPatientQr = handleAsync(async (req, res) => {
   const pharmacyRoles = ['pharmacist'];
   const labRoles = ['lab_technician'];
 
+  const effectiveMrn = row.is_unidentified && row.temporary_mrn
+    ? row.temporary_mrn
+    : patientQrService.formatMrn(row.id);
+
   const patient = {
     id: row.id,
-    mrn: patientQrService.formatMrn(row.id),
+    mrn: effectiveMrn,
     first_name: row.first_name,
     last_name: row.last_name
   };
+
   if (clinicalRoles.includes(req.user.role)) {
     patient.gender = row.gender;
     patient.date_of_birth = row.date_of_birth;
     patient.blood_type = row.blood_type;
     patient.allergies = row.allergies;
     patient.phone = row.phone;
+    patient.patient_photo_user_id = row.id;
   } else if (receptionistRoles.includes(req.user.role)) {
     patient.gender = row.gender;
     patient.date_of_birth = row.date_of_birth;
     patient.phone = row.phone;
   } else if (pharmacyRoles.includes(req.user.role)) {
-    patient.gender = row.gender;
-    patient.date_of_birth = row.date_of_birth;
     patient.allergies = row.allergies;
+    patient.date_of_birth = row.date_of_birth;
   } else if (labRoles.includes(req.user.role)) {
     patient.gender = row.gender;
     patient.date_of_birth = row.date_of_birth;
   }
-  // For cashier and non-clinical roles: returns only id, mrn, first_name, last_name
 
-  sendSuccess(res, { patient, verified_at: new Date().toISOString() }, 'Patient QR verified');
+  sendSuccess(res, {
+    patient,
+    identity_status: 'active',
+    verified_at: new Date().toISOString()
+  }, 'Patient QR verified successfully');
+});
+
+const confirmPatientIdentity = handleAsync(async (req, res) => {
+  const {
+    patient_id,
+    encounter_id,
+    department,
+    verification_method,
+    identifiers_confirmed,
+    status,
+    notes
+  } = req.body;
+
+  const patientId = Number(patient_id);
+  if (!Number.isSafeInteger(patientId) || patientId < 1) {
+    return sendError(res, 'Valid patient ID is required', 400);
+  }
+
+  const verification = await patientQrService.recordTwoIdentifierVerification(pool, {
+    patientId,
+    encounterId: encounter_id ? Number(encounter_id) : null,
+    actorUserId: req.user.id,
+    department: department || req.user.role,
+    verificationMethod: verification_method || 'two_identifier_verbal',
+    identifiersConfirmed: Array.isArray(identifiers_confirmed) ? identifiers_confirmed : ['full_name', 'dob'],
+    status: status || 'confirmed',
+    notes: notes || null
+  });
+
+  sendSuccess(res, { verification }, 'Patient identity verification recorded');
+});
+
+const reportIdentityMismatch = handleAsync(async (req, res) => {
+  const { scanned_patient_id, department, mismatch_details } = req.body;
+  if (!scanned_patient_id || !mismatch_details) {
+    return sendError(res, 'Scanned patient ID and mismatch details are required', 400);
+  }
+
+  const report = await patientQrService.reportIdentityMismatch(pool, {
+    scannedPatientId: Number(scanned_patient_id),
+    actorUserId: req.user.id,
+    department: department || req.user.role,
+    mismatchDetails: String(mismatch_details).trim(),
+    req
+  });
+
+  sendSuccess(res, { report }, 'Patient identity mismatch alert filed and escalated');
+});
+
+const revokePatientQr = handleAsync(async (req, res) => {
+  const patientId = Number(req.params.id);
+  const { reason, identity_id } = req.body;
+  if (!Number.isSafeInteger(patientId) || patientId < 1) {
+    return sendError(res, 'Invalid patient ID', 400);
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const revoked = await patientQrService.revokePatientQrIdentity(client, {
+      patientId,
+      identityId: identity_id ? Number(identity_id) : null,
+      actorUserId: req.user.id,
+      reason: reason || 'Revoked by authorized hospital staff',
+      req
+    });
+    if (!revoked) {
+      await client.query('ROLLBACK');
+      return sendError(res, 'No active QR identity found for this patient', 404);
+    }
+    await client.query('COMMIT');
+    sendSuccess(res, { revoked }, 'Patient QR identity successfully revoked');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+});
+
+const replacePatientQr = handleAsync(async (req, res) => {
+  const patientId = Number(req.params.id);
+  const { reason, printer_id } = req.body;
+  if (!Number.isSafeInteger(patientId) || patientId < 1) {
+    return sendError(res, 'Invalid patient ID', 400);
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const replacement = await patientQrService.replacePatientQrIdentity(client, {
+      patientId,
+      actorUserId: req.user.id,
+      reason: reason || 'Damaged or lost wristband replacement',
+      printerId: printer_id || 'THERMAL-MAIN-DESK',
+      req
+    });
+    await client.query('COMMIT');
+    sendSuccess(res, replacement, 'Replacement wristband issued and old identity revoked');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+});
+
+const getPatientQrHistory = handleAsync(async (req, res) => {
+  const patientId = Number(req.params.id);
+  if (!Number.isSafeInteger(patientId) || patientId < 1) {
+    return sendError(res, 'Invalid patient ID', 400);
+  }
+
+  const history = await patientQrService.getPatientQrHistory(pool, patientId);
+  sendSuccess(res, history, 'Patient QR history retrieved');
+});
+
+const getQrAuditStats = handleAsync(async (req, res) => {
+  const { startDate, endDate, department } = req.query;
+  const stats = await patientQrService.getQrAuditStats(pool, { startDate, endDate, department });
+  sendSuccess(res, stats, 'QR audit statistics retrieved');
+});
+
+const getQrAuditEvents = handleAsync(async (req, res) => {
+  const { startDate, endDate, department, action, limit, offset } = req.query;
+  const eventsData = await patientQrService.getQrAuditEvents(pool, {
+    startDate,
+    endDate,
+    department,
+    action,
+    limit: limit ? parseInt(limit, 10) : 25,
+    offset: offset ? parseInt(offset, 10) : 0
+  });
+  sendSuccess(res, eventsData, 'QR audit event logs retrieved');
+});
+
+const registerEmergencyUnidentified = handleAsync(async (req, res) => {
+  const { estimated_age, gender, condition_description, department_id } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await patientQrService.registerEmergencyUnidentifiedPatient(client, {
+      actorUserId: req.user.id,
+      departmentId: department_id ? Number(department_id) : 1,
+      estimatedAge: estimated_age || null,
+      gender: gender || 'unknown',
+      conditionDescription: condition_description || 'Emergency Trauma Unidentified Arrival',
+      req
+    });
+    await client.query('COMMIT');
+    sendSuccess(res, result, 'Emergency unidentified patient registered and wristband issued', 201);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 });
 
 const recordWristbandPrinted = handleAsync(async (req, res) => {
   const patientId = parseInt(req.params.id, 10);
-  const { encounter_id, barcode } = req.body;
+  const { encounter_id, barcode, printer_id, print_reason, print_type, replacement_reason } = req.body;
 
   const effectiveBarcode = barcode || `PAT-${String(patientId).padStart(4, '0')}`;
 
   const logRes = await pool.query(
     `INSERT INTO patient_wristband_logs (
-      patient_id, encounter_id, wristband_barcode, printed_by, printed_at
+      patient_id, encounter_id, wristband_barcode, printed_by, printer_id,
+      print_reason, print_type, replacement_reason, printed_at
     )
-    VALUES ($1, $2, $3, $4, NOW())
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
     RETURNING *`,
-    [patientId, encounter_id || null, effectiveBarcode, req.user?.id || null]
+    [
+      patientId,
+      encounter_id || null,
+      effectiveBarcode,
+      req.user?.id || null,
+      printer_id || 'THERMAL-DEFAULT',
+      print_reason || 'initial',
+      print_type || 'initial',
+      replacement_reason || null
+    ]
   );
 
   sendSuccess(res, {
@@ -709,5 +934,13 @@ module.exports = {
   recordWristbandPrinted,
   getPatientQr,
   regeneratePatientQr,
-  scanPatientQr
+  scanPatientQr,
+  confirmPatientIdentity,
+  reportIdentityMismatch,
+  revokePatientQr,
+  replacePatientQr,
+  getPatientQrHistory,
+  getQrAuditStats,
+  getQrAuditEvents,
+  registerEmergencyUnidentified
 };

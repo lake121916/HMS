@@ -28,6 +28,10 @@ const PatientWristbandModal: React.FC<PatientWristbandModalProps> = ({
   const [printing, setPrinting] = useState(false);
   const [printSuccess, setPrintSuccess] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [printType, setPrintType] = useState<'initial' | 'reprint' | 'replace'>('initial');
+  const [replacementReason, setReplacementReason] = useState('Damaged or torn wristband');
+  const [replacementNotice, setReplacementNotice] = useState<string | null>(null);
+  const [replacing, setReplacing] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !patient?.id) return;
@@ -60,12 +64,32 @@ const PatientWristbandModal: React.FC<PatientWristbandModalProps> = ({
     age = `${Math.floor(diffMs / (1000 * 60 * 60 * 24 * 365.25))} Yrs`;
   }
 
+  const handleReplaceToken = async () => {
+    setReplacing(true);
+    setReplacementNotice(null);
+    try {
+      const res = await api.post(`/patients/${patient.id}/qr/replace`, {
+        replacement_reason: replacementReason
+      });
+      if (res.data?.success && res.data.data?.qrCodeDataUrl) {
+        setQrDataUrl(res.data.data.qrCodeDataUrl);
+        setReplacementNotice('Old token revoked. New cryptographic QR identity issued.');
+      }
+    } catch (err: any) {
+      setReplacementNotice(err.response?.data?.message || 'Failed to replace QR identity token');
+    } finally {
+      setReplacing(false);
+    }
+  };
+
   const handlePrint = async () => {
     setPrinting(true);
     try {
       await api.post(`/patients/${patient.id}/wristband-printed`, {
         encounter_id: encounterId,
-        barcode: mrn
+        barcode: mrn,
+        print_reason: printType,
+        replacement_reason: printType === 'replace' ? replacementReason : undefined
       });
       setPrintSuccess(true);
       window.print();
@@ -108,6 +132,85 @@ const PatientWristbandModal: React.FC<PatientWristbandModalProps> = ({
               <span>Wristband print event successfully recorded in audit log.</span>
             </div>
           )}
+
+          {/* Print Reason / Replacement Selector */}
+          <div className="p-4 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Wristband Issuance Type
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">Token Lifecycle Control</span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setPrintType('initial')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition border ${
+                  printType === 'initial'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                }`}
+              >
+                Initial Admission
+              </button>
+              <button
+                type="button"
+                onClick={() => setPrintType('reprint')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition border ${
+                  printType === 'reprint'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                }`}
+              >
+                Reprint Existing
+              </button>
+              <button
+                type="button"
+                onClick={() => setPrintType('replace')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition border ${
+                  printType === 'replace'
+                    ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                }`}
+              >
+                Replace Damaged (Revoke)
+              </button>
+            </div>
+
+            {printType === 'replace' && (
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Revocation &amp; Replacement Reason *
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={replacementReason}
+                    onChange={e => setReplacementReason(e.target.value)}
+                    className="flex-1 text-xs px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl"
+                  >
+                    <option value="Damaged or torn wristband">Damaged or torn wristband</option>
+                    <option value="Illegible barcode or QR code">Illegible barcode or QR code</option>
+                    <option value="Lost or removed during clinical procedure">Lost or removed during clinical procedure</option>
+                    <option value="Expired token after discharge or readmission">Expired token after discharge or readmission</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleReplaceToken}
+                    disabled={replacing}
+                    className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl shadow-xs transition disabled:opacity-50 shrink-0"
+                  >
+                    {replacing ? 'Revoking…' : 'Issue New QR Token'}
+                  </button>
+                </div>
+                {replacementNotice && (
+                  <p className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                    {replacementNotice}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* ── HIGH FIDELITY THERMAL WRISTBAND STRIP ── */}
           <div className="relative border-4 border-dashed border-slate-300 dark:border-slate-700 p-4 rounded-3xl bg-slate-50 dark:bg-slate-950/40">

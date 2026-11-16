@@ -12,6 +12,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { DoctorEmergencyQueue } from '../components/DoctorEmergencyQueue';
 import WristbandScannerModal from '../components/WristbandScannerModal';
 import PatientJourneyHandoff from '../components/workflow/PatientJourneyHandoff';
+import PatientIdentityBanner from '../components/PatientIdentityBanner';
 import api from '../services/api';
 import {
   Stethoscope, FlaskConical, Scan, Pill, Syringe,
@@ -235,6 +236,25 @@ const DoctorConsultationPage: React.FC = () => {
       const res = await api.get('/encounters/doctor-queue');
       const encs = res.data.data.encounters || [];
       setQueue(encs);
+
+      const targetPatientId = searchParams.get('patient_id');
+      if (targetPatientId) {
+        const matched = encs.find((e: EncounterSummary) => String(e.patient_id) === String(targetPatientId));
+        if (matched) {
+          await openEncounter(matched);
+          return;
+        } else {
+          try {
+            const patientEncRes = await api.get(`/encounters?patient_id=${targetPatientId}`);
+            const list = patientEncRes.data?.data?.encounters || patientEncRes.data?.data || [];
+            if (list.length > 0) {
+              await openEncounter(list[0]);
+              return;
+            }
+          } catch {}
+        }
+      }
+
       if (!activeEncounter && encs.length > 0) {
         await openEncounter(encs[0]);
       }
@@ -861,6 +881,31 @@ const DoctorConsultationPage: React.FC = () => {
       {/* ── Main Content Area ───────────────────────────────────────── */}
       {activeEncounter ? (
         <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900 w-full min-w-0">
+          {/* Two-Identifier Clinical Safety Banner */}
+          <div className="px-3 sm:px-6 pt-3">
+            <PatientIdentityBanner
+              patient={{
+                id: activeEncounter.patient_id,
+                mrn: (activeEncounter as any).patient_mrn || (activeEncounter as any).mrn || `AKEH-PAT-${activeEncounter.patient_id}`,
+                first_name: activeEncounter.first_name,
+                last_name: activeEncounter.last_name,
+                gender: activeEncounter.gender,
+                date_of_birth: activeEncounter.date_of_birth,
+                blood_type: activeEncounter.blood_type,
+                allergies: activeEncounter.allergies || patientAllergies.map(a => a.allergen_name).join(', '),
+                encounter: {
+                  id: activeEncounter.id,
+                  encounter_number: activeEncounter.encounter_number,
+                  status: activeEncounter.status,
+                  priority: activeEncounter.priority,
+                  department_name: activeEncounter.department_name
+                }
+              }}
+              onClearContext={() => setActiveEncounter(null)}
+              compact={true}
+            />
+          </div>
+
           {/* Patient Top Banner */}
           <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-3 sm:px-6 py-3 sm:py-4 shadow-sm">
             {/* Mobile Back Button to Queue */}

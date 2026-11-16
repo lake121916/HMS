@@ -66,6 +66,7 @@ export const am = {
   'nav.finance_reports': 'የፋይናንስ ሪፖርቶች',
   'nav.reports': 'የአሰራር ትንታኔዎችና ሪፖርቶች',
   'nav.audit': 'የሲስተም ቁጥጥር (ኦዲት)',
+  'nav.qr_audit': 'የታካሚ QR እና ደህንነት ኦዲት',
   'nav.admin': 'የሲስተም ውቅርና አስተዳደር',
   'nav.user_management': 'የተጠቃሚዎች አስተዳደር',
   'nav.users': 'ተጠቃሚዎች',

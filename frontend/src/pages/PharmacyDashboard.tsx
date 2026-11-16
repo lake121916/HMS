@@ -23,6 +23,7 @@ import {
   Building, Sparkles, QrCode
 } from 'lucide-react';
 import WristbandScannerModal from '../components/WristbandScannerModal';
+import PatientIdentityBanner from '../components/PatientIdentityBanner';
 
 // ── Types ────────────────────────────────────────────────────────────
 interface Prescription {
@@ -147,6 +148,8 @@ export const PharmacyDashboard: React.FC = () => {
 
   const urlPatientId = searchParams.get('patient_id');
 
+  const [verifiedPatient, setVerifiedPatient] = useState<any | null>(null);
+
   useEffect(() => {
     if (urlPatientId) {
       loadPatientForPharmacy(parseInt(urlPatientId, 10));
@@ -158,6 +161,7 @@ export const PharmacyDashboard: React.FC = () => {
       const res = await api.get(`/patients/${pid}`);
       if (res.data?.success && res.data.data) {
         const p = res.data.data;
+        setVerifiedPatient(p);
         const fullName = `${p.first_name} ${p.last_name}`;
         setRxSearch(fullName);
         setActiveTab('prescriptions');
@@ -269,8 +273,9 @@ export const PharmacyDashboard: React.FC = () => {
 
   const handlePatientScanVerified = (result: any) => {
     setShowScannerModal(false);
-    const patient = result?.patient;
+    const patient = result?.patient || result;
     if (!patient) return;
+    setVerifiedPatient(patient);
     const fullName = `${patient.first_name} ${patient.last_name}`;
     setRxSearch(fullName);
     setActiveTab('prescriptions');
@@ -966,6 +971,28 @@ export const PharmacyDashboard: React.FC = () => {
       {/* ────────────────────────────────────────────────────────────── */}
       {activeTab === 'prescriptions' && (
         <div className="space-y-4">
+          {/* Two-Identifier Clinical Safety Patient Banner */}
+          {verifiedPatient && (
+            <PatientIdentityBanner
+              patient={{
+                id: verifiedPatient.id,
+                mrn: verifiedPatient.mrn || `AKEH-PAT-${verifiedPatient.id}`,
+                first_name: verifiedPatient.first_name,
+                last_name: verifiedPatient.last_name,
+                gender: verifiedPatient.gender,
+                date_of_birth: verifiedPatient.date_of_birth,
+                blood_type: verifiedPatient.blood_type,
+                allergies: verifiedPatient.allergies,
+                encounter: verifiedPatient.encounter
+              }}
+              onClearContext={() => {
+                setVerifiedPatient(null);
+                setRxSearch('');
+              }}
+              className="mb-2"
+            />
+          )}
+
           {/* Filter Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="relative flex-1 max-w-md">
@@ -2618,6 +2645,8 @@ export const PharmacyDashboard: React.FC = () => {
         <WristbandScannerModal
           isOpen={showScannerModal}
           onClose={() => setShowScannerModal(false)}
+          department="Pharmacy"
+          requireTwoIdentifierVerification={true}
           onPatientVerified={handlePatientScanVerified}
           continueLabel="Open Patient Prescriptions"
         />

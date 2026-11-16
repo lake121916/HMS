@@ -32,14 +32,84 @@ router.post(
   patientController.lookupPatientByIdentifier
 );
 
+// Patient QR Scan Endpoint (Universal across all authorized roles)
 router.post(
   '/scan',
   authenticate,
   authorize(...qrRoles),
   qrScanLimiter,
-  [body('qrContent').isString().trim().notEmpty().isLength({ max: 128 }).withMessage('Valid patient QR content is required')],
+  [body('qrContent').isString().trim().notEmpty().isLength({ max: 160 }).withMessage('Valid patient QR content is required')],
   validate,
   patientController.scanPatientQr
+);
+
+// Two-Identifier Clinical Safety Verification Confirmation (Phase 3)
+router.post(
+  '/qr/confirm-verification',
+  authenticate,
+  authorize(...qrRoles),
+  [body('patient_id').isInt({ min: 1 }).withMessage('Valid patient ID is required')],
+  validate,
+  patientController.confirmPatientIdentity
+);
+
+// Report Patient Identity Mismatch (Phase 3)
+router.post(
+  '/qr/report-mismatch',
+  authenticate,
+  authorize(...qrRoles),
+  [
+    body('scanned_patient_id').isInt({ min: 1 }).withMessage('Valid scanned patient ID is required'),
+    body('mismatch_details').isString().trim().notEmpty().withMessage('Mismatch description is required')
+  ],
+  validate,
+  patientController.reportIdentityMismatch
+);
+
+// QR Audit Monitoring Dashboard Aggregates (Phase 12)
+router.get(
+  '/qr/audit-stats',
+  authenticate,
+  authorize('super_admin', 'admin', 'hospital_manager'),
+  patientController.getQrAuditStats
+);
+
+// QR Audit Event Logs (Phase 12)
+router.get(
+  '/qr/audit-events',
+  authenticate,
+  authorize('super_admin', 'admin', 'hospital_manager'),
+  patientController.getQrAuditEvents
+);
+
+// Emergency Unidentified Patient Registration (Phase 15)
+router.post(
+  '/emergency-unidentified',
+  authenticate,
+  authorize('nurse', 'doctor', 'receptionist', 'admin', 'super_admin'),
+  patientController.registerEmergencyUnidentified
+);
+
+// QR Lifecycle Management: Revoke, Replace & History
+router.post(
+  '/:id/qr/revoke',
+  authenticate,
+  authorize('receptionist', 'nurse', 'doctor', 'admin', 'super_admin'),
+  patientController.revokePatientQr
+);
+
+router.post(
+  '/:id/qr/replace',
+  authenticate,
+  authorize('receptionist', 'nurse', 'doctor', 'admin', 'super_admin'),
+  patientController.replacePatientQr
+);
+
+router.get(
+  '/:id/qr/history',
+  authenticate,
+  authorize(...patientViewRoles),
+  patientController.getPatientQrHistory
 );
 
 router.post(

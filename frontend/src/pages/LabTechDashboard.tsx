@@ -9,6 +9,7 @@ import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { FlaskConical, RefreshCw, CheckCircle2, Search, AlertCircle, Printer, QrCode } from 'lucide-react';
 import WristbandScannerModal from '../components/WristbandScannerModal';
+import PatientIdentityBanner from '../components/PatientIdentityBanner';
 
 interface LabTest {
   id: number;
@@ -42,6 +43,7 @@ const LabTechDashboard: React.FC = () => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'pending'|'in_progress'|'completed'|'all'>('pending');
   const [showScannerModal, setShowScannerModal] = useState(false);
+  const [verifiedPatient, setVerifiedPatient] = useState<any | null>(null);
 
   const urlPatientId = searchParams.get('patient_id');
 
@@ -56,6 +58,7 @@ const LabTechDashboard: React.FC = () => {
       const res = await api.get(`/patients/${pid}`);
       if (res.data?.success && res.data.data) {
         const p = res.data.data;
+        setVerifiedPatient(p);
         const fullName = `${p.first_name} ${p.last_name}`;
         setSearch(fullName);
         setFilter('all');
@@ -68,8 +71,9 @@ const LabTechDashboard: React.FC = () => {
 
   const handlePatientScanVerified = (result: any) => {
     setShowScannerModal(false);
-    const patient = result?.patient;
+    const patient = result?.patient || result;
     if (!patient) return;
+    setVerifiedPatient(patient);
     const fullName = `${patient.first_name} ${patient.last_name}`;
     setSearch(fullName);
     setFilter('all');
@@ -157,6 +161,27 @@ const LabTechDashboard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Two-Identifier Patient Identity Banner */}
+      {verifiedPatient && (
+        <PatientIdentityBanner
+          patient={{
+            id: verifiedPatient.id,
+            mrn: verifiedPatient.mrn || `AKEH-PAT-${verifiedPatient.id}`,
+            first_name: verifiedPatient.first_name,
+            last_name: verifiedPatient.last_name,
+            gender: verifiedPatient.gender,
+            date_of_birth: verifiedPatient.date_of_birth,
+            blood_type: verifiedPatient.blood_type,
+            allergies: verifiedPatient.allergies,
+            encounter: verifiedPatient.encounter
+          }}
+          onClearContext={() => {
+            setVerifiedPatient(null);
+            setSearch('');
+          }}
+        />
+      )}
 
       <div className="flex gap-3 sm:gap-4 items-center flex-wrap">
         <div className="flex gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 overflow-x-auto max-w-full">
@@ -337,6 +362,8 @@ const LabTechDashboard: React.FC = () => {
         <WristbandScannerModal
           isOpen={showScannerModal}
           onClose={() => setShowScannerModal(false)}
+          department="Laboratory"
+          requireTwoIdentifierVerification={true}
           onPatientVerified={handlePatientScanVerified}
           continueLabel="Filter Patient Lab Orders"
         />

@@ -524,6 +524,7 @@ const Layout: React.FC = () => {
           { id: 'services_admin', name: 'Clinical Services', href: '/services-admin', icon: Package, group: 'Records & Schedule', permission: 'admin:departments', translationKey: 'nav.services' },
           ...allBoardItems,
           { id: 'audit', name: 'Audit Trail & Security', href: '/audit', icon: Shield, group: 'Duty & Account', permission: 'audit:view', translationKey: 'nav.audit' },
+          { id: 'qr_audit', name: 'Patient QR & Safety Audit', href: '/admin/qr-audit', icon: ShieldCheck, group: 'Duty & Account', translationKey: 'nav.qr_audit' },
           { id: 'reports', name: 'Operational Analytics', href: '/reports', icon: BarChart2, group: 'Duty & Account', permission: 'reports:view', translationKey: 'nav.reports' },
           { id: 'finance_reports', name: 'Financial Reports', href: '/finance-reports', icon: BarChart2, group: 'Duty & Account', permission: 'finance_reports:view', translationKey: 'nav.finance_reports' }
         ];

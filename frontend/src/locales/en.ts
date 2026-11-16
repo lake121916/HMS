@@ -66,6 +66,7 @@ export const en = {
   'nav.finance_reports': 'Financial Reports',
   'nav.reports': 'Operational Analytics',
   'nav.audit': 'Audit Trail & Security',
+  'nav.qr_audit': 'Patient QR & Safety Audit',
   'nav.admin': 'System Configuration',
   'nav.user_management': 'User Management',
   'nav.users': 'Users',

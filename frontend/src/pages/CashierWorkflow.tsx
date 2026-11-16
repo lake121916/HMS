@@ -23,6 +23,7 @@ import ThermalReceiptPrint from '../components/cashier/ThermalReceiptPrint';
 import DigitalPaymentVerifier from '../components/cashier/DigitalPaymentVerifier';
 import WristbandScannerModal from '../components/WristbandScannerModal';
 import PatientJourneyHandoff from '../components/workflow/PatientJourneyHandoff';
+import PatientIdentityBanner from '../components/PatientIdentityBanner';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -322,6 +323,22 @@ const CashierWorkflow: React.FC = () => {
             {/* Invoice detail + payment form */}
             {selected && invoiceDetail ? (
               <div className="space-y-4">
+                <PatientIdentityBanner
+                  patient={{
+                    id: (selected as any).patient_id || selected.id,
+                    mrn: (selected as any).mrn || (selected as any).patient_mrn || `AKEH-PAT-${(selected as any).patient_id || selected.id}`,
+                    first_name: selected.first_name,
+                    last_name: selected.last_name,
+                    encounter: {
+                      id: selected.id,
+                      encounter_number: selected.encounter_number,
+                      status: selected.invoice_status
+                    }
+                  }}
+                  onClearContext={() => setSelected(null)}
+                  compact={true}
+                />
+
                 <PatientJourneyHandoff
                   currentStage={parseFloat(invoiceDetail.invoice.amount_paid || 0) >= parseFloat(invoiceDetail.invoice.total_amount || 0) ? 'completed' : 'billing'}
                   patient={{
@@ -640,6 +657,8 @@ const CashierWorkflow: React.FC = () => {
         <WristbandScannerModal
           isOpen={showScannerModal}
           onClose={() => setShowScannerModal(false)}
+          department="Cashier"
+          requireTwoIdentifierVerification={true}
           onPatientVerified={handlePatientScanVerified}
           continueLabel="Open Pending Billing"
         />

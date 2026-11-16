@@ -9,6 +9,8 @@ export interface WristbandScannerModalProps {
   onOpenSearch?: () => void;
   qrOnly?: boolean;
   continueLabel?: string;
+  department?: string;
+  requireTwoIdentifierVerification?: boolean;
 }
 
 const WristbandScannerModal: React.FC<WristbandScannerModalProps> = ({
@@ -17,7 +19,9 @@ const WristbandScannerModal: React.FC<WristbandScannerModalProps> = ({
   onPatientVerified,
   onOpenSearch,
   qrOnly = false,
-  continueLabel
+  continueLabel,
+  department = 'Clinical',
+  requireTwoIdentifierVerification = false
 }) => {
   if (!isOpen) return null;
 
@@ -86,6 +90,8 @@ const WristbandScannerModal: React.FC<WristbandScannerModalProps> = ({
             showHeader={false}
             continueLabel={continueLabel}
             allowManualInput={!qrOnly}
+            department={department}
+            requireTwoIdentifierVerification={requireTwoIdentifierVerification}
             onPatientVerified={handleVerified}
             onContinue={handleContinue}
           />
