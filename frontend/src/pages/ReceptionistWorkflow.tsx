@@ -16,6 +16,7 @@ import QueueTokenTicket, { QueueTicketData } from '../components/queue/QueueToke
 import PatientWristbandModal from '../components/PatientWristbandModal';
 import WristbandScannerModal from '../components/WristbandScannerModal';
 import PatientJourneyHandoff from '../components/workflow/PatientJourneyHandoff';
+import { DashboardHeader, WorkflowTabs } from '../components/common/PremiumUI';
 
 interface Patient {
   id: number;
@@ -325,54 +326,45 @@ const ReceptionistWorkflow: React.FC = () => {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 uppercase tracking-wider">
-            Receptionist Desk
-          </span>
-          <h1 className="mt-1 sm:mt-2 text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Patient Registration & Check-in</h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">Search, register, and send patients to triage</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setShowScannerModal(true)}
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shadow-sm"
-          >
-            <QrCode className="h-4 w-4" />
-            <span>Scan Patient QR</span>
-          </button>
-          <button
-            onClick={() => { setShowRegForm(true); setActiveTab('search'); }}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition"
-          >
-            <UserPlus className="h-4 w-4" />
-            New Patient
-          </button>
-        </div>
-      </div>
+      {/* Premium Dashboard Header */}
+      <DashboardHeader
+        title="Reception & Patient Intake Desk"
+        amharicTitle="የመቀበያ እና የታካሚ መመዝገቢያ"
+        subtitle="Search electronic medical records, enroll new patients, and initiate outpatient triage encounters"
+        badge="Reception Desk"
+        icon={UserPlus}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowScannerModal(true)}
+              className="h-9 px-3.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/25 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <QrCode className="h-4 w-4" />
+              <span>Scan Patient QR</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowRegForm(true); setActiveTab('search'); }}
+              className="h-9 px-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-xs transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            >
+              <UserPlus className="h-4 w-4" />
+              <span>Register Patient</span>
+            </button>
+          </div>
+        }
+      />
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 w-fit">
-        {[
-          { key: 'search', label: 'Patient Search' },
-          { key: 'encounters', label: `Active Encounters (${encounters.length})` },
-          { key: 'billing', label: `Billing Hand-off (${invoices.length})` }
-        ].map(t => (
-          <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key as any)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all
-              ${activeTab === t.key
-                ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm font-semibold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-              }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Segmented Control Tabs */}
+      <WorkflowTabs
+        tabs={[
+          { id: 'search', label: 'Patient Directory & Search' },
+          { id: 'encounters', label: 'Active Encounters', count: encounters.length },
+          { id: 'billing', label: 'Registration Invoices', count: invoices.length }
+        ]}
+        activeTab={activeTab}
+        onChange={id => setActiveTab(id as any)}
+      />
 
       {/* Search Tab */}
       {activeTab === 'search' && (

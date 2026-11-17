@@ -773,7 +773,7 @@ const DoctorConsultationPage: React.FC = () => {
   return (
     <div className="h-full flex flex-col gap-0 overflow-hidden">
       {/* ── Emergency / Code Red Live Queue Banner ────────────────── */}
-      <div className="p-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
+      <div className="p-3 bg-slate-100 dark:bg-navy-950 border-b border-slate-200 dark:border-navy-800 flex-shrink-0">
         <DoctorEmergencyQueue
           onSelectEncounter={(encId) => openEncounterById(encId)}
           activeEncounterId={activeEncounter?.id}
@@ -791,11 +791,11 @@ const DoctorConsultationPage: React.FC = () => {
       )}
 
       {/* ── Left Panel — Queue ────────────────────────────────────── */}
-      <div className={`border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col ${activeEncounter ? 'hidden lg:flex lg:w-80 lg:flex-shrink-0' : 'w-full lg:w-80 lg:flex-shrink-0'}`}>
-        <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-700">
+      <div className={`border-r border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-900 flex flex-col ${activeEncounter ? 'hidden lg:flex lg:w-80 lg:flex-shrink-0' : 'w-full lg:w-80 lg:flex-shrink-0'}`}>
+        <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-navy-800">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-              <Stethoscope className="h-4 w-4 text-blue-600" /> My Patient Queue
+              <Stethoscope className="h-4 w-4 text-cyan-500" /> Clinical Worklist
             </h2>
             <div className="flex items-center gap-1.5">
               <button
@@ -835,7 +835,7 @@ const DoctorConsultationPage: React.FC = () => {
               onClick={() => openEncounter(enc)}
               className={`p-3.5 cursor-pointer transition ${
                 activeEncounter?.id === enc.id
-                  ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-600'
+                  ? 'bg-cyan-500/10 dark:bg-cyan-500/15 border-l-4 border-l-cyan-500 shadow-xs'
                   : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'
               }`}
             >
@@ -855,14 +855,14 @@ const DoctorConsultationPage: React.FC = () => {
                   📋 {enc.chief_complaint}
                 </div>
               )}
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-navy-800">
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     callPatientToRoom(enc);
                   }}
-                  className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 text-[11px] font-bold rounded-lg transition"
+                  className="flex items-center gap-1 px-2.5 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-400 text-[11px] font-bold rounded-xl border border-cyan-500/20 transition cursor-pointer"
                   title="Page patient on Waiting Room TV screen"
                 >
                   <Volume2 className="h-3 w-3" />
@@ -880,7 +880,7 @@ const DoctorConsultationPage: React.FC = () => {
 
       {/* ── Main Content Area ───────────────────────────────────────── */}
       {activeEncounter ? (
-        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900 w-full min-w-0">
+        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-navy-950 w-full min-w-0">
           {/* Two-Identifier Clinical Safety Banner */}
           <div className="px-3 sm:px-6 pt-3">
             <PatientIdentityBanner
@@ -907,12 +907,12 @@ const DoctorConsultationPage: React.FC = () => {
           </div>
 
           {/* Patient Top Banner */}
-          <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-3 sm:px-6 py-3 sm:py-4 shadow-sm">
+          <div className="bg-white dark:bg-navy-900 border-b border-slate-200 dark:border-navy-800 px-3 sm:px-6 py-3 sm:py-4 shadow-sm">
             {/* Mobile Back Button to Queue */}
             <button
               type="button"
               onClick={() => setActiveEncounter(null)}
-              className="lg:hidden flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 pb-2 mb-2 border-b border-slate-100 dark:border-slate-700 w-full"
+              className="lg:hidden flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 pb-2 mb-2 border-b border-slate-100 dark:border-navy-800 w-full"
             >
               ← Back to Patient Queue ({queue.length})
             </button>
@@ -945,7 +945,7 @@ const DoctorConsultationPage: React.FC = () => {
 
               {/* Vitals & Top Actions */}
               <div className="flex items-center gap-3">
-                <div className="hidden lg:flex gap-3 text-xs bg-slate-100 dark:bg-slate-900/60 rounded-xl px-3 py-2 border border-slate-200 dark:border-slate-700">
+                <div className="hidden lg:flex gap-3 text-xs bg-slate-100 dark:bg-navy-950/60 rounded-xl px-3 py-2 border border-slate-200 dark:border-navy-800">
                   {activeEncounter.temperature && <span>🌡️ {activeEncounter.temperature}°C</span>}
                   {activeEncounter.heart_rate && <span>❤️ {activeEncounter.heart_rate} bpm</span>}
                   {activeEncounter.blood_pressure_systolic && (
@@ -967,7 +967,7 @@ const DoctorConsultationPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handlePrintDischargeSummary}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition shadow-sm"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-navy-900 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-navy-800 transition shadow-sm"
                   title="Print Official Certified Discharge Summary with QR Code"
                 >
                   <Printer className="h-3.5 w-3.5" />
@@ -996,7 +996,7 @@ const DoctorConsultationPage: React.FC = () => {
             </div>
 
             {/* Structured Allergy Safety Strip */}
-            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between flex-wrap gap-2">
+            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-navy-800 flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                   <AlertOctagon className="h-3.5 w-3.5 text-red-500" /> Recorded Allergies:
@@ -1192,7 +1192,7 @@ const DoctorConsultationPage: React.FC = () => {
                           type="button"
                           disabled={aiAnalyzing}
                           onClick={() => testQuickScenario(sc)}
-                          className="text-[11px] px-2 py-0.5 rounded-lg border border-blue-200 dark:border-blue-800/80 bg-white/90 dark:bg-slate-800/90 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-700 dark:text-slate-300 font-medium transition shadow-2xs flex items-center gap-1"
+                          className="text-[11px] px-2 py-0.5 rounded-lg border border-blue-200 dark:border-blue-800/80 bg-white/90 dark:bg-navy-900/90 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-700 dark:text-slate-300 font-medium transition shadow-2xs flex items-center gap-1"
                         >
                           <span>{sc.name}</span>
                           <span className="text-[9px] px-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-mono font-bold">
@@ -1211,7 +1211,7 @@ const DoctorConsultationPage: React.FC = () => {
                   )}
 
                   {aiPredictions.length === 0 && !aiAnalyzing && !aiError && (
-                    <div className="text-xs text-slate-600 dark:text-slate-400 bg-white/70 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
+                    <div className="text-xs text-slate-600 dark:text-slate-400 bg-white/70 dark:bg-navy-900/50 rounded-xl p-3 border border-slate-200/60 dark:border-navy-800/60 flex items-center justify-between">
                       <span>
                         Click <strong>Run AI Analysis</strong> to evaluate patient triage complaints, symptom hallmarks, and recorded vitals with the Ethiopian CDSS engine.
                       </span>
@@ -1224,7 +1224,7 @@ const DoctorConsultationPage: React.FC = () => {
                         const top = aiPredictions[0];
                         const confPct = Math.round((top.confidence || 0) * 100);
                         return (
-                          <div className="bg-white dark:bg-slate-800/95 rounded-xl p-3.5 border border-blue-200 dark:border-blue-800/80 shadow-xs space-y-2.5">
+                          <div className="bg-white dark:bg-navy-900/95 rounded-xl p-3.5 border border-blue-200 dark:border-blue-800/80 shadow-xs space-y-2.5">
                             <div className="flex items-center justify-between flex-wrap gap-2">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-black text-blue-700 dark:text-blue-300 uppercase tracking-wide">
@@ -1275,7 +1275,7 @@ const DoctorConsultationPage: React.FC = () => {
 
                             {/* Recommendations */}
                             {top.recommendations && top.recommendations.length > 0 && (
-                              <div className="bg-slate-50 dark:bg-slate-900/60 rounded-lg p-2.5 text-[11px] text-slate-700 dark:text-slate-300 space-y-1">
+                              <div className="bg-slate-50 dark:bg-navy-950/60 rounded-lg p-2.5 text-[11px] text-slate-700 dark:text-slate-300 space-y-1">
                                 <div className="font-bold text-slate-600 dark:text-slate-400 uppercase text-[9px] tracking-wider">
                                   Standard Treatment Guidelines (STG) Guidance:
                                 </div>
@@ -1289,7 +1289,7 @@ const DoctorConsultationPage: React.FC = () => {
 
                             {/* Differential Diagnoses */}
                             {top.differentialDiagnoses && top.differentialDiagnoses.length > 0 && (
-                              <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+                              <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-navy-800 text-[11px]">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                   Differential Diagnoses:
                                 </span>
@@ -1311,7 +1311,7 @@ const DoctorConsultationPage: React.FC = () => {
                 </div>
 
                 {/* Consultation Notes Form */}
-                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
+                <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 p-5 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold text-slate-900 dark:text-white text-sm">
                       Clinical Examination & Diagnostic Findings
@@ -1338,7 +1338,7 @@ const DoctorConsultationPage: React.FC = () => {
                       value={consultForm.consultation_notes}
                       onChange={e => setConsultForm(f => ({ ...f, consultation_notes: e.target.value }))}
                       placeholder="Clinical observations, physical examination, symptom evolution, SOAP findings..."
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100 disabled:text-slate-600 font-sans"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-950 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100 disabled:text-slate-600 font-sans"
                     />
                   </div>
 
@@ -1359,7 +1359,7 @@ const DoctorConsultationPage: React.FC = () => {
                             className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition ${
                               consultForm.icd_code === d.code
                                 ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                                : 'bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300'
+                                : 'bg-slate-50 dark:bg-navy-950/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-navy-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300'
                             }`}
                           >
                             {d.name} <span className="opacity-70 text-[10px]">({d.code})</span>
@@ -1379,7 +1379,7 @@ const DoctorConsultationPage: React.FC = () => {
                         value={consultForm.diagnosis}
                         onChange={e => setConsultForm(f => ({ ...f, diagnosis: e.target.value }))}
                         placeholder="Clinical diagnosis"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100 disabled:text-slate-600"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-950 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100 disabled:text-slate-600"
                       />
                     </div>
                     <div>
@@ -1391,7 +1391,7 @@ const DoctorConsultationPage: React.FC = () => {
                         value={consultForm.icd_code}
                         onChange={e => setConsultForm(f => ({ ...f, icd_code: e.target.value }))}
                         placeholder="e.g. J18.1, A09"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100 disabled:text-slate-600"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-950 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100 disabled:text-slate-600"
                       />
                     </div>
                   </div>
@@ -1406,7 +1406,7 @@ const DoctorConsultationPage: React.FC = () => {
                       value={consultForm.treatment_plan}
                       onChange={e => setConsultForm(f => ({ ...f, treatment_plan: e.target.value }))}
                       placeholder="Treatment protocol, patient instructions..."
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100 disabled:text-slate-600"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-950 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100 disabled:text-slate-600"
                     />
                   </div>
 
@@ -1420,14 +1420,14 @@ const DoctorConsultationPage: React.FC = () => {
                       value={consultForm.follow_up_instructions}
                       onChange={e => setConsultForm(f => ({ ...f, follow_up_instructions: e.target.value }))}
                       placeholder="Next review appointment or warning signs..."
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100 disabled:text-slate-600"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-950 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-slate-100 disabled:text-slate-600"
                     />
                   </div>
                 </div>
 
                 {/* ── Clinical Addenda Timeline (Immutable Amendments) ── */}
                 {consultationAddenda.length > 0 && (
-                  <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4 shadow-sm">
+                  <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 p-5 space-y-4 shadow-sm">
                     <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                       <History className="h-4 w-4 text-indigo-500" />
                       Clinical Addenda & Amendments History
@@ -1437,7 +1437,7 @@ const DoctorConsultationPage: React.FC = () => {
                       {consultationAddenda.map((addendum, idx) => (
                         <div
                           key={addendum.id}
-                          className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl"
+                          className="p-4 bg-slate-50 dark:bg-navy-950/60 border border-slate-200 dark:border-navy-800 rounded-xl"
                         >
                           <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                             <span className="font-bold text-indigo-600 dark:text-indigo-400">
@@ -1448,7 +1448,7 @@ const DoctorConsultationPage: React.FC = () => {
                           <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
                             {addendum.addendum_text}
                           </div>
-                          <div className="mt-2 text-[11px] text-slate-500 italic bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <div className="mt-2 text-[11px] text-slate-500 italic bg-white dark:bg-navy-900 p-2 rounded-lg border border-slate-200 dark:border-navy-800">
                             <span className="font-bold text-slate-700 dark:text-slate-300">Documented Reason: </span>
                             {addendum.reason}
                           </div>
@@ -1463,7 +1463,7 @@ const DoctorConsultationPage: React.FC = () => {
             {/* 2. PRESCRIPTIONS TAB (With Allergy Safety Validation) */}
             {activeTab === 'prescriptions' && (
               <div className="max-w-3xl space-y-5">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+                <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 p-5 shadow-sm">
                   <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4 flex items-center gap-2">
                     <Pill className="h-4 w-4 text-violet-500" /> Add Prescription (Allergy Pre-Checked)
                   </h3>
@@ -1479,7 +1479,7 @@ const DoctorConsultationPage: React.FC = () => {
                           value={rxForm.medication_name}
                           onChange={e => setRxForm(f => ({ ...f, medication_name: e.target.value }))}
                           placeholder="e.g. Amoxicillin 500mg, Ceftriaxone 1g, Paracetamol"
-                          className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+                          className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-950 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400"
                         />
                       </div>
 
@@ -1497,7 +1497,7 @@ const DoctorConsultationPage: React.FC = () => {
                             value={(rxForm as any)[f.key]}
                             onChange={e => setRxForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                             placeholder={f.ph}
-                            className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+                            className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-950 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400"
                           />
                         </div>
                       ))}
@@ -1508,7 +1508,7 @@ const DoctorConsultationPage: React.FC = () => {
                           value={rxForm.instructions}
                           onChange={e => setRxForm(f => ({ ...f, instructions: e.target.value }))}
                           placeholder="e.g. Take with food, drink plenty of water"
-                          className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400"
+                          className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-950 text-xs focus:outline-none focus:ring-2 focus:ring-violet-400"
                         />
                       </div>
                     </div>
@@ -1527,7 +1527,7 @@ const DoctorConsultationPage: React.FC = () => {
 
                 {/* Prescriptions List */}
                 {(activeEncounter.prescriptions || []).length > 0 && (
-                  <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden shadow-sm">
+                  <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden shadow-sm">
                     {(activeEncounter.prescriptions || []).map((rx: any) => (
                       <div key={rx.id} className="p-4 flex items-center justify-between">
                         <div>
@@ -1565,7 +1565,7 @@ const DoctorConsultationPage: React.FC = () => {
             {/* 3. LAB TESTS TAB */}
             {activeTab === 'labs' && (
               <div className="max-w-3xl space-y-5">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+                <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 p-5 shadow-sm">
                   <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4 flex items-center gap-2">
                     <FlaskConical className="h-4 w-4 text-cyan-500" /> Order Laboratory Test
                   </h3>
@@ -1577,7 +1577,7 @@ const DoctorConsultationPage: React.FC = () => {
                         value={labForm.test_name}
                         onChange={e => setLabForm(f => ({ ...f, test_name: e.target.value }))}
                         placeholder="e.g. Complete Blood Count (CBC), Widal Test, Urinalysis"
-                        className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                        className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-950 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-400"
                       />
                     </div>
 
@@ -1596,7 +1596,7 @@ const DoctorConsultationPage: React.FC = () => {
                             className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition ${
                               labForm.test_name === b.name
                                 ? 'bg-cyan-600 text-white border-cyan-600 shadow-xs'
-                                : 'bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 hover:border-cyan-300'
+                                : 'bg-slate-50 dark:bg-navy-950/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-navy-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 hover:border-cyan-300'
                             }`}
                           >
                             {b.name}
@@ -1618,7 +1618,7 @@ const DoctorConsultationPage: React.FC = () => {
 
                 {/* Lab Tests List */}
                 {(activeEncounter.labTests || []).length > 0 && (
-                  <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden shadow-sm">
+                  <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden shadow-sm">
                     {(activeEncounter.labTests || []).map((lab: any) => (
                       <div key={lab.id} className="p-4 flex items-center justify-between">
                         <div>
@@ -1661,7 +1661,7 @@ const DoctorConsultationPage: React.FC = () => {
             {/* 4. RADIOLOGY TAB */}
             {activeTab === 'radiology' && (
               <div className="max-w-3xl space-y-5">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+                <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 p-5 shadow-sm">
                   <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4 flex items-center gap-2">
                     <Scan className="h-4 w-4 text-indigo-500" /> Order Radiology Examination
                   </h3>
@@ -1673,7 +1673,7 @@ const DoctorConsultationPage: React.FC = () => {
                         value={radForm.study_type}
                         onChange={e => setRadForm(f => ({ ...f, study_type: e.target.value }))}
                         placeholder="e.g. Chest X-Ray, Abdominal Ultrasound"
-                        className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-950 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
                       />
                     </div>
                     <div className="flex justify-end">
@@ -1693,7 +1693,7 @@ const DoctorConsultationPage: React.FC = () => {
             {/* 5. PROCEDURES TAB */}
             {activeTab === 'procedures' && (
               <div className="max-w-3xl space-y-5">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+                <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 p-5 shadow-sm">
                   <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4 flex items-center gap-2">
                     <Syringe className="h-4 w-4 text-rose-500" /> Order Minor / Major Procedure
                   </h3>
@@ -1705,7 +1705,7 @@ const DoctorConsultationPage: React.FC = () => {
                         value={procForm.procedure_name}
                         onChange={e => setProcForm(f => ({ ...f, procedure_name: e.target.value }))}
                         placeholder="e.g. Wound Suture, Incision and Drainage, IV Cannulation"
-                        className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-rose-400"
+                        className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-950 text-xs focus:outline-none focus:ring-2 focus:ring-rose-400"
                       />
                     </div>
                     <div className="flex justify-end">
@@ -1726,8 +1726,8 @@ const DoctorConsultationPage: React.FC = () => {
             {activeTab === 'billing' && (
               <div className="max-w-3xl">
                 {activeEncounter.billing?.invoice ? (
-                  <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-                    <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 overflow-hidden shadow-sm">
+                    <div className="p-4 border-b border-slate-200 dark:border-navy-800 flex items-center justify-between">
                       <div>
                         <h3 className="font-black text-sm text-slate-900 dark:text-white">
                           Invoice #{activeEncounter.billing.invoice.id}
@@ -1755,7 +1755,7 @@ const DoctorConsultationPage: React.FC = () => {
                       ))}
                     </div>
 
-                    <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex justify-between font-black text-sm">
+                    <div className="p-4 border-t border-slate-200 dark:border-navy-800 bg-slate-50 dark:bg-navy-950 flex justify-between font-black text-sm">
                       <span>Total Amount:</span>
                       <span>{parseFloat(activeEncounter.billing.invoice.total_amount || 0).toLocaleString()} ETB</span>
                     </div>
@@ -1771,7 +1771,7 @@ const DoctorConsultationPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="hidden lg:flex flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900 text-center text-slate-400">
+        <div className="hidden lg:flex flex-1 items-center justify-center bg-slate-50 dark:bg-navy-950 text-center text-slate-400">
           <div>
             <Stethoscope className="h-16 w-16 mx-auto mb-3 opacity-20" />
             <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Select a patient from the queue</p>
@@ -1784,7 +1784,7 @@ const DoctorConsultationPage: React.FC = () => {
       {/* ── MODAL: ALLERGY CONFLICT WARNING & OVERRIDE ──────────────── */}
       {allergyConflictModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border-2 border-red-500 rounded-3xl shadow-2xl max-w-xl w-full p-6 animate-shake">
+          <div className="bg-white dark:bg-navy-950 border-2 border-red-500 rounded-3xl shadow-2xl max-w-xl w-full p-6 animate-shake">
             <div className="flex items-start gap-4">
               <div className="p-3 bg-red-100 text-red-600 rounded-2xl flex-shrink-0">
                 <AlertOctagon className="h-8 w-8" />
@@ -1876,7 +1876,7 @@ const DoctorConsultationPage: React.FC = () => {
 
             {/* Override Form (Disabled if Hard Blocked) */}
             {!allergyConflictModal.hardBlocked ? (
-              <form onSubmit={handleConfirmOverride} className="mt-5 space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <form onSubmit={handleConfirmOverride} className="mt-5 space-y-3 pt-3 border-t border-slate-200 dark:border-navy-800">
                 <div>
                   <label className="block text-xs font-bold text-slate-900 dark:text-white mb-1">
                     Document Mandatory Clinical Override Justification * (Min 5 characters)
@@ -1888,7 +1888,7 @@ const DoctorConsultationPage: React.FC = () => {
                     value={overrideReason}
                     onChange={e => setOverrideReason(e.target.value)}
                     placeholder="e.g. Clinical benefits outweigh cross-reactivity risk; patient tolerated in past under observation"
-                    className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-red-500"
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-navy-900 border-slate-300 dark:border-navy-800 focus:ring-2 focus:ring-red-500"
                   />
                 </div>
 
@@ -1924,7 +1924,7 @@ const DoctorConsultationPage: React.FC = () => {
                 </div>
               </form>
             ) : (
-              <div className="mt-5 pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+              <div className="mt-5 pt-3 border-t border-slate-200 dark:border-navy-800 flex justify-end">
                 <button
                   type="button"
                   onClick={() => setAllergyConflictModal(null)}
@@ -1941,8 +1941,8 @@ const DoctorConsultationPage: React.FC = () => {
       {/* ── MODAL: ISSUE MEDICAL CERTIFICATE ────────────────────────── */}
       {showMedicalCertModal && activeEncounter && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl max-w-xl w-full p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-navy-950 border border-slate-200 dark:border-navy-800 rounded-3xl shadow-2xl max-w-xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-navy-800">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-blue-600" />
                 <h2 className="text-base font-black text-slate-900 dark:text-white">
@@ -1963,7 +1963,7 @@ const DoctorConsultationPage: React.FC = () => {
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                   Patient Identity
                 </label>
-                <div className="px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs font-medium text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700">
+                <div className="px-3 py-2 bg-slate-50 dark:bg-navy-900 rounded-xl text-xs font-medium text-slate-900 dark:text-white border border-slate-200 dark:border-navy-800">
                   {activeEncounter.first_name} {activeEncounter.last_name} (MRN: ETH-MRN-{activeEncounter.patient_id})
                 </div>
               </div>
@@ -1978,7 +1978,7 @@ const DoctorConsultationPage: React.FC = () => {
                   rows={3}
                   value={medCertForm.medical_statement}
                   onChange={e => setMedCertForm(f => ({ ...f, medical_statement: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-xl text-xs bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-xl text-xs bg-white dark:bg-navy-900 border-slate-300 dark:border-navy-800 focus:ring-2 focus:ring-blue-500"
                   placeholder="Official medical statement..."
                 />
               </div>
@@ -1990,12 +1990,12 @@ const DoctorConsultationPage: React.FC = () => {
                 <input
                   value={medCertForm.diagnosis_summary}
                   onChange={e => setMedCertForm(f => ({ ...f, diagnosis_summary: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-xl text-xs bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-xl text-xs bg-white dark:bg-navy-900 border-slate-300 dark:border-navy-800 focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g. Acute Lumbar Muscular Strain"
                 />
               </div>
 
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-3">
+              <div className="p-3 bg-slate-50 dark:bg-navy-900/60 border border-slate-200 dark:border-navy-800 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-900 dark:text-white">
                     Sick Leave Recommended
@@ -2018,7 +2018,7 @@ const DoctorConsultationPage: React.FC = () => {
                         max={60}
                         value={medCertForm.sick_leave_days}
                         onChange={e => setMedCertForm(f => ({ ...f, sick_leave_days: parseInt(e.target.value) || 1 }))}
-                        className="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+                        className="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-white dark:bg-navy-950 border-slate-300 dark:border-navy-800"
                       />
                     </div>
                     <div>
@@ -2027,7 +2027,7 @@ const DoctorConsultationPage: React.FC = () => {
                         type="date"
                         value={medCertForm.sick_leave_start_date}
                         onChange={e => setMedCertForm(f => ({ ...f, sick_leave_start_date: e.target.value }))}
-                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white dark:bg-navy-950 border-slate-300 dark:border-navy-800"
                       />
                     </div>
                     <div>
@@ -2036,13 +2036,13 @@ const DoctorConsultationPage: React.FC = () => {
                         type="date"
                         value={medCertForm.sick_leave_end_date}
                         onChange={e => setMedCertForm(f => ({ ...f, sick_leave_end_date: e.target.value }))}
-                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
+                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white dark:bg-navy-950 border-slate-300 dark:border-navy-800"
                       />
                     </div>
                   </div>
                 )}
 
-                <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-navy-800">
                   <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                     Fit for Normal Work Duties
                   </span>
@@ -2080,7 +2080,7 @@ const DoctorConsultationPage: React.FC = () => {
       {/* ── MODAL: ADD CLINICAL ADDENDUM ────────────────────────────── */}
       {showAddendumModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl max-w-lg w-full p-6">
+          <div className="bg-white dark:bg-navy-950 border border-slate-200 dark:border-navy-800 rounded-3xl shadow-2xl max-w-lg w-full p-6">
             <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
               <PlusCircle className="h-4 w-4 text-indigo-600" /> Append Clinical Addendum
             </h2>
@@ -2099,7 +2099,7 @@ const DoctorConsultationPage: React.FC = () => {
                   value={addendumForm.addendum_text}
                   onChange={e => setAddendumForm({ ...addendumForm, addendum_text: e.target.value })}
                   placeholder="Document supplemental clinical notes, lab review findings, or treatment adjustment..."
-                  className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-indigo-400"
+                  className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-navy-900 border-slate-300 dark:border-navy-800 focus:ring-2 focus:ring-indigo-400"
                 />
               </div>
 
@@ -2112,11 +2112,11 @@ const DoctorConsultationPage: React.FC = () => {
                   value={addendumForm.reason}
                   onChange={e => setAddendumForm({ ...addendumForm, reason: e.target.value })}
                   placeholder="e.g. Subsequent pathology report received, diagnostic clarification"
-                  className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-indigo-400"
+                  className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-navy-900 border-slate-300 dark:border-navy-800 focus:ring-2 focus:ring-indigo-400"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-navy-800">
                 <button
                   type="button"
                   onClick={() => setShowAddendumModal(false)}
@@ -2140,7 +2140,7 @@ const DoctorConsultationPage: React.FC = () => {
       {/* ── MODAL: DOCUMENT NEW ALLERGY ─────────────────────────────── */}
       {showAddAllergyModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-navy-950 border border-slate-200 dark:border-navy-800 rounded-3xl shadow-2xl max-w-md w-full p-6">
             <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
               <AlertOctagon className="h-4 w-4 text-red-500" /> Document Patient Allergy
             </h2>
@@ -2158,7 +2158,7 @@ const DoctorConsultationPage: React.FC = () => {
                   value={newAllergyForm.allergen_name}
                   onChange={e => setNewAllergyForm({ ...newAllergyForm, allergen_name: e.target.value })}
                   placeholder="e.g. Penicillin, Sulfa, Aspirin, Ibuprofen, Peanuts"
-                  className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700"
+                  className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-navy-900 border-slate-300 dark:border-navy-800"
                 />
               </div>
 
@@ -2170,7 +2170,7 @@ const DoctorConsultationPage: React.FC = () => {
                   <select
                     value={newAllergyForm.allergen_category}
                     onChange={e => setNewAllergyForm({ ...newAllergyForm, allergen_category: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700"
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-navy-900 border-slate-300 dark:border-navy-800"
                   >
                     <option value="drug">Drug / Medication</option>
                     <option value="food">Food</option>
@@ -2185,7 +2185,7 @@ const DoctorConsultationPage: React.FC = () => {
                   <select
                     value={newAllergyForm.severity}
                     onChange={e => setNewAllergyForm({ ...newAllergyForm, severity: e.target.value as any })}
-                    className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700"
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-navy-900 border-slate-300 dark:border-navy-800"
                   >
                     <option value="mild">Mild (Rash/Itch)</option>
                     <option value="moderate">Moderate (Hives/Swelling)</option>
@@ -2203,11 +2203,11 @@ const DoctorConsultationPage: React.FC = () => {
                   value={newAllergyForm.reaction_description}
                   onChange={e => setNewAllergyForm({ ...newAllergyForm, reaction_description: e.target.value })}
                   placeholder="e.g. Severe facial edema, shortness of breath within 30 min"
-                  className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border-slate-300 dark:border-slate-700"
+                  className="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 dark:bg-navy-900 border-slate-300 dark:border-navy-800"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-navy-800">
                 <button
                   type="button"
                   onClick={() => setShowAddAllergyModal(false)}

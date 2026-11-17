@@ -1,9 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { QrCode } from 'lucide-react';
+import {
+  QrCode, CalendarDays, ClipboardList, Users,
+  Pill, FlaskConical, ArrowRight, RefreshCw, Stethoscope, ChevronRight
+} from 'lucide-react';
 import WristbandScannerModal from '../components/WristbandScannerModal';
-import { CalendarDays, ClipboardList, Activity, Users, Pill, FlaskConical, ArrowRight, RefreshCw } from 'lucide-react';
+import {
+  DashboardHeader,
+  StatisticCard,
+  ChartCard,
+  EmptyState
+} from '../components/common/PremiumUI';
 
 interface DoctorDashboardData {
   stats: {
@@ -42,8 +50,6 @@ interface DoctorDashboardData {
   }>;
 }
 
-const cardClass = 'rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800';
-
 const DoctorDashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +87,7 @@ const DoctorDashboardPage: React.FC = () => {
         return acc;
       }, {});
 
-      const upcoming = appointments.filter((item: any) => ['scheduled', 'confirmed'].includes(item.status)).slice(0, 5);
+      const upcoming = appointments.filter((item: any) => ['scheduled', 'confirmed'].includes(item.status)).slice(0, 6);
       const patientFocus = Array.from(new Set(vitals.map((item: any) => item.patient_name).filter(Boolean))).length;
 
       setData({
@@ -94,8 +100,8 @@ const DoctorDashboardPage: React.FC = () => {
         },
         appointments: upcoming,
         vitals: vitals.slice(0, 5),
-        prescriptions: prescriptions.slice(0, 4),
-        labTests: labTests.slice(0, 4),
+        prescriptions: prescriptions.slice(0, 5),
+        labTests: labTests.slice(0, 5),
       });
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Unable to load doctor dashboard.');
@@ -109,177 +115,275 @@ const DoctorDashboardPage: React.FC = () => {
   }, []);
 
   const doctorCards = useMemo(() => [
-    { label: 'Today appointments', value: data?.stats.todayAppointments ?? 0, icon: CalendarDays, color: 'bg-blue-500' },
-    { label: 'Pending review', value: data?.stats.pendingAppointments ?? 0, icon: ClipboardList, color: 'bg-amber-500' },
-    { label: 'Active patients', value: data?.stats.activePatients ?? 0, icon: Users, color: 'bg-emerald-500' },
-    { label: 'Prescriptions', value: data?.stats.prescriptions ?? 0, icon: Pill, color: 'bg-violet-500' },
-    { label: 'Lab tests', value: data?.stats.labTests ?? 0, icon: FlaskConical, color: 'bg-cyan-500' },
+    { label: 'Today Appointments', amharic: 'የዛሬ ቀጠሮ', value: data?.stats.todayAppointments ?? 0, icon: CalendarDays, variant: 'blue' as const, subtitle: 'Scheduled visits' },
+    { label: 'Pending Review', amharic: 'የሚጠበቁ', value: data?.stats.pendingAppointments ?? 0, icon: ClipboardList, variant: 'amber' as const, subtitle: 'Awaiting doctor' },
+    { label: 'Active Patients', amharic: 'ንቁ ታካሚዎች', value: data?.stats.activePatients ?? 0, icon: Users, variant: 'cyan' as const, subtitle: 'Assigned today' },
+    { label: 'Prescriptions', amharic: 'የታዘዙ መድኃኒት', value: data?.stats.prescriptions ?? 0, icon: Pill, variant: 'purple' as const, subtitle: 'Rx issued' },
+    { label: 'Lab Tests', amharic: 'የላብራቶሪ ምርመራ', value: data?.stats.labTests ?? 0, icon: FlaskConical, variant: 'teal' as const, subtitle: 'Diagnostic orders' },
   ], [data]);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <p className="text-xs sm:text-sm font-medium uppercase tracking-[0.2em] text-sky-600">Doctor portal</p>
-          <h1 className="mt-0.5 sm:mt-1 text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Doctor dashboard</h1>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setShowScannerModal(true)}
-            className="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl bg-teal-600 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-teal-700 shadow-sm active:scale-95 transition"
-          >
-            <QrCode className="h-4 w-4" />
-            Scan QR
-          </button>
-          <button
-            onClick={fetchDoctorDashboard}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl bg-sky-600 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-        </div>
-      </div>
+      {/* ── 1. Doctor Dashboard Header ───────────────────────────────── */}
+      <DashboardHeader
+        title="Physician Clinical Overview"
+        amharicTitle="የሀኪም ክሊኒካል ማጠቃለያ"
+        subtitle="Patient consultations, incoming lab results, electronic prescriptions, and appointment schedule"
+        badge="Attending Physician"
+        icon={Stethoscope}
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate('/consultation')}
+              className="h-9 px-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-xs transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Stethoscope className="w-4 h-4" />
+              <span>Consultation Desk</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowScannerModal(true)}
+              className="h-9 px-3.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/25 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <QrCode className="w-4 h-4" />
+              <span>Scan Patient</span>
+            </button>
+            <button
+              type="button"
+              onClick={fetchDoctorDashboard}
+              disabled={loading}
+              className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-1.5 transition cursor-pointer"
+              title="Refresh dashboard"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          </div>
+        }
+      />
 
       {error && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-xs text-amber-600 dark:text-amber-400">
           {error}
         </div>
       )}
 
+      {/* ── 2. Gradient Statistic Cards ─────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
-        {doctorCards.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className={cardClass}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
-                <p className="mt-1 sm:mt-3 text-xl sm:text-3xl font-bold text-slate-900 dark:text-white">{loading ? '—' : value}</p>
-              </div>
-              <div className={`rounded-xl p-2 sm:p-3 text-white ${color} shrink-0`}>
-                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-              </div>
-            </div>
-          </div>
+        {doctorCards.map((card, idx) => (
+          <StatisticCard
+            key={idx}
+            title={card.label}
+            amharicTitle={card.amharic}
+            value={loading ? '—' : card.value}
+            icon={card.icon}
+            variant={card.variant}
+            subtitle={card.subtitle}
+          />
         ))}
       </div>
 
+      {/* ── 3. Main Clinical Workspace (Appointments & Latest Vitals) ── */}
       <div className="grid gap-6 xl:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 xl:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Upcoming appointments</h2>
-            <button
-              onClick={() => window.location.assign('/appointments')}
-              className="inline-flex items-center gap-1 text-sm font-medium text-sky-600 hover:text-sky-700"
-            >
-              View all <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
+        {/* Upcoming Appointments */}
+        <div className="xl:col-span-2">
+          <ChartCard
+            title="Today Scheduled Appointments"
+            subtitle="Patients queued for direct outpatient consultation"
+            actions={
+              <button
+                onClick={() => navigate('/appointments')}
+                className="text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>View Full Schedule</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            }
+          >
+            {loading ? (
+              <div className="py-12 text-center text-slate-400 text-xs">Loading appointments telemetry...</div>
+            ) : data?.appointments && data.appointments.length > 0 ? (
+              <div className="space-y-2.5">
+                {data.appointments.map(item => (
+                  <div
+                    key={item.id}
+                    onClick={() => navigate('/consultation')}
+                    className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 hover:border-cyan-500/40 hover:bg-slate-100/60 dark:hover:bg-slate-800/80 transition-all cursor-pointer group"
+                  >
+                    <div className="min-w-0 pr-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                          {item.patient_name || 'Patient'}
+                        </span>
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 border border-cyan-500/20">
+                          {item.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                        {item.reason || 'General clinical follow-up'}
+                      </p>
+                    </div>
 
-          {loading ? (
-            <div className="text-sm text-slate-500 dark:text-slate-400">Loading appointments...</div>
-          ) : data?.appointments && data.appointments.length > 0 ? (
-            <div className="space-y-3">
-              {data.appointments.map((item: any) => (
-                <div key={item.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/40">
-                  <div>
-                    <p className="font-medium text-slate-900 dark:text-white">{item.patient_name || 'Unknown patient'}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{new Date(item.appointment_date).toLocaleString()}</p>
+                    <div className="flex items-center gap-3 shrink-0 text-right">
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                        {new Date(item.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-cyan-400 transition-transform group-hover:translate-x-0.5" />
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="inline-flex rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold capitalize text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
-                      {item.status}
-                    </span>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{item.reason || 'General consultation'}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500 dark:text-slate-400">No upcoming appointments found.</p>
-          )}
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No Upcoming Appointments"
+                description="No patients are currently scheduled for this window. Walk-ins from reception will appear automatically."
+              />
+            )}
+          </ChartCard>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <div className="mb-4 flex items-center gap-2">
-            <Activity className="h-5 w-5 text-emerald-600" />
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Latest vitals</h2>
-          </div>
-
-          {loading ? (
-            <div className="text-sm text-slate-500 dark:text-slate-400">Loading vitals...</div>
-          ) : data?.vitals && data.vitals.length > 0 ? (
-            <div className="space-y-3">
-              {data.vitals.map((item: any) => (
-                <div key={item.id} className="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-slate-900 dark:text-white">{item.patient_name}</p>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">{new Date(item.recorded_at).toLocaleDateString()}</span>
+        {/* Latest Clinical Vitals */}
+        <div>
+          <ChartCard
+            title="Recent Intake Vitals"
+            subtitle="Pre-consultation observations from triage nurses"
+            actions={
+              <button
+                onClick={() => navigate('/vitals')}
+                className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>Vitals Log</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            }
+          >
+            {loading ? (
+              <div className="py-12 text-center text-slate-400 text-xs">Loading vitals stream...</div>
+            ) : data?.vitals && data.vitals.length > 0 ? (
+              <div className="space-y-2.5">
+                {data.vitals.map(item => (
+                  <div
+                    key={item.id}
+                    className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-900 dark:text-white truncate">
+                        {item.patient_name}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {new Date(item.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold">
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        HR: {item.heart_rate || '—'} bpm
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                        SpO₂: {item.oxygen_saturation || '—'}%
+                      </span>
+                    </div>
                   </div>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                    HR {item.heart_rate || '—'} · O₂ {item.oxygen_saturation || '—'}%
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500 dark:text-slate-400">No vitals recorded yet.</p>
-          )}
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No Recent Observations"
+                description="Nursing staff have not recorded vitals for pending patients yet."
+              />
+            )}
+          </ChartCard>
         </div>
       </div>
 
+      {/* ── 4. Diagnostics & Prescriptions Activity ───────────────────── */}
       <div className="grid gap-6 xl:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <div className="mb-4 flex items-center gap-2">
-            <Pill className="h-5 w-5 text-violet-600" />
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Recent prescriptions</h2>
-          </div>
-
+        {/* Prescriptions */}
+        <ChartCard
+          title="Recent Electronic Prescriptions"
+          subtitle="Medications ordered during today's clinical encounters"
+          actions={
+            <button
+              onClick={() => navigate('/prescriptions')}
+              className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>Pharmacy Orders</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          }
+        >
           {loading ? (
-            <div className="text-sm text-slate-500 dark:text-slate-400">Loading prescriptions...</div>
+            <div className="py-8 text-center text-slate-400 text-xs">Loading prescriptions...</div>
           ) : data?.prescriptions && data.prescriptions.length > 0 ? (
-            <div className="space-y-3">
-              {data.prescriptions.map((item: any) => (
-                <div key={item.id} className="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
-                  <p className="font-medium text-slate-900 dark:text-white">{item.medication_name}</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">{item.patient_name} · {item.dosage} · {item.frequency}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500 dark:text-slate-400">No prescriptions found.</p>
-          )}
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <div className="mb-4 flex items-center gap-2">
-            <FlaskConical className="h-5 w-5 text-cyan-600" />
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Lab test queue</h2>
-          </div>
-
-          {loading ? (
-            <div className="text-sm text-slate-500 dark:text-slate-400">Loading lab tests...</div>
-          ) : data?.labTests && data.labTests.length > 0 ? (
-            <div className="space-y-3">
-              {data.labTests.map((item: any) => (
-                <div key={item.id} className="flex items-center justify-between rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+            <div className="space-y-2">
+              {data.prescriptions.map(item => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 text-xs"
+                >
                   <div>
-                    <p className="font-medium text-slate-900 dark:text-white">{item.test_name}</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-300">{item.patient_name}</p>
+                    <p className="font-bold text-slate-900 dark:text-white">{item.medication_name}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {item.patient_name} • {item.dosage} • {item.frequency}
+                    </p>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium capitalize text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                    {item.status || 'pending'}
+                  <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-300 font-bold text-[10px]">
+                    Rx Active
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-500 dark:text-slate-400">No lab tests found.</p>
+            <EmptyState
+              title="No Prescriptions Issued"
+              description="No active prescriptions have been logged for this shift yet."
+            />
           )}
-        </div>
+        </ChartCard>
+
+        {/* Lab Test Queue */}
+        <ChartCard
+          title="Laboratory Diagnostic Orders"
+          subtitle="Real-time test processing and abnormal result alerts"
+          actions={
+            <button
+              onClick={() => navigate('/lab-tests')}
+              className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>All Lab Orders</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          }
+        >
+          {loading ? (
+            <div className="py-8 text-center text-slate-400 text-xs">Loading laboratory orders...</div>
+          ) : data?.labTests && data.labTests.length > 0 ? (
+            <div className="space-y-2">
+              {data.labTests.map(item => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 text-xs"
+                >
+                  <div>
+                    <p className="font-bold text-slate-900 dark:text-white">{item.test_name}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{item.patient_name}</p>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-600 dark:text-teal-300 font-bold text-[10px] uppercase">
+                    {item.status || 'Pending'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No Laboratory Tests Queued"
+              description="All diagnostic requests have been fulfilled or none are pending."
+            />
+          )}
+        </ChartCard>
       </div>
-      {/* ── Doctor Patient QR Scanner Modal ── */}
+
+      {/* ── 5. Wristband Scanner Modal ──────────────────────────────── */}
       {showScannerModal && (
         <WristbandScannerModal
           isOpen={showScannerModal}

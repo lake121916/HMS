@@ -146,33 +146,30 @@ const PatientWristbandModal: React.FC<PatientWristbandModalProps> = ({
               <button
                 type="button"
                 onClick={() => setPrintType('initial')}
-                className={`py-2 px-3 rounded-xl text-xs font-bold transition border ${
-                  printType === 'initial'
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                }`}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition border ${printType === 'initial'
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  }`}
               >
                 Initial Admission
               </button>
               <button
                 type="button"
                 onClick={() => setPrintType('reprint')}
-                className={`py-2 px-3 rounded-xl text-xs font-bold transition border ${
-                  printType === 'reprint'
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                }`}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition border ${printType === 'reprint'
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  }`}
               >
                 Reprint Existing
               </button>
               <button
                 type="button"
                 onClick={() => setPrintType('replace')}
-                className={`py-2 px-3 rounded-xl text-xs font-bold transition border ${
-                  printType === 'replace'
-                    ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                }`}
+                className={`py-2 px-3 rounded-xl text-xs font-bold transition border ${printType === 'replace'
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  }`}
               >
                 Replace Damaged (Revoke)
               </button>

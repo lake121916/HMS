@@ -291,9 +291,9 @@ const registerPatient = handleAsync(async (req, res) => {
         allergies, emergency_contact_name, emergency_contact_phone, insurance_number, medical_history)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
       [userId, first_name, last_name, date_of_birth, gender, phone || null,
-       effectiveEmail, address || null, blood_type || null, allergies || null,
-       emergency_contact_name || null, emergency_contact_phone || null,
-       insurance_number || null, medical_history || null]
+        effectiveEmail, address || null, blood_type || null, allergies || null,
+        emergency_contact_name || null, emergency_contact_phone || null,
+        insurance_number || null, medical_history || null]
     );
 
     const patientRow = patientResult.rows[0];
@@ -355,7 +355,7 @@ const registerPatient = handleAsync(async (req, res) => {
 
       if (encRes.rows.length) {
         initialEncounter = encRes.rows[0];
-        const encNumber = `ENC-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${String(initialEncounter.id).padStart(4,'0')}`;
+        const encNumber = `ENC-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(initialEncounter.id).padStart(4, '0')}`;
         await client.query(
           `UPDATE patient_encounters SET encounter_number = $1 WHERE id = $2`,
           [encNumber, initialEncounter.id]
@@ -483,10 +483,10 @@ const deletePatient = handleAsync(async (req, res) => {
   );
 
   const row = linkCheck.rows[0];
-  const totalLinked = parseInt(row.encounter_count || 0) + 
-                      parseInt(row.prescription_count || 0) + 
-                      parseInt(row.lab_count || 0) + 
-                      parseInt(row.invoice_count || 0);
+  const totalLinked = parseInt(row.encounter_count || 0) +
+    parseInt(row.prescription_count || 0) +
+    parseInt(row.lab_count || 0) +
+    parseInt(row.invoice_count || 0);
 
   if (totalLinked > 0) {
     return sendError(

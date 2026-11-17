@@ -6,6 +6,7 @@ import {
   FlaskConical, Plus, Search, Trash2, X, Upload,
   AlertCircle, Activity, Play, Eye, EyeOff, Sliders
 } from 'lucide-react';
+import { DashboardHeader, StatisticCard } from '../components/common/PremiumUI';
 
 interface LabTest {
   id: number;
@@ -192,45 +193,73 @@ const RadiologyPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <FlaskConical className="w-6 h-6 text-sky-600" /> Radiology & Medical Imaging
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Order scans, track status, and perform deep CNN image classifications with Grad-CAM localization heatmaps.
-          </p>
-        </div>
-        {can('lab_tests:create') && (
-          <button
-            onClick={() => {
-              setOrderForm({ patient_id: '', test_name: 'Chest X-Ray', test_type: 'radiology', priority: 'normal', notes: '' });
-              setShowOrderModal(true);
-            }}
-            className="flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold gap-2 transition-colors self-start md:self-auto"
-          >
-            <Plus className="w-4 h-4" /> Order Scan
-          </button>
-        )}
+      {/* ── Premium Radiology Header ─────────────────────────────────── */}
+      <DashboardHeader
+        title="Radiology & Diagnostic Imaging"
+        amharicTitle="የራዲዮሎጂ እና የምስል ምርመራ"
+        subtitle="Order medical scans, track image studies, and run AI deep CNN classifications with Grad-CAM heatmaps"
+        badge="Imaging Center"
+        icon={FlaskConical}
+        actions={
+          can('lab_tests:create') && (
+            <button
+              onClick={() => {
+                setOrderForm({ patient_id: '', test_name: 'Chest X-Ray', test_type: 'radiology', priority: 'normal', notes: '' });
+                setShowOrderModal(true);
+              }}
+              className="h-9 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Order Diagnostic Scan</span>
+            </button>
+          )
+        }
+      />
+
+      {/* ── Metric Cards ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+        <StatisticCard
+          title="Total Imaging Orders"
+          amharicTitle="ጠቅላላ ትእዛዞች"
+          value={tests.length}
+          icon={FlaskConical}
+          variant="cyan"
+          subtitle="All studies"
+        />
+        <StatisticCard
+          title="Awaiting Review"
+          amharicTitle="የሚጠበቁ"
+          value={tests.filter(t => t.status === 'pending' || t.status === 'in_progress').length}
+          icon={Activity}
+          variant="amber"
+          subtitle="Pending radiologist"
+        />
+        <StatisticCard
+          title="Completed Studies"
+          amharicTitle="የተጠናቀቁ"
+          value={tests.filter(t => t.status === 'completed').length}
+          icon={Eye}
+          variant="teal"
+          subtitle="Diagnostics verified"
+        />
       </div>
 
       {/* Filters & Search */}
-      <div className="flex flex-col md:flex-row gap-3 bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-3 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-3 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by patient, scan type, or ordering doctor..."
+            placeholder="Search by patient name, study type, or doctor..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-white"
+            className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-cyan-500 bg-white dark:bg-slate-900 dark:text-white"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:text-white"
+          className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-cyan-500 bg-white dark:bg-slate-900 dark:text-white"
         >
           <option value="">All Statuses</option>
           <option value="pending">Pending</option>
@@ -240,8 +269,76 @@ const RadiologyPage: React.FC = () => {
         </select>
       </div>
 
-      {/* Main Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+      {/* Mobile Card List (< sm) */}
+      <div className="sm:hidden space-y-3">
+        {loading ? (
+          <div className="p-8 text-center text-slate-400 text-xs">Loading imaging scans...</div>
+        ) : filteredTests.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 text-xs bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+            No radiology scans matching the criteria.
+          </div>
+        ) : (
+          filteredTests.map((test) => (
+            <div key={test.id} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{test.patient_name}</h4>
+                  <span className="text-[11px] font-mono text-cyan-600 dark:text-cyan-400">ID #{test.patient_id}</span>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${STATUS_COLORS[test.status] || ''}`}>
+                  {test.status.replace('_', ' ')}
+                </span>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-xs space-y-1">
+                <div className="font-bold text-slate-800 dark:text-slate-200">{test.test_name}</div>
+                <div className="text-[11px] text-slate-500">
+                  Ordered by Dr. {test.doctor_name || 'Clinician'} • {new Date(test.requested_date).toLocaleDateString()}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                {test.status === 'pending' && user?.role === 'lab_technician' && (
+                  <button
+                    onClick={() => handleStatusUpdate(test.id, 'in_progress')}
+                    className="flex-1 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold"
+                  >
+                    Accept Scan
+                  </button>
+                )}
+                {test.status === 'in_progress' && user?.role === 'lab_technician' && (
+                  <button
+                    onClick={() => {
+                      setSelectedTest(test);
+                      setSelectedFile(null);
+                      setFilePreview(null);
+                      setAnalysisResult(null);
+                      setShowAnalysisModal(true);
+                    }}
+                    className="flex-1 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1"
+                  >
+                    <Play className="w-3.5 h-3.5" /> AI Classify
+                  </button>
+                )}
+                {test.results && (
+                  <button
+                    onClick={() => {
+                      setSelectedTest(test);
+                      setShowViewModal(true);
+                    }}
+                    className="flex-1 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold"
+                  >
+                    View Report
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Main Table (Desktop >= sm) */}
+      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading imaging scans...</div>
         ) : filteredTests.length === 0 ? (

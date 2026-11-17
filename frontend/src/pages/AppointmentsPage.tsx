@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useRoleAccess } from '../hooks/useRoleAccess';
-import { useAuth } from '../contexts/AuthContext';
 import {
   useAppointments, useCreateAppointment,
   useCancelAppointment, useRescheduleAppointment,
 } from '../hooks/useApi';
-import { Plus, Calendar, Clock, User, CheckCircle, XCircle, X, RefreshCw, Search } from 'lucide-react';
-
+import {
+  Calendar, Clock, CheckCircle2, XCircle, X, RefreshCw, Search,
+  Plus, CalendarCheck, CalendarX, ArrowUpRight
+} from 'lucide-react';
+import { DashboardHeader, StatisticCard } from '../components/common/PremiumUI';
 
 interface Appointment {
   id: number;
@@ -21,20 +23,19 @@ interface Appointment {
   notes?: string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  scheduled:   'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  confirmed:   'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  completed:   'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-  cancelled:   'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-  rescheduled: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-};
+const inp = 'w-full px-4 py-2.5 bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700/80 rounded-xl text-sm focus:ring-2 focus:ring-cyan-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none transition';
+const lbl = 'block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5';
 
-const inp = 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white';
-const lbl = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
+const STATUS_CONFIG: Record<string, { bg: string; text: string; border: string; icon: React.ElementType }> = {
+  scheduled:   { bg: 'bg-blue-500/10 dark:bg-blue-500/20', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/30', icon: Clock },
+  confirmed:   { bg: 'bg-emerald-500/10 dark:bg-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30', icon: CheckCircle2 },
+  completed:   { bg: 'bg-slate-500/10 dark:bg-slate-500/20', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30', icon: CheckCircle2 },
+  cancelled:   { bg: 'bg-rose-500/10 dark:bg-rose-500/20', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-500/30', icon: XCircle },
+  rescheduled: { bg: 'bg-amber-500/10 dark:bg-amber-500/20', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30', icon: ArrowUpRight },
+};
 
 const AppointmentsPage: React.FC = () => {
   const { can } = useRoleAccess();
-  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -50,7 +51,7 @@ const AppointmentsPage: React.FC = () => {
 
   // ── TanStack Query ──────────────────────────────────────────────────────
   const { data, isLoading, refetch } = useAppointments({ status: statusFilter });
-  const appointments = data?.appointments ?? [];
+  const appointments: Appointment[] = data?.appointments ?? [];
 
   const createAppointment   = useCreateAppointment();
   const cancelAppointment   = useCancelAppointment();
@@ -107,7 +108,6 @@ const AppointmentsPage: React.FC = () => {
     } catch (e: any) { alert(e.response?.data?.message || 'Failed to reschedule'); }
   };
 
-
   React.useEffect(() => {
     if (location.pathname.endsWith('/new')) {
       const patientId = searchParams.get('patient');
@@ -126,41 +126,90 @@ const AppointmentsPage: React.FC = () => {
       (a.reason?.toLowerCase().includes(q));
   });
 
+  const scheduledCount = appointments.filter(a => a.status === 'scheduled' || a.status === 'confirmed').length;
+  const completedCount = appointments.filter(a => a.status === 'completed').length;
+  const cancelledCount = appointments.filter(a => a.status === 'cancelled').length;
+
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" /> Appointments
-          </h1>
-          <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            {user?.role === 'patient' ? 'Your appointment history' : 'Manage patient appointments'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button onClick={() => refetch()} disabled={isLoading}
-            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-          {can('appointments:create') && (
-            <button onClick={handleBook}
-              className="flex items-center px-3.5 sm:px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 text-xs sm:text-sm font-semibold gap-1.5 sm:gap-2 shadow-sm">
-              <Plus className="w-4 h-4" /> Book Appointment
+    <div className="space-y-6">
+      <DashboardHeader
+        title="Clinical Appointments"
+        amharicTitle="የክሊኒካል ቀጠሮዎች መቆጣጠሪያ"
+        badge="Outpatient Scheduling"
+        icon={Calendar}
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => refetch()}
+              disabled={isLoading}
+              className="p-2.5 rounded-xl border border-slate-200 dark:border-navy-700/80 bg-white dark:bg-navy-900 text-slate-600 dark:text-slate-300 hover:text-cyan-500 hover:border-cyan-500/40 transition disabled:opacity-50 cursor-pointer"
+              title="Refresh Appointments"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-cyan-400' : ''}`} />
             </button>
-          )}
-        </div>
+            {can('appointments:create') && (
+              <button
+                onClick={handleBook}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-teal-500/20 active:scale-95 transition cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Book Appointment</span>
+              </button>
+            )}
+          </div>
+        }
+      />
+
+      {/* Metric Telemetry Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatisticCard
+          title="Total Bookings"
+          value={appointments.length}
+          subtitle="All patient encounters"
+          icon={Calendar}
+          variant="cyan"
+        />
+        <StatisticCard
+          title="Confirmed / Scheduled"
+          value={scheduledCount}
+          subtitle="Active outpatient queue"
+          icon={CalendarCheck}
+          variant="teal"
+        />
+        <StatisticCard
+          title="Completed Visits"
+          value={completedCount}
+          subtitle="Successfully discharged"
+          icon={CheckCircle2}
+          variant="blue"
+        />
+        <StatisticCard
+          title="Cancelled / Missed"
+          value={cancelledCount}
+          subtitle="No-show or withdrawn"
+          icon={CalendarX}
+          variant="rose"
+        />
       </div>
 
+      {/* Filters & Search Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input type="text" placeholder="Search by patient, doctor or reason..."
-            value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by patient name, doctor, reason, or MRN..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700/80 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-500 outline-none transition"
+          />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
-          <option value="">All Status</option>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="px-4 py-2.5 bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700/80 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500 outline-none transition cursor-pointer"
+        >
+          <option value="">All Statuses ({appointments.length})</option>
           <option value="scheduled">Scheduled</option>
           <option value="confirmed">Confirmed</option>
           <option value="completed">Completed</option>
@@ -169,117 +218,258 @@ const AppointmentsPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      {/* Mobile Card List (< sm) */}
+      <div className="sm:hidden space-y-3">
+        {isLoading ? (
+          <div className="p-8 text-center text-slate-400">
+            <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin text-cyan-500" />
+            Loading appointments...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 p-8 text-center text-slate-400">
+            <Calendar className="w-10 h-10 mx-auto mb-2 opacity-30 text-cyan-500" />
+            No appointments found
+          </div>
+        ) : (
+          filtered.map(appt => {
+            const conf = STATUS_CONFIG[appt.status] || STATUS_CONFIG.scheduled;
+            const StatusIcon = conf.icon;
+            return (
+              <div
+                key={appt.id}
+                className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 p-4 shadow-xs space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-black text-sm flex items-center justify-center shrink-0">
+                      {appt.patient_name?.[0] || 'P'}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                        {appt.patient_name || `Patient #${appt.patient_id}`}
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {appt.doctor_name || `Doctor #${appt.doctor_id}`}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-full border ${conf.bg} ${conf.text} ${conf.border}`}>
+                    <StatusIcon className="w-3 h-3" />
+                    <span className="capitalize">{appt.status}</span>
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-navy-950/60 rounded-xl p-3 text-xs space-y-1">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold">
+                    <Calendar className="w-3.5 h-3.5 text-cyan-500" />
+                    <span>{new Date(appt.appointment_date).toLocaleDateString()} at {new Date(appt.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  {appt.reason && (
+                    <div className="text-slate-500 dark:text-slate-400 text-xs">
+                      Concern: <span className="text-slate-800 dark:text-slate-200 font-medium">{appt.reason}</span>
+                    </div>
+                  )}
+                </div>
+
+                {(can('appointments:edit') || can('appointments:cancel')) && appt.status !== 'cancelled' && appt.status !== 'completed' && (
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-navy-800">
+                    {can('appointments:edit') && (
+                      <button
+                        onClick={() => openReschedule(appt)}
+                        className="flex-1 py-2 text-xs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 rounded-xl hover:bg-cyan-100 dark:hover:bg-cyan-900/40 transition text-center cursor-pointer"
+                      >
+                        Reschedule
+                      </button>
+                    )}
+                    {can('appointments:cancel') && (
+                      <button
+                        onClick={() => handleCancel(appt)}
+                        className="flex-1 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-900/40 transition text-center cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Data Table (>= sm) */}
+      <div className="hidden sm:block bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 dark:bg-navy-950/60 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-navy-800">
               <tr>
-                {['Date & Time', 'Patient', 'Doctor', 'Reason', 'Status', 'Actions'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">{h}</th>
+                {['Date & Time', 'Patient', 'Attending Doctor', 'Clinical Reason', 'Status', 'Actions'].map(h => (
+                  <th key={h} className="px-5 py-3.5">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            <tbody className="divide-y divide-slate-100 dark:divide-navy-800/80">
               {isLoading ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">
-                  <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin opacity-40" />
-                  Loading...
-                </td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">
-                  <Calendar className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                  No appointments found
-                </td></tr>
-              ) : filtered.map(appt => (
-                <tr key={appt.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-900 dark:text-white font-medium">
-                      <Calendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                      {new Date(appt.appointment_date).toLocaleDateString()}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      <Clock className="w-3 h-3 flex-shrink-0" />
-                      {new Date(appt.appointment_date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <User className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                      <span className="text-sm text-gray-900 dark:text-white">
-                        {appt.patient_name || `Patient #${appt.patient_id}`}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                    {appt.doctor_name || `Doctor #${appt.doctor_id}`}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 max-w-[160px] truncate" title={appt.reason}>
-                    {appt.reason || '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full capitalize ${STATUS_COLORS[appt.status] || 'bg-gray-100 text-gray-700'}`}>
-                      {appt.status === 'confirmed' ? <CheckCircle className="w-3 h-3" /> :
-                       appt.status === 'cancelled' ? <XCircle className="w-3 h-3" /> : null}
-                      {appt.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {can('appointments:edit') && appt.status !== 'cancelled' && appt.status !== 'completed' && (
-                        <button onClick={() => openReschedule(appt)}
-                          title="Reschedule"
-                          className="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 rounded-lg transition-colors">
-                          Reschedule
-                        </button>
-                      )}
-                      {can('appointments:cancel') && appt.status !== 'cancelled' && appt.status !== 'completed' && (
-                        <button onClick={() => handleCancel(appt)}
-                          title="Cancel"
-                          className="text-xs font-medium text-red-600 hover:text-red-800 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 px-2 py-1 rounded-lg transition-colors">
-                          Cancel
-                        </button>
-                      )}
-                    </div>
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400">
+                    <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin text-cyan-500 opacity-60" />
+                    Loading clinical appointments...
                   </td>
                 </tr>
-              ))}
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400">
+                    <Calendar className="w-8 h-8 mx-auto mb-2 opacity-30 text-cyan-500" />
+                    No appointments matched your query
+                  </td>
+                </tr>
+              ) : (
+                filtered.map(appt => {
+                  const conf = STATUS_CONFIG[appt.status] || STATUS_CONFIG.scheduled;
+                  const StatusIcon = conf.icon;
+                  return (
+                    <tr key={appt.id} className="hover:bg-slate-50/70 dark:hover:bg-navy-800/40 transition-colors">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2 text-sm text-slate-900 dark:text-white font-semibold">
+                          <Calendar className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                          {new Date(appt.appointment_date).toLocaleDateString()}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                          {new Date(appt.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold text-xs flex items-center justify-center shrink-0">
+                            {appt.patient_name?.[0] || 'P'}
+                          </div>
+                          <span className="text-sm font-bold text-slate-900 dark:text-white">
+                            {appt.patient_name || `Patient #${appt.patient_id}`}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {appt.doctor_name || `Doctor #${appt.doctor_id}`}
+                      </td>
+                      <td className="px-5 py-4 text-xs text-slate-600 dark:text-slate-400 max-w-[180px] truncate" title={appt.reason}>
+                        {appt.reason || '—'}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full border ${conf.bg} ${conf.text} ${conf.border}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          <span className="capitalize">{appt.status}</span>
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          {can('appointments:edit') && appt.status !== 'cancelled' && appt.status !== 'completed' && (
+                            <button
+                              onClick={() => openReschedule(appt)}
+                              className="text-xs font-bold text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 px-2 py-1 rounded-lg hover:bg-cyan-50 dark:hover:bg-cyan-950/40 transition cursor-pointer"
+                            >
+                              Reschedule
+                            </button>
+                          )}
+                          {can('appointments:cancel') && appt.status !== 'cancelled' && appt.status !== 'completed' && (
+                            <button
+                              onClick={() => handleCancel(appt)}
+                              className="text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Book Appointment Modal */}
+      {/* Booking Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Book Appointment</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="w-full max-w-lg bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700 rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-navy-800">
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-cyan-500" /> Book Clinical Appointment
+              </h3>
+              <button onClick={closeModal} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-navy-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className={lbl}>Patient ID *</label>
-                  <input type="number" required value={formData.patientId}
-                    onChange={e => setFormData({...formData, patientId:e.target.value})} className={inp} /></div>
-                <div><label className={lbl}>Doctor ID *</label>
-                  <input type="number" required value={formData.doctorId}
-                    onChange={e => setFormData({...formData, doctorId:e.target.value})} className={inp} /></div>
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              <div>
+                <label className={lbl}>Patient ID / Number</label>
+                <input
+                  type="number"
+                  required
+                  placeholder="e.g. 1"
+                  value={formData.patientId}
+                  onChange={e => setFormData({ ...formData, patientId: e.target.value })}
+                  className={inp}
+                />
               </div>
-              <div><label className={lbl}>Date & Time *</label>
-                <input type="datetime-local" required value={formData.appointmentDate}
-                  onChange={e => setFormData({...formData, appointmentDate:e.target.value})} className={inp} /></div>
-              <div><label className={lbl}>Reason for Visit *</label>
-                <textarea required value={formData.reason} rows={3}
-                  onChange={e => setFormData({...formData, reason:e.target.value})} className={inp}
-                  placeholder="Describe the reason for the appointment..." /></div>
-              <div><label className={lbl}>Additional Notes</label>
-                <textarea value={formData.notes} rows={2}
-                  onChange={e => setFormData({...formData, notes:e.target.value})} className={inp} /></div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50">Cancel</button>
-                <button type="submit"
-                  className="px-5 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700">Book Appointment</button>
+              <div>
+                <label className={lbl}>Doctor ID</label>
+                <input
+                  type="number"
+                  required
+                  placeholder="e.g. 2"
+                  value={formData.doctorId}
+                  onChange={e => setFormData({ ...formData, doctorId: e.target.value })}
+                  className={inp}
+                />
+              </div>
+              <div>
+                <label className={lbl}>Appointment Date & Time</label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={formData.appointmentDate}
+                  onChange={e => setFormData({ ...formData, appointmentDate: e.target.value })}
+                  className={inp}
+                />
+              </div>
+              <div>
+                <label className={lbl}>Clinical Reason</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Follow-up consultation, HTN review"
+                  value={formData.reason}
+                  onChange={e => setFormData({ ...formData, reason: e.target.value })}
+                  className={inp}
+                />
+              </div>
+              <div>
+                <label className={lbl}>Internal Notes</label>
+                <textarea
+                  rows={2}
+                  placeholder="Optional referral details or special accommodations"
+                  value={formData.notes}
+                  onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                  className={inp}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-navy-800">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-navy-800 rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={createAppointment.isPending}
+                  className="px-5 py-2 text-xs font-bold text-white bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 rounded-xl shadow-md transition disabled:opacity-50 cursor-pointer"
+                >
+                  {createAppointment.isPending ? 'Confirming...' : 'Schedule Appointment'}
+                </button>
               </div>
             </form>
           </div>
@@ -288,33 +478,52 @@ const AppointmentsPage: React.FC = () => {
 
       {/* Reschedule Modal */}
       {showRescheduleModal && selectedAppt && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Reschedule Appointment</h2>
-              <button onClick={() => setShowRescheduleModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700 rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-navy-800">
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                <Clock className="w-5 h-5 text-cyan-500" /> Reschedule Appointment
+              </h3>
+              <button onClick={() => setShowRescheduleModal(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-navy-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <form onSubmit={handleReschedule} className="p-6 space-y-4">
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-sm">
-                <p className="font-medium text-blue-800 dark:text-blue-300">
-                  {selectedAppt.patient_name || `Patient #${selectedAppt.patient_id}`}
-                </p>
-                <p className="text-blue-600 dark:text-blue-400 text-xs mt-0.5">
-                  Current: {new Date(selectedAppt.appointment_date).toLocaleString()}
-                </p>
+            <form onSubmit={handleReschedule} className="space-y-3.5">
+              <div>
+                <label className={lbl}>New Date & Time</label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={rescheduleData.newDate}
+                  onChange={e => setRescheduleData({ ...rescheduleData, newDate: e.target.value })}
+                  className={inp}
+                />
               </div>
-              <div><label className={lbl}>New Date & Time *</label>
-                <input type="datetime-local" required value={rescheduleData.newDate}
-                  onChange={e => setRescheduleData({...rescheduleData, newDate:e.target.value})} className={inp} /></div>
-              <div><label className={lbl}>Reason for Rescheduling</label>
-                <input value={rescheduleData.reason}
-                  onChange={e => setRescheduleData({...rescheduleData, reason:e.target.value})} className={inp}
-                  placeholder="Optional reason..." /></div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowRescheduleModal(false)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50">Cancel</button>
-                <button type="submit"
-                  className="px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700">Reschedule</button>
+              <div>
+                <label className={lbl}>Reason for Change</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Patient requested, Doctor in surgery"
+                  value={rescheduleData.reason}
+                  onChange={e => setRescheduleData({ ...rescheduleData, reason: e.target.value })}
+                  className={inp}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-navy-800">
+                <button
+                  type="button"
+                  onClick={() => setShowRescheduleModal(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-navy-800 rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={rescheduleAppointment.isPending}
+                  className="px-5 py-2 text-xs font-bold text-white bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 rounded-xl shadow-md transition disabled:opacity-50 cursor-pointer"
+                >
+                  {rescheduleAppointment.isPending ? 'Updating...' : 'Save New Time'}
+                </button>
               </div>
             </form>
           </div>

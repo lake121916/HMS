@@ -10,6 +10,7 @@ import api from '../services/api';
 import { FlaskConical, RefreshCw, CheckCircle2, Search, AlertCircle, Printer, QrCode } from 'lucide-react';
 import WristbandScannerModal from '../components/WristbandScannerModal';
 import PatientIdentityBanner from '../components/PatientIdentityBanner';
+import { DashboardHeader, StatisticCard, WorkflowTabs } from '../components/common/PremiumUI';
 
 interface LabTest {
   id: number;
@@ -137,29 +138,61 @@ const LabTechDashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <span className="inline-flex items-center rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-700 uppercase tracking-wider">
-            Laboratory
-          </span>
-          <h1 className="mt-1 sm:mt-2 text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Lab Technician Dashboard</h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">Process lab orders and record results</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setShowScannerModal(true)}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs sm:text-sm shadow-sm transition active:scale-95"
-          >
-            <QrCode className="h-4 w-4" />
-            <span>Scan QR</span>
-          </button>
-          <button onClick={fetchTests} disabled={loading}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition text-xs sm:text-sm text-slate-600">
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-        </div>
+      {/* ── Premium Lab Dashboard Header ─────────────────────────── */}
+      <DashboardHeader
+        title="Clinical Laboratory & Diagnostic Hub"
+        amharicTitle="የላብራቶሪ የሥራ ማዕከል"
+        subtitle="Specimen intake, diagnostic test processing, abnormal value alerts, and results delivery"
+        badge="Clinical Pathology"
+        icon={FlaskConical}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowScannerModal(true)}
+              className="h-9 px-3.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/25 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <QrCode className="h-4 w-4" />
+              <span>Scan Specimen / Wristband</span>
+            </button>
+            <button
+              onClick={fetchTests}
+              disabled={loading}
+              className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-1.5 transition cursor-pointer"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          </div>
+        }
+      />
+
+      {/* ── Lab Telemetry Stat Cards ─────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+        <StatisticCard
+          title="Pending Analysis"
+          amharicTitle="የሚጠበቁ"
+          value={tests.filter(t => t.status === 'pending').length}
+          icon={FlaskConical}
+          variant="amber"
+          subtitle="Orders awaiting processing"
+        />
+        <StatisticCard
+          title="In Progress"
+          amharicTitle="በመሰራት ላይ"
+          value={tests.filter(t => t.status === 'in_progress').length}
+          icon={RefreshCw}
+          variant="blue"
+          subtitle="Active bench tests"
+        />
+        <StatisticCard
+          title="Completed & Verified"
+          amharicTitle="የተጠናቀቁ"
+          value={tests.filter(t => t.status === 'completed').length}
+          icon={CheckCircle2}
+          variant="teal"
+          subtitle="Dispatched to physician chart"
+        />
       </div>
 
       {/* Two-Identifier Patient Identity Banner */}
@@ -183,33 +216,28 @@ const LabTechDashboard: React.FC = () => {
         />
       )}
 
-      <div className="flex gap-3 sm:gap-4 items-center flex-wrap">
-        <div className="flex gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 overflow-x-auto max-w-full">
-          {(['pending', 'in_progress', 'completed', 'all'] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition capitalize whitespace-nowrap
-                ${filter === f ? 'bg-white dark:bg-slate-700 text-cyan-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-              {f.replace('_', ' ')}
-            </button>
-          ))}
-        </div>
-        <div className="relative w-full sm:w-auto">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search tests or patients..."
-            className="w-full sm:w-64 pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-cyan-300" />
-        </div>
-        <div className="w-full sm:w-auto sm:ml-auto flex justify-around sm:justify-end gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
-          {[
-            { label: 'Pending', count: tests.filter(t => t.status === 'pending').length, color: 'text-amber-600' },
-            { label: 'In Progress', count: tests.filter(t => t.status === 'in_progress').length, color: 'text-blue-600' },
-            { label: 'Completed', count: tests.filter(t => t.status === 'completed').length, color: 'text-emerald-600' },
-          ].map(s => (
-            <div key={s.label} className="text-center">
-              <div className={`text-xl font-bold ${s.color}`}>{s.count}</div>
-              <div className="text-xs text-slate-500">{s.label}</div>
-            </div>
-          ))}
+      {/* Filters & Search Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+        <WorkflowTabs
+          tabs={[
+            { id: 'pending', label: 'Pending Tests', count: tests.filter(t => t.status === 'pending').length },
+            { id: 'in_progress', label: 'In Progress', count: tests.filter(t => t.status === 'in_progress').length },
+            { id: 'completed', label: 'Completed', count: tests.filter(t => t.status === 'completed').length },
+            { id: 'all', label: 'All Orders', count: tests.length }
+          ]}
+          activeTab={filter}
+          onChange={f => setFilter(f as any)}
+          className="flex-1"
+        />
+
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search test name or patient..."
+            className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 shadow-2xs"
+          />
         </div>
       </div>
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Plus, Search, X, LogOut, Printer } from 'lucide-react';
+import { Plus, Search, X, LogOut, Bed, Users, CheckCircle2, ArrowRightLeft, RefreshCw } from 'lucide-react';
 import RoleGuard from '../components/RoleGuard';
+import { DashboardHeader, StatisticCard } from '../components/common/PremiumUI';
 
 interface Admission {
   id: number;
@@ -21,11 +22,14 @@ interface Admission {
   total_charges: number;
 }
 
-const statusColors: Record<string, string> = {
-  admitted: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  discharged: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  transferred: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+const statusConfig: Record<string, { bg: string; text: string; border: string }> = {
+  admitted:    { bg: 'bg-cyan-500/10 dark:bg-cyan-500/20', text: 'text-cyan-600 dark:text-cyan-400', border: 'border-cyan-500/30' },
+  discharged:  { bg: 'bg-emerald-500/10 dark:bg-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
+  transferred: { bg: 'bg-amber-500/10 dark:bg-amber-500/20', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30' },
 };
+
+const inp = 'w-full px-4 py-2.5 bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700/80 rounded-xl text-sm focus:ring-2 focus:ring-cyan-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none transition';
+const lbl = 'block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5';
 
 const AdmissionsPage: React.FC = () => {
   const [admissions, setAdmissions] = useState<Admission[]>([]);
@@ -83,176 +87,377 @@ const AdmissionsPage: React.FC = () => {
     a.ward?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const totalAdmitted = admissions.filter(a => a.status === 'admitted').length;
+  const totalDischarged = admissions.filter(a => a.status === 'discharged').length;
+  const totalTransferred = admissions.filter(a => a.status === 'transferred').length;
+
   return (
     <RoleGuard allowedRoles={['super_admin', 'admin', 'hospital_manager', 'doctor', 'nurse', 'receptionist']}>
       <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admissions</h1>
-          <p className="mt-1 text-gray-600 dark:text-gray-400">Manage patient admissions and bed assignments</p>
-        </div>
-        <button onClick={() => { setFormData({ patient_id: '', bed_id: '', admitting_doctor_id: '', diagnosis: '', treatment_plan: '' }); setShowModal(true); }}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-          <Plus className="w-4 h-4 mr-2" /> Admit Patient
-        </button>
-      </div>
+        <DashboardHeader
+          title="Inpatient Admissions & Ward Management"
+          amharicTitle="የተኝተው ታካሚዎች ቅበላ እና አልጋ አመዳደብ"
+          badge="Inpatient Services"
+          icon={Bed}
+          actions={
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchAdmissions}
+                disabled={loading}
+                className="p-2.5 rounded-xl border border-slate-200 dark:border-navy-700/80 bg-white dark:bg-navy-900 text-slate-600 dark:text-slate-300 hover:text-cyan-500 hover:border-cyan-500/40 transition disabled:opacity-50 cursor-pointer"
+                title="Refresh Admissions"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
+              </button>
+              <button
+                onClick={() => { setFormData({ patient_id: '', bed_id: '', admitting_doctor_id: '', diagnosis: '', treatment_plan: '' }); setShowModal(true); }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-teal-500/20 active:scale-95 transition cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Admit Patient</span>
+              </button>
+            </div>
+          }
+        />
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input type="text" placeholder="Search by patient or ward..."
-            value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500" />
+        {/* Metric Telemetry Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <StatisticCard
+            title="Total Admissions"
+            value={admissions.length}
+            subtitle="All inpatient records"
+            icon={Users}
+            variant="cyan"
+          />
+          <StatisticCard
+            title="Currently Admitted"
+            value={totalAdmitted}
+            subtitle="Occupying hospital beds"
+            icon={Bed}
+            variant="teal"
+          />
+          <StatisticCard
+            title="Discharged"
+            value={totalDischarged}
+            subtitle="Completed hospital care"
+            icon={CheckCircle2}
+            variant="blue"
+          />
+          <StatisticCard
+            title="Transferred"
+            value={totalTransferred}
+            subtitle="Referral or ward shift"
+            icon={ArrowRightLeft}
+            variant="amber"
+          />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
-          <option value="">All</option>
-          <option value="admitted">Admitted</option>
-          <option value="discharged">Discharged</option>
-          <option value="transferred">Transferred</option>
-        </select>
-      </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                {['Patient', 'Doctor', 'Bed / Ward', 'Admitted', 'Diagnosis', 'Status', 'Actions'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {loading ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No admissions found</td></tr>
-              ) : filtered.map(a => (
-                <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
-                  <td className="px-4 py-3">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">{a.patient_name}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{a.patient_phone}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="text-sm text-gray-900 dark:text-white">{a.doctor_name || '—'}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{a.specialization}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">{a.bed_number ? `Bed ${a.bed_number}` : '—'}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{a.ward} {a.bed_type && `(${a.bed_type})`}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">{new Date(a.admission_date).toLocaleDateString()}</div>
-                    {a.discharge_date && <div className="text-xs text-green-600 dark:text-green-400">Discharged: {new Date(a.discharge_date).toLocaleDateString()}</div>}
-                  </td>
-                  <td className="px-4 py-3 max-w-[180px]">
-                    <div className="text-sm text-gray-600 dark:text-gray-400 truncate" title={a.diagnosis}>{a.diagnosis || '—'}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full capitalize ${statusColors[a.status] || 'bg-gray-100 text-gray-800'}`}>{a.status}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {a.status === 'admitted' && (
-                        <button onClick={() => { setSelectedAdmission(a); setDischargeData({ discharge_summary: '', total_charges: String(a.total_charges || '') }); setShowDischargeModal(true); }}
-                          title="Discharge" className="flex items-center text-xs text-red-600 hover:text-red-800 dark:text-red-400 font-medium">
-                          <LogOut className="w-4 h-4 mr-1" /> Discharge
-                        </button>
-                      )}
-                      <button
-                        onClick={() => window.open(`/api/documents/discharge/${a.id}/pdf`, '_blank')}
-                        title="Print Discharge Summary PDF"
-                        className="flex items-center text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800"
-                      >
-                        <Printer className="w-3.5 h-3.5 mr-1" /> Summary PDF
-                      </button>
+        {/* Search & Filter Toolbar */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by patient name, ward, or room number..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700/80 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-500 outline-none transition"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            className="px-4 py-2.5 bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700/80 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-cyan-500 outline-none transition cursor-pointer"
+          >
+            <option value="">All Statuses</option>
+            <option value="admitted">Admitted</option>
+            <option value="discharged">Discharged</option>
+            <option value="transferred">Transferred</option>
+          </select>
+        </div>
+
+        {/* Mobile Cards (< sm) */}
+        <div className="sm:hidden space-y-3">
+          {loading ? (
+            <div className="p-8 text-center text-slate-400">
+              <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin text-cyan-500" />
+              Loading admissions...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 p-8 text-center text-slate-400">
+              <Bed className="w-10 h-10 mx-auto mb-2 opacity-30 text-cyan-500" />
+              No admissions found
+            </div>
+          ) : (
+            filtered.map(a => {
+              const conf = statusConfig[a.status] || statusConfig.admitted;
+              return (
+                <div
+                  key={a.id}
+                  className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 p-4 shadow-xs space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-black text-sm flex items-center justify-center shrink-0">
+                        {a.patient_name?.[0] || 'P'}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                          {a.patient_name}
+                        </h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {a.patient_phone || 'No phone recorded'}
+                        </p>
+                      </div>
                     </div>
-                  </td>
+                    <span className={`inline-flex items-center px-2.5 py-1 text-[11px] font-bold rounded-full border capitalize ${conf.bg} ${conf.text} ${conf.border}`}>
+                      {a.status}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-50 dark:bg-navy-950/60 rounded-xl p-3 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                      <span className="text-slate-400">Ward & Bed:</span>
+                      <span className="font-semibold text-cyan-600 dark:text-cyan-400">{a.ward} {a.bed_number ? `· Bed ${a.bed_number}` : ''}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                      <span className="text-slate-400">Attending Doctor:</span>
+                      <span className="font-semibold">{a.doctor_name || '—'}</span>
+                    </div>
+                    {a.diagnosis && (
+                      <div className="pt-1 border-t border-slate-200/50 dark:border-navy-800 text-slate-600 dark:text-slate-400">
+                        Diagnosis: <span className="font-medium text-slate-800 dark:text-slate-200">{a.diagnosis}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {a.status === 'admitted' && (
+                    <button
+                      onClick={() => { setSelectedAdmission(a); setDischargeData({ discharge_summary: '', total_charges: '' }); setShowDischargeModal(true); }}
+                      className="w-full py-2.5 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-xl border border-rose-200 dark:border-rose-900 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Discharge Patient</span>
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop Data Table (>= sm) */}
+        <div className="hidden sm:block bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 overflow-hidden shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 dark:bg-navy-950/60 text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold border-b border-slate-100 dark:border-navy-800">
+                <tr>
+                  {['Patient', 'Doctor', 'Bed / Ward', 'Admitted', 'Diagnosis', 'Status', 'Actions'].map(h => (
+                    <th key={h} className="px-5 py-3.5">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Admit Patient Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Admit Patient</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Patient ID *</label>
-                  <input type="number" required value={formData.patient_id} onChange={e => setFormData({ ...formData, patient_id: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bed ID</label>
-                  <input type="number" value={formData.bed_id} onChange={e => setFormData({ ...formData, bed_id: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500" placeholder="Optional" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admitting Doctor ID</label>
-                <input type="number" value={formData.admitting_doctor_id} onChange={e => setFormData({ ...formData, admitting_doctor_id: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500" placeholder="Optional" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Diagnosis</label>
-                <textarea value={formData.diagnosis} onChange={e => setFormData({ ...formData, diagnosis: e.target.value })} rows={2}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Treatment Plan</label>
-                <textarea value={formData.treatment_plan} onChange={e => setFormData({ ...formData, treatment_plan: e.target.value })} rows={2}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Admit Patient</button>
-              </div>
-            </form>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-navy-800/80">
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-12 text-center text-slate-400">
+                      <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin text-cyan-500 opacity-60" />
+                      Loading admissions...
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-12 text-center text-slate-400">
+                      <Bed className="w-8 h-8 mx-auto mb-2 opacity-30 text-cyan-500" />
+                      No admissions found
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map(a => {
+                    const conf = statusConfig[a.status] || statusConfig.admitted;
+                    return (
+                      <tr key={a.id} className="hover:bg-slate-50/70 dark:hover:bg-navy-800/40 transition-colors">
+                        <td className="px-5 py-4">
+                          <div className="text-sm font-bold text-slate-900 dark:text-white">{a.patient_name}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400">{a.patient_phone}</div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">{a.doctor_name || '—'}</div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400">{a.specialization}</div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">{a.ward}</span>
+                          {a.bed_number && <span className="text-xs text-slate-500 dark:text-slate-400"> · Bed {a.bed_number}</span>}
+                        </td>
+                        <td className="px-5 py-4 text-xs text-slate-600 dark:text-slate-400">
+                          {new Date(a.admission_date).toLocaleDateString()}
+                        </td>
+                        <td className="px-5 py-4 text-xs text-slate-600 dark:text-slate-400 max-w-[160px] truncate" title={a.diagnosis}>
+                          {a.diagnosis || '—'}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-full border capitalize ${conf.bg} ${conf.text} ${conf.border}`}>
+                            {a.status}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          {a.status === 'admitted' && (
+                            <button
+                              onClick={() => { setSelectedAdmission(a); setDischargeData({ discharge_summary: '', total_charges: '' }); setShowDischargeModal(true); }}
+                              className="text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 px-2.5 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition flex items-center gap-1 cursor-pointer"
+                            >
+                              <LogOut className="w-3.5 h-3.5" /> Discharge
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-      )}
 
-      {/* Discharge Modal */}
-      {showDischargeModal && selectedAdmission && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Discharge Patient</h2>
-              <button onClick={() => setShowDischargeModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
+        {/* Admission Modal */}
+        {showModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+            <div className="w-full max-w-lg bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700 rounded-2xl shadow-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-navy-800">
+                <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                  <Bed className="w-5 h-5 text-cyan-500" /> Admit Patient to Ward
+                </h3>
+                <button onClick={() => setShowModal(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-navy-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-3.5">
+                <div>
+                  <label className={lbl}>Patient ID / Number</label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="e.g. 1"
+                    value={formData.patient_id}
+                    onChange={e => setFormData({ ...formData, patient_id: e.target.value })}
+                    className={inp}
+                  />
+                </div>
+                <div>
+                  <label className={lbl}>Bed ID (Optional)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 5"
+                    value={formData.bed_id}
+                    onChange={e => setFormData({ ...formData, bed_id: e.target.value })}
+                    className={inp}
+                  />
+                </div>
+                <div>
+                  <label className={lbl}>Admitting Doctor ID</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 2"
+                    value={formData.admitting_doctor_id}
+                    onChange={e => setFormData({ ...formData, admitting_doctor_id: e.target.value })}
+                    className={inp}
+                  />
+                </div>
+                <div>
+                  <label className={lbl}>Initial Clinical Diagnosis</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Acute appendicitis, Pneumonia"
+                    value={formData.diagnosis}
+                    onChange={e => setFormData({ ...formData, diagnosis: e.target.value })}
+                    className={inp}
+                  />
+                </div>
+                <div>
+                  <label className={lbl}>Treatment Plan / Care Orders</label>
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. IV fluids, pre-op antibiotics, surgical consult"
+                    value={formData.treatment_plan}
+                    onChange={e => setFormData({ ...formData, treatment_plan: e.target.value })}
+                    className={inp}
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-navy-800">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-navy-800 rounded-xl transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 text-xs font-bold text-white bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 rounded-xl shadow-md transition cursor-pointer"
+                  >
+                    Confirm Admission
+                  </button>
+                </div>
+              </form>
             </div>
-            <form onSubmit={handleDischarge} className="p-6 space-y-4">
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-sm">
-                <p className="font-medium text-blue-800 dark:text-blue-300">{selectedAdmission.patient_name}</p>
-                <p className="text-blue-600 dark:text-blue-400">Admitted: {new Date(selectedAdmission.admission_date).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Discharge Summary</label>
-                <textarea value={dischargeData.discharge_summary} onChange={e => setDischargeData({ ...dischargeData, discharge_summary: e.target.value })} rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500"
-                  placeholder="Describe the patient's discharge condition and instructions..." />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Charges ($)</label>
-                <input type="number" step="0.01" value={dischargeData.total_charges} onChange={e => setDischargeData({ ...dischargeData, total_charges: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowDischargeModal(false)} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Confirm Discharge</button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Discharge Modal */}
+        {showDischargeModal && selectedAdmission && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+            <div className="w-full max-w-md bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700 rounded-2xl shadow-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-navy-800">
+                <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                  <LogOut className="w-5 h-5 text-rose-500" /> Patient Discharge Summary
+                </h3>
+                <button onClick={() => setShowDischargeModal(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-navy-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleDischarge} className="space-y-3.5">
+                <div>
+                  <label className={lbl}>Discharge Clinical Summary</label>
+                  <textarea
+                    rows={3}
+                    required
+                    placeholder="Patient recovered, vital signs stable, wound healing normally..."
+                    value={dischargeData.discharge_summary}
+                    onChange={e => setDischargeData({ ...dischargeData, discharge_summary: e.target.value })}
+                    className={inp}
+                  />
+                </div>
+                <div>
+                  <label className={lbl}>Total Inpatient Hospital Charges (ETB)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="e.g. 2400.00"
+                    value={dischargeData.total_charges}
+                    onChange={e => setDischargeData({ ...dischargeData, total_charges: e.target.value })}
+                    className={inp}
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-navy-800">
+                  <button
+                    type="button"
+                    onClick={() => setShowDischargeModal(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-navy-800 rounded-xl transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 rounded-xl shadow-md transition cursor-pointer"
+                  >
+                    Authorize Discharge
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </RoleGuard>
   );

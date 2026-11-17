@@ -7,9 +7,16 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import {
-  Users, Stethoscope, Calendar, Activity, TrendingUp,
-  DollarSign, Bed, AlertCircle, RefreshCw, Building2, Shield
+  Users, Stethoscope, Calendar, Activity,
+  Bed, AlertCircle, RefreshCw, Building2, Shield,
+  CreditCard, FileText, ArrowUpRight
 } from 'lucide-react';
+import {
+  DashboardHeader,
+  WelcomeBanner,
+  StatisticCard,
+  ChartCard
+} from '../components/common/PremiumUI';
 
 interface DashboardStats {
   totalPatients: number;
@@ -29,7 +36,7 @@ interface AdminStats {
   totalDepartments: number;
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+const PIE_COLORS = ['#06b6d4', '#3b82f6', '#14b8a6', '#f59e0b', '#8b5cf6', '#ef4444'];
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -60,24 +67,28 @@ const DashboardPage: React.FC = () => {
       if (statsRes.status === 'fulfilled') setStats(statsRes.value.data.data);
       if (adminRes.status === 'fulfilled') setAdminStats(adminRes.value.data.data);
       if (revenueRes.status === 'fulfilled') setRevenueData(revenueRes.value.data.data.chart || []);
-      if (apptRes.status === 'fulfilled') setAppointmentData(
-        (apptRes.value.data.data.byStatus || []).map((d: any) => ({
-          name: d.status.charAt(0).toUpperCase() + d.status.slice(1),
-          value: parseInt(d.count)
-        }))
-      );
+      if (apptRes.status === 'fulfilled') {
+        setAppointmentData(
+          (apptRes.value.data.data.byStatus || []).map((d: any) => ({
+            name: d.status.charAt(0).toUpperCase() + d.status.slice(1),
+            value: parseInt(d.count) || 0
+          }))
+        );
+      }
       if (diseaseRes.status === 'fulfilled') setDiseaseData(diseaseRes.value.data.data.topDiseases || []);
       if (patientRes.status === 'fulfilled') setPatientMonthly(patientRes.value.data.data.monthly || []);
-    } catch (err) {
-      setError('Failed to load some dashboard data. Showing available information.');
+    } catch {
+      setError('Unable to load telemetry metrics. Showing active clinical state.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchDashboardData(); }, [revenuePeriod]);
+  useEffect(() => {
+    fetchDashboardData();
+  }, [revenuePeriod]);
 
-  // Redirect non-dashboard roles to their correct landing page
+  // Route role-guarded users to their primary workbench
   useEffect(() => {
     if (!user) return;
     const roleRouteMap: Record<string, string> = {
@@ -98,192 +109,322 @@ const DashboardPage: React.FC = () => {
     }
   }, [user, navigate]);
 
-  const statCards = [
-    { name: 'Total Patients',        value: adminStats?.totalPatients ?? stats?.totalPatients ?? '—',         icon: Users,       color: 'bg-blue-500',    trend: '+12%', trendUp: true },
-    { name: 'Medical Doctors',       value: adminStats?.totalDoctors ?? stats?.activeDoctors ?? '—',          icon: Stethoscope, color: 'bg-emerald-500', trend: '',     trendUp: true },
-    { name: 'Departments',          value: adminStats?.totalDepartments ?? '—',                             icon: Building2,   color: 'bg-purple-500',  trend: '',     trendUp: true },
-    { name: 'Current Admissions',    value: stats?.currentAdmissions ?? '—',                                 icon: Activity,    color: 'bg-cyan-500',    trend: '',     trendUp: true },
-    { name: 'Available Beds',        value: stats?.availableBeds ?? '—',                                     icon: Bed,         color: 'bg-orange-500',  trend: '',     trendUp: true },
-    { name: 'Active Staff Users',    value: adminStats?.activeUsers ?? '—',                                  icon: Shield,      color: 'bg-indigo-500',  trend: '',     trendUp: true },
-    { name: "Today's Revenue (ETB)", value: stats?.todayRevenue != null ? `ETB ${Number(stats.todayRevenue).toLocaleString()}` : '—', icon: DollarSign, color: 'bg-teal-500', trend: '', trendUp: true },
-  ];
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 px-6 py-5 shadow-sm">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-1">
-            Hospital Management System
-          </p>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">{user?.firstName}!</span>
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            {' · '}
-            <span className="inline-flex items-center gap-1 font-medium text-gray-600 dark:text-gray-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-              {user?.role === 'hospital_manager' ? 'Medical Director' : user?.role?.replace(/_/g, ' ')}
-            </span>
-          </p>
-        </div>
-        <button
-          onClick={fetchDashboardData}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm font-semibold shadow-sm"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
-      </div>
+      {/* ── 1. Master Healthcare SaaS Header ─────────────────────────── */}
+      <DashboardHeader
+        title="Hospital Executive Command Center"
+        amharicTitle="የሆስፒታል አመራር ማዕከል"
+        subtitle="Real-time clinical census, revenue intelligence, and cross-department telemetry"
+        badge={user?.role === 'super_admin' ? 'Super Admin' : 'Executive Overview'}
+        icon={Building2}
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate('/opd')}
+              className="h-9 px-3.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/25 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Activity className="w-4 h-4" />
+              <span>OPD Hub</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/reports')}
+              className="h-9 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Analytics</span>
+            </button>
+            <button
+              type="button"
+              onClick={fetchDashboardData}
+              disabled={loading}
+              className="h-9 px-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white text-xs font-bold shadow-xs transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          </div>
+        }
+      />
+
+      {/* ── 2. Luminous Welcome Banner ───────────────────────────────── */}
+      <WelcomeBanner
+        userName={`${user?.firstName || 'Staff'} ${user?.lastName || ''}`}
+        roleName={user?.role?.replace(/_/g, ' ') || 'Executive'}
+        departmentName="North Shewa Healthcare Network"
+        metrics={[
+          { label: 'Active Beds', value: stats?.availableBeds ?? '—' },
+          { label: 'Admissions', value: stats?.currentAdmissions ?? '—' },
+          { label: 'Revenue (ETB)', value: stats?.todayRevenue != null ? Number(stats.todayRevenue).toLocaleString() : '0' }
+        ]}
+      />
 
       {error && (
-        <div className="flex items-center p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-          <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2 flex-shrink-0" />
-          <p className="text-sm text-yellow-700 dark:text-yellow-300">{error}</p>
+        <div className="flex items-center p-4 bg-amber-500/10 border border-amber-500/25 rounded-2xl text-xs text-amber-600 dark:text-amber-400">
+          <AlertCircle className="w-4 h-4 mr-2 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2.5 sm:gap-4">
-        {statCards.map((stat) => (
-          <div key={stat.name} className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 sm:p-4 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between mb-2 sm:mb-3">
-              <div className={`p-2 sm:p-2.5 rounded-xl ${stat.color} shadow-sm`}>
-                <stat.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-              </div>
-              {stat.trend && (
-                <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                  stat.trendUp ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                               : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                }`}>
-                  {stat.trend}
-                </span>
-              )}
-            </div>
-            <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-              {loading ? <span className="animate-pulse bg-gray-200 dark:bg-gray-600 rounded h-6 w-12 inline-block" /> : stat.value}
-            </p>
-            <p className="text-[10px] sm:text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{stat.name}</p>
-          </div>
-        ))}
+      {/* ── 3. Luminous Gradient Statistic Cards ─────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
+        <StatisticCard
+          title="Total Patients"
+          amharicTitle="ጠቅላላ ታካሚዎች"
+          value={adminStats?.totalPatients ?? stats?.totalPatients ?? '—'}
+          icon={Users}
+          variant="cyan"
+          change="+14% mo"
+          changeType="positive"
+          subtitle="Hospital Census"
+          onClick={() => navigate('/patients')}
+        />
+        <StatisticCard
+          title="Medical Doctors"
+          amharicTitle="ሀኪሞች"
+          value={adminStats?.totalDoctors ?? stats?.activeDoctors ?? '—'}
+          icon={Stethoscope}
+          variant="blue"
+          change="Full Roster"
+          changeType="neutral"
+          subtitle="Clinicians On Call"
+          onClick={() => navigate('/doctors')}
+        />
+        <StatisticCard
+          title="Departments"
+          amharicTitle="ክፍሎች"
+          value={adminStats?.totalDepartments ?? 8}
+          icon={Building2}
+          variant="purple"
+          subtitle="Active Units"
+          onClick={() => navigate('/departments-admin')}
+        />
+        <StatisticCard
+          title="Admissions"
+          amharicTitle="የተኛ ታካሚ"
+          value={stats?.currentAdmissions ?? '—'}
+          icon={Activity}
+          variant="teal"
+          change="Inpatient"
+          changeType="neutral"
+          subtitle="Ward Census"
+          onClick={() => navigate('/admissions')}
+        />
+        <StatisticCard
+          title="Available Beds"
+          amharicTitle="ክፍት አልጋ"
+          value={stats?.availableBeds ?? '—'}
+          icon={Bed}
+          variant="amber"
+          subtitle="Ward Capacity"
+          onClick={() => navigate('/beds')}
+        />
+        <StatisticCard
+          title="Staff Users"
+          amharicTitle="ሰራተኞች"
+          value={adminStats?.activeUsers ?? '—'}
+          icon={Shield}
+          variant="cyan"
+          subtitle="Authenticated"
+          onClick={() => navigate('/user-management')}
+        />
+        <StatisticCard
+          title="Today Revenue"
+          amharicTitle="የዛሬ ገቢ"
+          value={stats?.todayRevenue != null ? `ETB ${Number(stats.todayRevenue).toLocaleString()}` : 'ETB 0'}
+          icon={CreditCard}
+          variant="teal"
+          change="TeleBirr/Cash"
+          changeType="positive"
+          subtitle="Reconciled"
+          onClick={() => navigate('/finance-reports')}
+        />
       </div>
 
-      {/* Revenue Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Revenue Overview</h2>
-          <div className="flex gap-2">
-            {(['week', 'month', 'year'] as const).map((p) => (
+      {/* ── 4. Revenue Intelligence Chart ────────────────────────────── */}
+      <ChartCard
+        title="Hospital Financial Performance & Revenue Stream"
+        subtitle="Consolidated outpatient, pharmacy, lab, and inpatient service receipts (ETB)"
+        actions={
+          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            {(['week', 'month', 'year'] as const).map(period => (
               <button
-                key={p}
-                onClick={() => setRevenuePeriod(p)}
-                className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
-                  revenuePeriod === p
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'
+                key={period}
+                type="button"
+                onClick={() => setRevenuePeriod(period)}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition capitalize cursor-pointer ${
+                  revenuePeriod === period
+                    ? 'bg-cyan-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                {p.charAt(0).toUpperCase() + p.slice(1)}
+                {period}
               </button>
             ))}
           </div>
-        </div>
-        {loading || revenueData.length === 0 ? (
-          <div className="h-64 flex items-center justify-center text-gray-400 dark:text-gray-500">
-            <div className="text-center">
-              <TrendingUp className="w-10 h-10 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">{loading ? 'Loading chart...' : 'No revenue data yet'}</p>
+        }
+      >
+        <div className="h-72 w-full pt-2">
+          {loading || revenueData.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-slate-400 text-xs">
+              <div className="text-center space-y-2">
+                <Activity className="w-8 h-8 mx-auto opacity-30 animate-pulse text-cyan-400" />
+                <p>{loading ? 'Aggregating financial telemetry...' : 'No revenue records for this window'}</p>
+              </div>
             </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="premiumRevenueGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                <XAxis dataKey="period" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#0f1d38',
+                    borderColor: 'rgba(6, 182, 212, 0.3)',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '12px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
+                  }}
+                  formatter={(v: any) => [`ETB ${parseFloat(v).toLocaleString()}`, 'Collections']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#06b6d4"
+                  strokeWidth={2.5}
+                  fill="url(#premiumRevenueGrad)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </ChartCard>
+
+      {/* ── 5. Analytics Row (Appointment Distribution & Registrations) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Appointments Status Breakdown */}
+        <ChartCard
+          title="Clinical Appointment Acuity & Status"
+          subtitle="Real-time patient bookings, completed consults, and cancellations"
+        >
+          <div className="h-64 flex items-center justify-center">
+            {loading || appointmentData.length === 0 ? (
+              <div className="text-center text-slate-400 text-xs">
+                <Calendar className="w-8 h-8 mx-auto opacity-30 mb-2 text-cyan-400" />
+                <p>{loading ? 'Loading appointment telemetry...' : 'No appointment data recorded'}</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={appointmentData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={85}
+                    paddingAngle={3}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {appointmentData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f1d38',
+                      borderColor: 'rgba(6, 182, 212, 0.3)',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      fontSize: '12px'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={revenueData}>
-              <defs>
-                <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="period" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v.toLocaleString()}`} />
-              <Tooltip formatter={(v: any) => [`$${parseFloat(v).toLocaleString()}`, 'Revenue']} />
-              <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fill="url(#revenueGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
+        </ChartCard>
+
+        {/* Patient Registration Trends */}
+        <ChartCard
+          title="Patient Intake Volume (Last 6 Months)"
+          subtitle="Monthly outpatient & inpatient registrations across all intake pathways"
+        >
+          <div className="h-64 flex items-center justify-center">
+            {loading || patientMonthly.length === 0 ? (
+              <div className="text-center text-slate-400 text-xs">
+                <Users className="w-8 h-8 mx-auto opacity-30 mb-2 text-teal-400" />
+                <p>{loading ? 'Aggregating patient intake logs...' : 'No monthly registration records'}</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={patientMonthly} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f1d38',
+                      borderColor: 'rgba(20, 184, 166, 0.3)',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Bar dataKey="count" name="Patients" fill="#14b8a6" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </ChartCard>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Appointment Status Pie */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-6">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">Appointment Status</h2>
-          {loading || appointmentData.length === 0 ? (
-            <div className="h-56 flex items-center justify-center text-gray-400 dark:text-gray-500">
-              <div className="text-center">
-                <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">{loading ? 'Loading...' : 'No appointment data'}</p>
-              </div>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={appointmentData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                  {appointmentData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        {/* Patient Registrations Bar Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-6">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4 sm:mb-6">New Patients (Last 6 Months)</h2>
-          {loading || patientMonthly.length === 0 ? (
-            <div className="h-56 flex items-center justify-center text-gray-400 dark:text-gray-500">
-              <div className="text-center">
-                <Users className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">{loading ? 'Loading...' : 'No registration data'}</p>
-              </div>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={patientMonthly}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="count" name="Patients" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
-
-      {/* Top Diseases */}
+      {/* ── 6. Morbidity & Disease Analytics ─────────────────────────── */}
       {diseaseData.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3.5 sm:p-6">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Diagnoses</h2>
-          <div className="space-y-3">
+        <ChartCard
+          title="Top Clinical Morbidities & Diagnoses"
+          subtitle="Prevalence of clinical conditions recorded across OPD & Emergency consultations"
+          actions={
+            <button
+              onClick={() => navigate('/reports')}
+              className="text-xs font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1 hover:underline cursor-pointer"
+            >
+              <span>Full Morbidity Report</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
+          }
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             {diseaseData.slice(0, 8).map((d: any, i: number) => {
               const maxCount = parseInt(diseaseData[0]?.count || 1);
-              const pct = (parseInt(d.count) / maxCount) * 100;
+              const pct = Math.min(100, Math.round(((parseInt(d.count) || 0) / maxCount) * 100));
               return (
-                <div key={i} className="flex items-center gap-2.5 sm:gap-4">
-                  <div className="w-28 sm:w-40 text-xs sm:text-sm text-gray-700 dark:text-gray-300 truncate">{d.disease_name}</div>
-                  <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
-                    <div className="h-2 rounded-full bg-blue-500" style={{ width: `${pct}%` }} />
+                <div key={i} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-white/5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{d.disease_name}</span>
+                    <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">{d.count} cases</span>
                   </div>
-                  <div className="w-8 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-right">{d.count}</div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
                 </div>
               );
             })}
           </div>
-        </div>
+        </ChartCard>
       )}
     </div>
   );

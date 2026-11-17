@@ -8,6 +8,7 @@ import api from '../services/api';
 import PatientQRCode from '../components/PatientQRCode';
 import type { PatientCardData } from '../components/PatientIDCard';
 import WristbandScannerModal from '../components/WristbandScannerModal';
+import { DashboardHeader } from '../components/common/PremiumUI';
 
 
 const inp = 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white';
@@ -134,99 +135,172 @@ const PatientsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Users className="w-6 h-6 text-blue-600" /> Patients
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {can('patients:create') ? 'Register and manage patient records' : 'View patient records'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowScannerModal(true)}
-            className="flex items-center px-4 py-2 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white rounded-xl text-sm font-semibold gap-2 shadow-xs active:scale-95 transition"
-          >
-            <QrCode className="w-4 h-4 text-teal-400" />
-            <span>Scan Patient QR</span>
-          </button>
-          {can('patients:create') && (
-            <button onClick={openAdd}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-semibold gap-2">
-              <Plus className="w-4 h-4" /> Add Patient
+      {/* ── Premium Header ─────────────────────────────────────────── */}
+      <DashboardHeader
+        title="Patient Medical Records Directory"
+        amharicTitle="የታካሚዎች ማህደር"
+        subtitle="Search hospital census, inspect longitudinal medical histories, issue wristbands, and register admissions"
+        badge="Electronic Health Records"
+        icon={Users}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowScannerModal(true)}
+              className="h-9 px-3.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/25 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <QrCode className="w-4 h-4" />
+              <span>Scan Wristband</span>
             </button>
-          )}
-        </div>
-      </div>
+            {can('patients:create') && (
+              <button
+                onClick={openAdd}
+                className="h-9 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-xs transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Register Patient</span>
+              </button>
+            )}
+          </div>
+        }
+      />
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input type="text" placeholder="Search patients by name, email or phone..."
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Search by patient name, MRN, phone number, or email..."
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(1); }}
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500" />
+          className="w-full pl-10 pr-4 py-2.5 border border-slate-200/80 dark:border-slate-800 rounded-xl text-xs sm:text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500 shadow-2xs"
+        />
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      {/* Mobile Card List (< sm) */}
+      <div className="sm:hidden space-y-3">
+        {isLoading ? (
+          <div className="p-8 text-center text-slate-400 text-xs">Loading patient records...</div>
+        ) : patients.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 text-xs bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+            No patients matching query
+          </div>
+        ) : (
+          patients.map(p => (
+            <div key={p.id} className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-extrabold text-xs flex items-center justify-center border border-cyan-500/20 shrink-0">
+                    {p.first_name?.[0]}{p.last_name?.[0]}
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">{p.first_name} {p.last_name}</h3>
+                    <p className="text-[11px] text-slate-500 font-mono">ID #{p.id} • {p.gender || 'N/A'}</p>
+                  </div>
+                </div>
+                {p.blood_type && (
+                  <span className="px-2 py-0.5 text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-full border border-rose-500/25">
+                    Blood {p.blood_type}
+                  </span>
+                )}
+              </div>
+
+              <div className="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl space-y-0.5">
+                <div>📞 Phone: <span className="font-semibold text-slate-800 dark:text-slate-200">{p.phone || 'None'}</span></div>
+                {p.email && <div>✉️ Email: <span>{p.email}</span></div>}
+                {p.date_of_birth && <div>🎂 DOB: <span>{new Date(p.date_of_birth).toLocaleDateString()}</span></div>}
+              </div>
+
+              <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => openView(p)}
+                  className="flex-1 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 font-bold rounded-xl text-xs flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5" /> View Profile
+                </button>
+                {can('patients:edit') && (
+                  <button
+                    type="button"
+                    onClick={() => openEdit(p)}
+                    className="py-1.5 px-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-xs cursor-pointer"
+                  >
+                    Edit
+                  </button>
+                )}
+                {can('patients:delete') && (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(p.id)}
+                    className="py-1.5 px-3 bg-rose-50 dark:bg-rose-950/30 text-rose-600 font-semibold rounded-xl text-xs cursor-pointer"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View (>= sm) */}
+      <div className="hidden sm:block bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200/80 dark:border-slate-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
               <tr>
                 {['Patient', 'Contact', 'DOB', 'Blood Type', 'Gender', 'Actions'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
               {isLoading ? (
                 Array.from({length:5}).map((_,i)=>(
                   <tr key={i}><td colSpan={6} className="px-4 py-3">
-                    <div className="animate-pulse h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4" />
+                    <div className="animate-pulse h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
                   </td></tr>
                 ))
               ) : patients.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">
+                <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-400">
                   <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
                   <p>No patients found</p>
                 </td></tr>
               ) : patients.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                <tr key={p.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xs flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center font-bold text-xs shrink-0 border border-cyan-500/20">
                         {p.first_name?.[0]}{p.last_name?.[0]}
                       </div>
                       <div>
-                        <div className="font-medium text-sm text-gray-900 dark:text-white">{p.first_name} {p.last_name}</div>
-                        <div className="text-xs text-gray-400">{p.email}</div>
+                        <div className="font-bold text-sm text-slate-900 dark:text-white">{p.first_name} {p.last_name}</div>
+                        <div className="text-slate-400 font-mono text-[11px]">ID #{p.id}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{p.phone || '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono">{p.phone || '—'}</td>
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
                     {p.date_of_birth ? new Date(p.date_of_birth).toLocaleDateString() : '—'}
                   </td>
                   <td className="px-4 py-3">
                     {p.blood_type ? (
-                      <span className="px-2 py-0.5 text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full">
+                      <span className="px-2 py-0.5 text-[11px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-full border border-rose-500/20">
                         {p.blood_type}
                       </span>
                     ) : '—'}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 capitalize">{p.gender || '—'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400 capitalize">{p.gender || '—'}</td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1.5">
                       <button onClick={() => openView(p)} title="View Details"
-                        className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors"><Eye className="w-4 h-4" /></button>
+                        className="p-1.5 text-slate-400 hover:text-cyan-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"><Eye className="w-4 h-4" /></button>
                       {can('patients:edit') && (
                         <button onClick={() => openEdit(p)} title="Edit"
-                          className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors"><Edit className="w-4 h-4" /></button>
+                          className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"><Edit className="w-4 h-4" /></button>
                       )}
                       {can('patients:delete') && (
                         <button onClick={() => handleDelete(p.id)} title="Delete"
-                          className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
+                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"><Trash2 className="w-4 h-4" /></button>
                       )}
                     </div>
                   </td>

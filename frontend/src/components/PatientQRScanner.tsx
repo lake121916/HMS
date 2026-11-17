@@ -441,7 +441,7 @@ export const PatientQRScanner: React.FC<PatientQRScannerProps> = ({
             decodedText => {
               if (!scanLockRef.current) void verifyTokenWithBackend(decodedText);
             },
-            () => {}
+            () => { }
           );
           setScanning(true);
           await refreshAvailableCameras(fallbackScanner);
@@ -791,11 +791,10 @@ export const PatientQRScanner: React.FC<PatientQRScannerProps> = ({
                   type="button"
                   onClick={() => void handleToggleTorch()}
                   title={torchOn ? 'Turn Flashlight Off' : 'Turn Flashlight On (Night / Low Light)'}
-                  className={`px-3.5 py-2.5 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 ${
-                    torchOn
-                      ? 'bg-amber-500 text-slate-950 font-black'
-                      : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600'
-                  }`}
+                  className={`px-3.5 py-2.5 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 ${torchOn
+                    ? 'bg-amber-500 text-slate-950 font-black'
+                    : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600'
+                    }`}
                 >
                   {torchOn ? <FlashlightOff className="w-3.5 h-3.5" /> : <Flashlight className="w-3.5 h-3.5 text-amber-500" />}
                   <span>{torchOn ? 'Torch On' : 'Torch'}</span>
