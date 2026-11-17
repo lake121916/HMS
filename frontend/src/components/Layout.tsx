@@ -10,7 +10,6 @@ import api from '../services/api';
 import OfflineStatusBanner from './OfflineStatusBanner';
 import ProfileAvatar from './ProfileAvatar';
 import WristbandScannerModal from './WristbandScannerModal';
-import RoleDemoSwitcher from './RoleDemoSwitcher';
 import CriticalAlertChimeModal from './CriticalAlertChimeModal';
 import { getRolePatientWorkflowUrl, getRoleWorkflowLabel } from '../utils/roleWorkflowRouting';
 import {
@@ -1011,8 +1010,8 @@ const Layout: React.FC = () => {
             })}
           </nav>
 
-          {/* Mobile User Profile & Quick Sign Out Footer in Drawer */}
-          <div className="lg:hidden p-3 border-t border-white/10 bg-black/20 flex-shrink-0">
+          {/* Mobile User Profile & Quick Duty / Sign Out Footer in Drawer */}
+          <div className="lg:hidden p-3 border-t border-white/10 bg-black/20 flex-shrink-0 space-y-2.5">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
                 <ProfileAvatar
@@ -1036,16 +1035,44 @@ const Layout: React.FC = () => {
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Mobile In-Drawer Duty Status Toggle */}
+            {['doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier'].includes(user?.role || '') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSidebarOpen(false);
+                  setDutyModalOpen(true);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                  dutyStatus?.isOnDuty
+                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/60 hover:bg-emerald-900/60'
+                    : 'bg-white/10 text-slate-300 border-white/10 hover:bg-white/15'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${dutyStatus?.isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
+                  <span>
+                    {dutyStatus?.isOnDuty
+                      ? (dutyStatus?.shiftLabel || 'On Duty')
+                      : (language === 'am' ? 'ተረኛ አይደለም' : 'Off Duty')}
+                  </span>
+                </div>
+                <span className="text-[10px] font-medium text-emerald-300 underline">
+                  {language === 'am' ? 'ቀይር' : 'Change'}
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Main content wrapper */}
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'}`}>
-        {/* Top Navigation Bar (Phase 4 & Phase 5) */}
-        <div className="sticky top-0 z-30 flex items-center justify-between h-14 px-2 sm:px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm lg:px-8">
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            {/* Mobile Hamburger Menu Button - Guaranteed Unshrinkable and High Visibility */}
+        {/* Top Navigation Bar */}
+        <div className="sticky top-0 z-30 flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs lg:px-8">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            {/* Mobile Hamburger Menu Button */}
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
@@ -1056,15 +1083,20 @@ const Layout: React.FC = () => {
               <Menu className="w-5 h-5 text-slate-800 dark:text-slate-100" />
             </button>
 
-            {/* Mobile Compact Quick-Search Button (< sm) */}
-            <button
-              type="button"
-              onClick={() => setQuickSearchOpen(true)}
-              className="sm:hidden flex items-center justify-center w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
-              title="Search patient by Name, Phone, or MRN (Ctrl + K)"
-            >
-              <Search className="w-4 h-4" />
-            </button>
+            {/* Hospital Brand Logo & Title */}
+            <Link to="/" className="flex items-center gap-2.5 select-none group shrink-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-xs group-hover:scale-105 transition-transform">
+                AKEH
+              </div>
+              <div className="leading-tight">
+                <span className="block font-black text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight">
+                  {language === 'am' ? 'ዓለም ከተማ ሆስፒታል' : 'Alem Ketema Hospital'}
+                </span>
+                <span className="block text-[10px] text-blue-600 dark:text-blue-400 font-bold capitalize">
+                  {formatRoleName(user?.role)}
+                </span>
+              </div>
+            </Link>
 
             {/* Desktop / Tablet Consolidated Patient Search & Scanner Launcher (>= sm) */}
             <div className="hidden sm:flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 p-0.5 shadow-2xs hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
@@ -1100,13 +1132,23 @@ const Layout: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            {/* Authoritative Duty Status Pill (Phase 4.2) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Mobile Compact Quick-Search Button (< sm) */}
+            <button
+              type="button"
+              onClick={() => setQuickSearchOpen(true)}
+              className="sm:hidden flex items-center justify-center w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
+              title="Search patient by Name, Phone, or MRN (Ctrl + K)"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+
+            {/* Authoritative Duty Status Pill (Phase 4.2) - Visible on tablet/desktop */}
             {['doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier'].includes(user?.role || '') && (
               <button
                 type="button"
                 onClick={() => setDutyModalOpen(true)}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer shrink-0 ${
+                className={`hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer shrink-0 ${
                   dutyStatus?.isOnDuty
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 hover:bg-emerald-100'
                     : 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 hover:bg-slate-200'
@@ -1114,19 +1156,16 @@ const Layout: React.FC = () => {
                 title="Click to view duty details and clock in / out"
               >
                 <span className={`w-2 h-2 rounded-full ${dutyStatus?.isOnDuty ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-                <span className="hidden sm:inline">
+                <span>
                   {dutyStatus?.isOnDuty
                     ? (dutyStatus?.shiftLabel || 'On Duty')
                     : (language === 'am' ? 'ተረኛ አይደለም' : 'Off Duty')}
-                </span>
-                <span className="sm:hidden text-[10px] font-black uppercase">
-                  {dutyStatus?.isOnDuty ? 'DUTY' : 'OFF'}
                 </span>
               </button>
             )}
 
             {/* Staff Full Name & Primary Role Badge (Phase 4.1) */}
-            <div className="hidden md:flex items-center gap-2 pl-2 pr-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+            <div className="hidden lg:flex items-center gap-2 pl-2 pr-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
               <ProfileAvatar
                 userId={user?.id || 0}
                 hasPhoto={!!user?.profilePhotoUpdatedAt}
@@ -1143,9 +1182,6 @@ const Layout: React.FC = () => {
                 </span>
               </div>
             </div>
-
-            {/* 1-Click Role Switcher Demo Mode (Academic Defense) */}
-            <RoleDemoSwitcher />
 
             {/* Language Switcher */}
             <LanguageSwitcher variant="pill" />
@@ -1381,94 +1417,94 @@ const Layout: React.FC = () => {
         </main>
       </div>
 
-      {/* ── Mobile Bottom Navigation Bar (Permanent 1-tap navigation for mobile/phone screens) ── */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-bottom">
-        {/* 1. Left Sidebar Opener */}
-        <button
-          type="button"
-          onClick={() => setSidebarOpen(true)}
-          className="flex flex-col items-center justify-center min-w-[50px] p-1 rounded-xl text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 active:scale-95 transition-all cursor-pointer"
-          title="Open Navigation Menu"
-        >
-          <Menu className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          <span className="text-[10px] font-bold mt-0.5">{language === 'am' ? 'ዝርዝር' : 'Menu'}</span>
-        </button>
-
-        {/* 2. Primary Role Workbench */}
+      {/* ── Mobile Bottom Navigation Bar (Modern Sleek Web Dock) ── */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800/80 px-3 py-1 flex items-center justify-around shadow-xl safe-area-bottom">
+        {/* 1. Primary Role Workbench */}
         <Link
           to={getRoleWorkbenchUrl(user?.role || '')}
-          className={`flex flex-col items-center justify-center min-w-[50px] p-1 rounded-xl transition-all ${
+          className={`flex flex-col items-center justify-center min-w-[54px] py-1 px-1.5 rounded-xl transition-all ${
             location.pathname === getRoleWorkbenchUrl(user?.role || '')
-              ? 'text-blue-600 dark:text-blue-400 font-black'
-              : 'text-slate-600 dark:text-slate-400 hover:text-blue-600'
+              ? 'text-blue-600 dark:text-blue-400 font-extrabold'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
           title="Workbench"
         >
           <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px] font-semibold mt-0.5">{language === 'am' ? 'ሥራ' : 'Workbench'}</span>
+          <span className="text-[10px] tracking-tight mt-0.5">{language === 'am' ? 'ሥራ' : 'Workbench'}</span>
+          {location.pathname === getRoleWorkbenchUrl(user?.role || '') && (
+            <span className="w-1 h-1 rounded-full bg-blue-600 dark:bg-blue-400 mt-0.5" />
+          )}
         </Link>
 
-        {/* 3. Center Action: QR Scanner (Staff) or Appointments */}
+        {/* 2. OPD Command Hub */}
+        <Link
+          to="/opd"
+          className={`flex flex-col items-center justify-center min-w-[54px] py-1 px-1.5 rounded-xl transition-all ${
+            location.pathname === '/opd'
+              ? 'text-blue-600 dark:text-blue-400 font-extrabold'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+          title="OPD Command Center"
+        >
+          <Building2 className="w-5 h-5" />
+          <span className="text-[10px] tracking-tight mt-0.5">OPD</span>
+          {location.pathname === '/opd' && (
+            <span className="w-1 h-1 rounded-full bg-blue-600 dark:bg-blue-400 mt-0.5" />
+          )}
+        </Link>
+
+        {/* 3. Center Action: Quick Patient QR Scanner */}
         {canScanPatientQr ? (
           <button
             type="button"
             onClick={() => setPatientScannerOpen(true)}
-            className="flex flex-col items-center justify-center -mt-3 w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-teal-500 text-white shadow-lg hover:shadow-xl active:scale-95 transition-all border-2 border-white dark:border-slate-900 cursor-pointer"
-            title="Scan Patient QR Wristband"
+            className="flex flex-col items-center justify-center -mt-5 w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-teal-500 text-white shadow-lg active:scale-95 transition-all border-2 border-white dark:border-slate-900 cursor-pointer"
+            title="Scan Patient Wristband"
           >
-            <Scan className="w-4 h-4" />
+            <Scan className="w-5 h-5" />
           </button>
         ) : (
           <Link
             to="/appointments"
-            className="flex flex-col items-center justify-center min-w-[50px] p-1 rounded-xl text-slate-600 dark:text-slate-400"
+            className={`flex flex-col items-center justify-center min-w-[54px] py-1 px-1.5 rounded-xl transition-all ${
+              location.pathname === '/appointments'
+                ? 'text-blue-600 dark:text-blue-400 font-extrabold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
             title="Appointments"
           >
             <Calendar className="w-5 h-5" />
-            <span className="text-[10px] font-semibold mt-0.5">Appts</span>
+            <span className="text-[10px] tracking-tight mt-0.5">Appts</span>
           </Link>
         )}
 
-        {/* 4. Queue / Tasks */}
+        {/* 4. Smart Queue */}
         <Link
           to="/queue-management"
-          className={`flex flex-col items-center justify-center min-w-[50px] p-1 rounded-xl transition-all ${
+          className={`flex flex-col items-center justify-center min-w-[54px] py-1 px-1.5 rounded-xl transition-all ${
             location.pathname === '/queue-management'
-              ? 'text-blue-600 dark:text-blue-400 font-black'
-              : 'text-slate-600 dark:text-slate-400 hover:text-blue-600'
+              ? 'text-blue-600 dark:text-blue-400 font-extrabold'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
           title="Smart Queue"
         >
           <Radio className="w-5 h-5" />
-          <span className="text-[10px] font-semibold mt-0.5">{language === 'am' ? 'ተራ' : 'Queue'}</span>
+          <span className="text-[10px] tracking-tight mt-0.5">{language === 'am' ? 'ተራ' : 'Queue'}</span>
+          {location.pathname === '/queue-management' && (
+            <span className="w-1 h-1 rounded-full bg-blue-600 dark:bg-blue-400 mt-0.5" />
+          )}
         </Link>
 
-        {/* 5. Duty Status / Account */}
-        {['doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier'].includes(user?.role || '') ? (
-          <button
-            type="button"
-            onClick={() => setDutyModalOpen(true)}
-            className="flex flex-col items-center justify-center min-w-[50px] p-1 rounded-xl text-slate-700 dark:text-slate-200 hover:text-emerald-600 transition-all cursor-pointer"
-            title="Duty Status"
-          >
-            <span className={`w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 ${
-              dutyStatus?.isOnDuty ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
-            } my-0.5`} />
-            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-              {dutyStatus?.isOnDuty ? 'On Duty' : 'Off Duty'}
-            </span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(prev => !prev)}
-            className="flex flex-col items-center justify-center min-w-[50px] p-1 rounded-xl text-slate-600 dark:text-slate-400 cursor-pointer"
-            title="Settings"
-          >
-            <Settings className="w-5 h-5" />
-            <span className="text-[10px] font-semibold mt-0.5">{language === 'am' ? 'መለያ' : 'Account'}</span>
-          </button>
-        )}
+        {/* 5. Full Department & System Drawer Menu */}
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          className="flex flex-col items-center justify-center min-w-[54px] py-1 px-1.5 rounded-xl text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 active:scale-95 transition-all cursor-pointer"
+          title="Open Navigation Menu"
+        >
+          <Menu className="w-5 h-5" />
+          <span className="text-[10px] tracking-tight mt-0.5">{language === 'am' ? 'ዝርዝር' : 'Menu'}</span>
+        </button>
       </div>
 
       {/* ── Universal Patient Quick-Search Modal (Phase 5) ──────────── */}

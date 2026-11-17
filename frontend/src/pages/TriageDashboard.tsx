@@ -358,117 +358,125 @@ const TriageDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Command Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-2 border-teal-700 pb-5">
+      {/* Modern Responsive Web Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 bg-teal-700 rounded-lg flex items-center justify-center">
-            <Activity className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center border border-teal-500/20 shrink-0">
+            <Activity className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-              Nurse Triage Worklist
-              <span className="ml-2 align-middle text-[11px] font-semibold text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/30 px-2 py-1 rounded">
-                CLINICAL INTAKE
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                Nurse Triage & Intake
+              </h1>
+              <span className="text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 px-2 py-0.5 rounded-full uppercase">
+                Clinical
               </span>
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Review acuity, record observations, and route patients to care.
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Acuity scoring, vitals observation, and physician clinical routing
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setShowScannerModal(true)}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm transition active:scale-95"
+            className="flex-1 sm:flex-none h-9 px-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <QrCode className="w-4 h-4" />
-            <span>Scan QR</span>
+            <span>Scan Wristband</span>
           </button>
 
           <button
+            type="button"
             onClick={fetchAllData}
             disabled={loading}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-xs sm:text-sm font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
+            className="h-9 px-3 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-1.5 transition cursor-pointer"
+            title="Refresh patient list"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* ── 3-Stage Progress Counters & Tabs Bar ── */}
-      <div className="flex gap-1 border-b border-gray-300 dark:border-gray-700 overflow-x-auto">
+      {/* Modern Responsive Segmented Control Tabs */}
+      <div className="bg-slate-100/90 dark:bg-slate-800/80 p-1 rounded-2xl flex gap-1 overflow-x-auto text-xs font-semibold">
         {/* Stage 1: Waiting */}
         <button
+          type="button"
           onClick={() => setStageTab('waiting')}
-          className={`flex shrink-0 items-center gap-3 px-4 py-3 border-b-2 text-left transition-colors ${
+          className={`flex-1 min-w-[100px] py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
             stageTab === 'waiting'
-              ? 'border-amber-600 text-amber-800 dark:text-amber-300'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white'
+              ? 'bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-400 shadow-xs font-bold'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <div className="flex items-center gap-3">
-            <Clock className="w-4 h-4" />
-            <div>
-              <span className="font-semibold text-sm">Waiting</span>
-            </div>
-          </div>
-          <span className="text-sm font-bold tabular-nums">
+          <Clock className="w-3.5 h-3.5" />
+          <span>Waiting</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold ${
+            stageTab === 'waiting'
+              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+              : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+          }`}>
             {waitingList.length}
           </span>
         </button>
 
         {/* Stage 2: In Triage */}
         <button
+          type="button"
           onClick={() => setStageTab('in_triage')}
-          className={`flex shrink-0 items-center gap-3 px-4 py-3 border-b-2 text-left transition-colors ${
+          className={`flex-1 min-w-[100px] py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
             stageTab === 'in_triage'
-              ? 'border-blue-700 text-blue-800 dark:text-blue-300'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white'
+              ? 'bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 shadow-xs font-bold'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <div className="flex items-center gap-3">
-            <Stethoscope className="w-4 h-4" />
-            <div>
-              <span className="font-semibold text-sm">In assessment</span>
-            </div>
-          </div>
-          <span className="text-sm font-bold tabular-nums">
+          <Stethoscope className="w-3.5 h-3.5" />
+          <span>In Assessment</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold ${
+            stageTab === 'in_triage'
+              ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300'
+              : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+          }`}>
             {inTriageList.length}
           </span>
         </button>
 
         {/* Stage 3: Completed */}
         <button
+          type="button"
           onClick={() => setStageTab('completed')}
-          className={`flex shrink-0 items-center gap-3 px-4 py-3 border-b-2 text-left transition-colors ${
+          className={`flex-1 min-w-[100px] py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
             stageTab === 'completed'
-              ? 'border-emerald-700 text-emerald-800 dark:text-emerald-300'
-              : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white'
+              ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-4 h-4" />
-            <div>
-              <span className="font-semibold text-sm">Completed</span>
-            </div>
-          </div>
-          <span className="text-sm font-bold tabular-nums">
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span>Completed</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold ${
+            stageTab === 'completed'
+              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+              : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+          }`}>
             {completedList.length}
           </span>
         </button>
       </div>
 
       {/* Search Filter */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
           type="text"
           placeholder="Search stage patients by name, encounter number, or complaint..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-teal-600"
+          className="w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm bg-white dark:bg-slate-800/80 dark:text-white focus:ring-2 focus:ring-teal-500 shadow-2xs"
         />
       </div>
 
@@ -490,52 +498,119 @@ const TriageDashboard: React.FC = () => {
               <p className="text-xs mt-1">New registered patients from reception will appear here automatically.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto border-y border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              <table className="w-full min-w-[760px] text-left">
-                <thead className="bg-gray-50 dark:bg-gray-700/60 text-[11px] uppercase tracking-wide text-gray-500">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold">Patient</th>
-                    <th className="px-4 py-3 font-semibold">Visit / concern</th>
-                    <th className="px-4 py-3 font-semibold">Safety flags</th>
-                    <th className="px-4 py-3 font-semibold">Arrival</th>
-                    <th className="px-4 py-3 text-right font-semibold">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {filteredCurrentList.map(enc => {
-                const age = calculateAge(enc.date_of_birth);
-                return (
-                  <tr
-                    key={enc.id}
-                    className="hover:bg-teal-50/40 dark:hover:bg-teal-900/10"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="font-semibold text-sm text-gray-900 dark:text-white">{enc.first_name} {enc.last_name}</div>
-                      <div className="text-xs text-gray-500">{age != null ? `${age}y` : 'Age unknown'} · {enc.gender || 'Gender unknown'} · <span className="font-mono">{enc.encounter_number}</span></div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="text-sm text-gray-800 dark:text-gray-200">{enc.chief_complaint || 'No concern recorded'}</div>
-                      <div className="text-xs text-gray-500">{enc.department_name || 'Unassigned department'}</div>
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      <span className="font-semibold text-red-700 dark:text-red-300">{enc.allergies && enc.allergies.toLowerCase() !== 'none' ? `Allergy: ${enc.allergies}` : 'No known allergy'}</span>
-                      <div className="text-gray-500">Blood {enc.blood_type || 'unknown'}</div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{new Date(enc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                    <td className="px-4 py-3 text-right">
+            <>
+              {/* Mobile Web Patient Cards (< sm) */}
+              <div className="sm:hidden space-y-3">
+                {filteredCurrentList.map(enc => {
+                  const age = calculateAge(enc.date_of_birth);
+                  const hasAllergy = enc.allergies && enc.allergies.toLowerCase() !== 'none';
+                  return (
+                    <div
+                      key={enc.id}
+                      className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-xs space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-black text-sm flex items-center justify-center shrink-0">
+                            {enc.first_name?.[0] || 'P'}{enc.last_name?.[0] || ''}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                              {enc.first_name} {enc.last_name}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {age != null ? `${age}y` : 'Age N/A'} · {enc.gender || 'N/A'} · <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold">{enc.encounter_number}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/60 px-2 py-0.5 rounded-full shrink-0">
+                          {new Date(enc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+
+                      <div className="bg-gray-50 dark:bg-gray-750/50 rounded-xl p-3 text-xs space-y-1">
+                        <div className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Chief Concern / Visit</div>
+                        <div className="text-gray-900 dark:text-gray-100 font-semibold text-sm">{enc.chief_complaint || 'No complaint recorded'}</div>
+                        <div className="text-teal-600 dark:text-teal-400 font-medium">{enc.department_name || 'General Medicine'}</div>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap text-xs">
+                        {hasAllergy ? (
+                          <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 font-bold text-[11px] flex items-center gap-1">
+                            ⚠️ Allergy: {enc.allergies}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px]">
+                            No known allergy
+                          </span>
+                        )}
+                        {enc.blood_type && (
+                          <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 font-semibold text-[11px]">
+                            Blood {enc.blood_type}
+                          </span>
+                        )}
+                      </div>
+
                       <button
+                        type="button"
                         onClick={() => handleStartTriage(enc)}
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs rounded-lg transition-colors"
+                        className="w-full h-11 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl shadow-xs transition active:scale-[0.99] cursor-pointer"
                       >
-                        <Stethoscope className="w-4 h-4" /> Assess
+                        <Stethoscope className="w-4 h-4" /> Start Triage Assessment
                       </button>
-                    </td>
-                  </tr>
-                );
-              })}
-                </tbody>
-              </table>
-            </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Data Table (>= sm) */}
+              <div className="hidden sm:block overflow-x-auto border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-2xl shadow-xs">
+                <table className="w-full min-w-[760px] text-left">
+                  <thead className="bg-gray-50 dark:bg-gray-700/60 text-[11px] uppercase tracking-wide text-gray-500">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Patient</th>
+                      <th className="px-4 py-3 font-semibold">Visit / concern</th>
+                      <th className="px-4 py-3 font-semibold">Safety flags</th>
+                      <th className="px-4 py-3 font-semibold">Arrival</th>
+                      <th className="px-4 py-3 text-right font-semibold">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {filteredCurrentList.map(enc => {
+                  const age = calculateAge(enc.date_of_birth);
+                  return (
+                    <tr
+                      key={enc.id}
+                      className="hover:bg-teal-50/40 dark:hover:bg-teal-900/10"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="font-semibold text-sm text-gray-900 dark:text-white">{enc.first_name} {enc.last_name}</div>
+                        <div className="text-xs text-gray-500">{age != null ? `${age}y` : 'Age unknown'} · {enc.gender || 'Gender unknown'} · <span className="font-mono">{enc.encounter_number}</span></div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm text-gray-800 dark:text-gray-200">{enc.chief_complaint || 'No concern recorded'}</div>
+                        <div className="text-xs text-gray-500">{enc.department_name || 'Unassigned department'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        <span className="font-semibold text-red-700 dark:text-red-300">{enc.allergies && enc.allergies.toLowerCase() !== 'none' ? `Allergy: ${enc.allergies}` : 'No known allergy'}</span>
+                        <div className="text-gray-500">Blood {enc.blood_type || 'unknown'}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{new Date(enc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => handleStartTriage(enc)}
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Stethoscope className="w-4 h-4" /> Assess
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -931,70 +1006,119 @@ const TriageDashboard: React.FC = () => {
               <p className="font-semibold text-gray-600 dark:text-gray-300">No completed triage assessments found</p>
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-gray-50 dark:bg-gray-700/50 text-xs font-bold text-gray-500 uppercase">
-                    <tr>
-                      <th className="px-5 py-3.5">Patient / Encounter</th>
-                      <th className="px-5 py-3.5">Priority</th>
-                      <th className="px-5 py-3.5">Vitals Readout</th>
-                      <th className="px-5 py-3.5">Assigned Routing</th>
-                      <th className="px-5 py-3.5">Assessed Time</th>
-                      <th className="px-5 py-3.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-xs">
-                    {filteredCurrentList.map(enc => {
-                      const pConf = priorityConfig[enc.priority || 'normal'] || priorityConfig.normal;
-                      return (
-                        <tr key={enc.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
-                          <td className="px-5 py-4">
-                            <div className="font-bold text-sm text-gray-900 dark:text-white">{enc.first_name} {enc.last_name}</div>
-                            <div className="text-gray-400 font-mono text-[11px]">{enc.encounter_number}</div>
-                          </td>
-                          <td className="px-5 py-4">
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border inline-flex items-center gap-1.5 ${pConf.badge}`}>
-                              <span>{pConf.icon}</span>
-                              <span>{pConf.label}</span>
-                              <span className="font-amharic opacity-90 text-[11px]">({pConf.amharic})</span>
-                            </span>
-                          </td>
-                          <td className="px-5 py-4">
-                            <div className="flex flex-wrap gap-2 text-[11px]">
-                              {enc.temperature && <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded font-mono">T: {enc.temperature}°C</span>}
-                              {enc.blood_pressure_systolic && <span className="bg-pink-50 text-pink-700 px-2 py-0.5 rounded font-mono">BP: {enc.blood_pressure_systolic}/{enc.blood_pressure_diastolic}</span>}
-                              {enc.heart_rate && <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-mono">HR: {enc.heart_rate}</span>}
-                              {enc.oxygen_saturation && <span className="bg-teal-50 text-teal-700 px-2 py-0.5 rounded font-mono">SpO2: {enc.oxygen_saturation}%</span>}
-                            </div>
-                          </td>
-                          <td className="px-5 py-4">
-                            {enc.doctor_name ? (
-                              <div className="font-semibold text-blue-600 dark:text-blue-400">{enc.doctor_name}</div>
-                            ) : enc.department_name ? (
-                              <div className="font-semibold text-purple-600 dark:text-purple-400">{enc.department_name}</div>
-                            ) : (
-                              <span className="text-gray-400 italic">General Queue</span>
-                            )}
-                          </td>
-                          <td className="px-5 py-4 text-gray-400 whitespace-nowrap">
-                            {enc.assessed_at ? new Date(enc.assessed_at).toLocaleString() : new Date(enc.created_at).toLocaleString()}
-                          </td>
-                          <td className="px-5 py-4 text-right">
-                            <button
-                              onClick={() => setViewDetailModal(enc)}
-                              className="px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300 font-bold rounded-lg hover:bg-blue-100 transition-all flex items-center gap-1 ml-auto"
-                            >
-                              <Eye className="w-3.5 h-3.5" /> Details
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+            <>
+              {/* Mobile Finalized Cards (< sm) */}
+              <div className="sm:hidden space-y-3">
+                {filteredCurrentList.map(enc => {
+                  const pConf = priorityConfig[enc.priority || 'normal'] || priorityConfig.normal;
+                  return (
+                    <div key={enc.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-xs space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-bold text-sm text-gray-900 dark:text-white">{enc.first_name} {enc.last_name}</div>
+                          <div className="text-gray-400 font-mono text-xs">{enc.encounter_number}</div>
+                        </div>
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold border inline-flex items-center gap-1 ${pConf.badge}`}>
+                          <span>{pConf.icon}</span>
+                          <span>{pConf.label}</span>
+                        </span>
+                      </div>
+
+                      {/* Vitals Readout Strip */}
+                      <div className="flex flex-wrap gap-1.5 text-xs">
+                        {enc.temperature && <span className="bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 px-2 py-0.5 rounded font-mono">T: {enc.temperature}°C</span>}
+                        {enc.blood_pressure_systolic && <span className="bg-pink-50 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300 px-2 py-0.5 rounded font-mono">BP: {enc.blood_pressure_systolic}/{enc.blood_pressure_diastolic}</span>}
+                        {enc.heart_rate && <span className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 px-2 py-0.5 rounded font-mono">HR: {enc.heart_rate}</span>}
+                        {enc.oxygen_saturation && <span className="bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300 px-2 py-0.5 rounded font-mono">SpO2: {enc.oxygen_saturation}%</span>}
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100 dark:border-gray-700">
+                        <div>
+                          Routing: <span className="font-semibold text-blue-600 dark:text-blue-400">{enc.doctor_name || enc.department_name || 'General OPD'}</span>
+                        </div>
+                        <span className="text-[11px] text-gray-400">
+                          {enc.assessed_at ? new Date(enc.assessed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setViewDetailModal(enc)}
+                        className="w-full h-10 flex items-center justify-center gap-1.5 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-bold text-xs rounded-xl hover:bg-blue-100 transition cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> View Assessment Details
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+
+              {/* Desktop Table View (>= sm) */}
+              <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-gray-50 dark:bg-gray-700/50 text-xs font-bold text-gray-500 uppercase">
+                      <tr>
+                        <th className="px-5 py-3.5">Patient / Encounter</th>
+                        <th className="px-5 py-3.5">Priority</th>
+                        <th className="px-5 py-3.5">Vitals Readout</th>
+                        <th className="px-5 py-3.5">Assigned Routing</th>
+                        <th className="px-5 py-3.5">Assessed Time</th>
+                        <th className="px-5 py-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-xs">
+                      {filteredCurrentList.map(enc => {
+                        const pConf = priorityConfig[enc.priority || 'normal'] || priorityConfig.normal;
+                        return (
+                          <tr key={enc.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
+                            <td className="px-5 py-4">
+                              <div className="font-bold text-sm text-gray-900 dark:text-white">{enc.first_name} {enc.last_name}</div>
+                              <div className="text-gray-400 font-mono text-[11px]">{enc.encounter_number}</div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold border inline-flex items-center gap-1.5 ${pConf.badge}`}>
+                                <span>{pConf.icon}</span>
+                                <span>{pConf.label}</span>
+                                <span className="font-amharic opacity-90 text-[11px]">({pConf.amharic})</span>
+                              </span>
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className="flex flex-wrap gap-2 text-[11px]">
+                                {enc.temperature && <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded font-mono">T: {enc.temperature}°C</span>}
+                                {enc.blood_pressure_systolic && <span className="bg-pink-50 text-pink-700 px-2 py-0.5 rounded font-mono">BP: {enc.blood_pressure_systolic}/{enc.blood_pressure_diastolic}</span>}
+                                {enc.heart_rate && <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-mono">HR: {enc.heart_rate}</span>}
+                                {enc.oxygen_saturation && <span className="bg-teal-50 text-teal-700 px-2 py-0.5 rounded font-mono">SpO2: {enc.oxygen_saturation}%</span>}
+                              </div>
+                            </td>
+                            <td className="px-5 py-4">
+                              {enc.doctor_name ? (
+                                <div className="font-semibold text-blue-600 dark:text-blue-400">{enc.doctor_name}</div>
+                              ) : enc.department_name ? (
+                                <div className="font-semibold text-purple-600 dark:text-purple-400">{enc.department_name}</div>
+                              ) : (
+                                <span className="text-gray-400 italic">General Queue</span>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 text-gray-400 whitespace-nowrap">
+                              {enc.assessed_at ? new Date(enc.assessed_at).toLocaleString() : new Date(enc.created_at).toLocaleString()}
+                            </td>
+                            <td className="px-5 py-4 text-right">
+                              <button
+                                onClick={() => setViewDetailModal(enc)}
+                                className="px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300 font-bold rounded-lg hover:bg-blue-100 transition-all flex items-center gap-1 ml-auto cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5" /> Details
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
           )}
         </div>
       )}

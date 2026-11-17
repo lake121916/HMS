@@ -848,8 +848,109 @@ export const OPDDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Tracker Table */}
-        <div className="overflow-x-auto">
+        {/* Mobile View: Cards (< sm) */}
+        <div className="sm:hidden divide-y divide-slate-100 dark:divide-slate-800">
+          {filteredTracker.length === 0 ? (
+            <div className="px-4 py-8 text-center text-slate-500 dark:text-slate-400 text-xs">
+              {language === 'am' ? 'ምንም የታካሚ መዝገብ አልተገኘም' : 'No patients currently in this queue stage'}
+            </div>
+          ) : (
+            filteredTracker.map(item => {
+              const isLongWait = item.elapsedMinutes > 30;
+              const isEmergency = item.priority === 'emergency' || item.priority === 'critical';
+              const isUrgent = item.priority === 'urgent';
+
+              return (
+                <div key={item.queue_id} className="p-3.5 space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 font-mono font-bold text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
+                        {item.queue_token}
+                      </span>
+                      <div>
+                        <div className="font-bold text-sm text-slate-900 dark:text-white">
+                          {item.first_name} {item.last_name}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                          {item.patientMrn} {item.gender ? `• ${item.gender}` : ''}
+                        </div>
+                      </div>
+                    </div>
+
+                    {isEmergency ? (
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-full shrink-0">
+                        🚨 P1 Emergency
+                      </span>
+                    ) : isUrgent ? (
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-full shrink-0">
+                        ⚡ P2 Urgent
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-full shrink-0">
+                        P3 Routine
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-800/40 p-2 rounded-xl">
+                    <span className={`px-2 py-0.5 rounded-md font-semibold text-[11px] ${
+                      item.currentStage === 'CONSULTATION'
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                        : item.currentStage === 'WAITING_FOR_DOCTOR'
+                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                        : item.currentStage === 'TRIAGE'
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                        : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                    }`}>
+                      {item.currentStage.replace(/_/g, ' ')}
+                    </span>
+                    <div className="text-right">
+                      <div className="text-slate-900 dark:text-white font-medium">{item.consultation_room || 'Room 1'}</div>
+                      <div className="text-[10px] text-slate-500">{item.doctor_name || 'General OPD'}</div>
+                    </div>
+                    <div className={`inline-flex items-center gap-1 font-mono text-[11px] font-bold ${
+                      isLongWait ? 'text-red-600 dark:text-red-400 animate-pulse' : 'text-slate-600 dark:text-slate-400'
+                    }`}>
+                      <Clock className="w-3 h-3" />
+                      <span>{item.elapsedMinutes}m</span>
+                    </div>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="flex items-center gap-2 pt-1">
+                    {item.currentStage === 'WAITING_FOR_DOCTOR' && (
+                      <button
+                        onClick={() => handleCallPatient(item)}
+                        className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer text-center"
+                      >
+                        Call
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setTransferItem(item);
+                        setTransferRoom(item.consultation_room || 'Room 1');
+                        setTransferModalOpen(true);
+                      }}
+                      className="flex-1 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 cursor-pointer text-center"
+                    >
+                      Transfer
+                    </button>
+                    <button
+                      onClick={() => handleSkipPatient(item)}
+                      className="py-1.5 px-3 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl text-xs cursor-pointer"
+                    >
+                      Skip
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Tracker Table (Desktop >= sm) */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
               <tr>
