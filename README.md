@@ -1,78 +1,87 @@
-# AI-Based Hospital Management System
+# Alem Ketema Enat General Hospital Management System (AKEH-HMS)
 
-A comprehensive hospital management system built with React.js, Node.js, Express.js, and PostgreSQL, featuring AI-powered disease prediction, drug interaction checking, smart scheduling, and role-based access control.
+An enterprise-grade, full-stack Hospital Management System built for **Alem Ketema Enat General Hospital**, featuring modern healthcare ergonomics, AI-powered clinical decision support, Outpatient Department (OPD) queue orchestration, cryptographic SHA-256 patient QR wristbands, authoritative staff shift duty tracking, and multi-channel payment processing (TeleBirr, CBE Birr, Stripe).
 
-## 🎓 Capstone Project Features
+🚀 **Live Production Deployment**: [https://alem-hms.vercel.app](https://alem-hms.vercel.app)
 
-This system has been enhanced with production-ready features suitable for a final year graduation project:
+---
 
-### High-Impact Production Features
+## 🌟 Key Architecture & Enterprise Healthcare Features
 
-#### 1. **ML Disease Prediction Microservice** ✨
-- **Technology**: FastAPI + Scikit-Learn (Random Forest Classifier)
-- **Features**: Real machine learning model for disease prediction from symptoms
-- **Integration**: Python microservice called from Node.js backend
-- **Impact**: Demonstrates full-stack integration of Software Engineering and Data Science
-- **Location**: `ml-service/` directory
+### 1. **Unified Global Navigation & Responsive Shell** 🧭
+- **Single Source of Truth**: Encapsulated within `GlobalNavigation.tsx` (controlled by user role and viewport size).
+- **Role-Governed Access**: Dynamic navigation hierarchy for 10 distinct hospital roles (Super Admin, Admin, Receptionist, Doctor, Nurse, Lab Tech, Pharmacist, Cashier, Hospital Manager, Patient).
+- **Dynamic Workload Badges**: Real-time counter pills showing waiting queues for Triage, Doctor consults, Lab worklists, Pharmacy dispensing, and Cashier invoices.
+- **Desktop Sidebar (`>= 1024px`)**: Collapsible/expandable sidebar (`w-64` / `w-18`), brand emblem, active cyan glow indicators, and accordion governance menus.
+- **Top Bar Omni-Tools**: Quick Omnisearch (`Ctrl+K`), instant QR camera launcher, authoritative duty switch chip, bilingual toggle (English / Amharic `አማ`), theme settings, and alerts.
+- **Mobile Touch Dock (`< 1024px`)**: Fixed 5-target thumb dock (`Menu`, `Workbench`, Center Elevated `Scan QR`, `Queue`, `Duty Status`).
 
-#### 2. **Stripe Payment Gateway Integration** 💳
-- **Technology**: Stripe API with PDFKit for receipt generation
-- **Features**: Real secure payment processing, automatic PDF receipts, refund support
-- **Impact**: Professional payment handling with downloadable receipts
-- **Endpoints**: `/api/payments/create-intent`, `/api/payments/confirm`, `/api/payments/receipt/:id`
+### 2. **Master Midnight Navy Design Language** 🎨
+- **Visual Identity**: Deep midnight navy background (`#070e1e` / `#0a1329`), cyan/teal accents (`#06b6d4`, `#14b8a6`), subtle translucent card borders (`border-cyan-500/20`), and gradient telemetry cards.
+- **Dual-View Data Presentations**: Desktop high-density data tables automatically transform into touch-friendly expandable cards on mobile devices (< 768px).
+- **Tested Across Viewports**: 320px, 360px, 375px, 390px, 414px, 430px, 768px, 1024px, 1280px, 1440px, and 1920px without horizontal scroll bleed.
 
-#### 3. **Real-time Critical Vitals Alerts** 🚨
-- **Technology**: Enhanced Socket.io with emergency notifications
-- **Features**: Instant alerts when vitals exceed thresholds, emergency call broadcasting
-- **Impact**: Demonstrates real-time system responsiveness during live demo
-- **Events**: `critical-vitals`, `emergency-call`
+### 3. **OPD Command Center & Real-Time Queue Management** 🏥
+- **Executive Telemetry**: Total patients today, waiting, in-triage, waiting for doctor, in-consultation, completed, cancelled, emergency referrals, and average wait time metrics.
+- **Dynamic Token Management**: Sequential alphanumeric tokens (`A-001`, `U-001`, `E-001`) with automatic calling counter voice announcements.
+- **Queue Operations**: Call next, recall skipped patients, skip with configurable grace windows, and department transfers.
+- **Public Waitroom Display Feed**: High-contrast, audio-chime enabled screen for hospital waiting rooms (`/opd/display`).
 
-#### 4. **RAG Chatbot with LLM Integration** 🤖
-- **Technology**: Retrieval-Augmented Generation with Google Gemini/OpenAI
-- **Features**: Intelligent responses using hospital knowledge base, fallback to keyword matching
-- **Impact**: Shows advanced AI implementation beyond simple rule-based systems
-- **Configuration**: Supports both Gemini and OpenAI APIs
-- **Location**: `backend/src/services/ragService.js`
+### 4. **Patient Identification & Cryptographic QR Wristbands** 🔐
+- **Probabilistic Duplicate Detection**: Multi-factor phonetic matching (Name, DOB, Phone, Kebele/National ID) during registration.
+- **Cryptographic Wristbands**: QR payloads signed with SHA-256 HMAC tokens preventing patient identity spoofing.
+- **Bedside Two-Identifier Safety Checks**: Point-of-care verification (Name + MRN/DOB) mandated prior to specimen collection, drug dispensing, or consultation.
+- **Emergency Unidentified Intake**: Trauma protocols for unconscious patients with auto-generated emergency IDs (`TRAUMA-M-001`).
 
-#### 5. **Telehealth Video Consultation** 📹
-- **Technology**: WebRTC with Socket.io signaling
-- **Features**: Real-time video calls between doctors and patients, session management
-- **Impact**: Modern healthcare delivery demonstration
-- **Endpoints**: `/api/telehealth/sessions`, `/api/telehealth/sessions/:id/join`
+### 5. **Authoritative Staff Shift Duty Tracking** ⏱️
+- **Real-Time Duty Switch**: Healthcare workers toggle duty status via the navigation bar, updating departmental capacity.
+- **Active Duty Gating**: Automated routing rules prevent assigning queue tickets to off-duty physicians.
+- **Shift Handover Reports**: Structured documentation of critical patient watchlists, pending lab orders, and resuscitation notes passed to incoming staff.
 
-#### 6. **Medical Image Analysis with CNN** 🏥
-- **Technology**: FastAPI + TensorFlow/Keras (ResNet50)
-- **Features**: X-ray/MRI/CT analysis, pneumonia detection, fracture detection, tumor detection
-- **Impact**: Demonstrates deep learning in healthcare
-- **Location**: `image-analysis-service/` directory
-- **Features**: Grad-CAM heatmap generation for model interpretability
+### 6. **Clinical Decision Support System (CDSS) & Auditable Addenda** 🩺
+- **Comprehensive Patient Chart**: Unified view of history of present illness, physical exams, vitals trends, ICD-10 diagnostic coding, and prescriptions.
+- **Real-Time Drug Interaction & Allergy Alerts**: Cross-checks prescribed medications against patient allergy history and drug-drug safety databases.
+- **Immutable Encounter Finalization**: Consultation records lock upon completion; post-finalization corrections are recorded as append-only auditable addenda with author ID and timestamp.
+
+### 7. **Multi-Channel Cashier POS & Ethiopian Mobile Payments** 💳
+- **Local Integrations**: TeleBirr USSD / API reference validation and Commercial Bank of Ethiopia (CBE Birr) mobile payment settlement.
+- **Card & Cash Processing**: Stripe payment gateway integration with PDF receipts and physical cash change calculation.
+- **Cashier Shifts & Z-Reports**: Daily opening float, continuous transaction ledger, reconciliation, and supervisory handover review.
+
+### 8. **Advanced Capstone AI Microservices** 🤖
+- **ML Disease Prediction**: FastAPI + Scikit-Learn Random Forest symptom classifier (`ml-service/`).
+- **Medical Image Analysis**: FastAPI + TensorFlow ResNet50 for chest X-ray and CT imaging analysis with Grad-CAM heatmaps (`image-analysis-service/`).
+- **RAG Knowledge Chatbot**: Retrieval-Augmented Generation with Gemini & OpenAI for patient assistance (`backend/src/services/ragService.js`).
+- **Telehealth Video Consultations**: WebRTC peer-to-peer video consultations with Socket.io signaling.
+
+---
 
 ## Features
 
 ### Core Modules
 - **Authentication Module**: JWT-based authentication with role-based access control (RBAC)
-- **Patient Management**: Registration, search, medical history tracking
-- **Appointment Management**: Booking, rescheduling, cancellation, doctor scheduling
-- **Doctor Module**: Patient consultation, diagnosis, prescriptions, treatment notes
-- **Nurse Module**: Vital signs recording, patient monitoring, ward assignment
-- **Laboratory Module**: Test requests, result uploads, lab reports
-- **Pharmacy Module**: Inventory management, medicine dispensing, low stock alerts
-- **Billing Module**: Invoice generation, payment processing, receipt printing
-- **Ward & Bed Management**: Bed allocation, admission, discharge
-- **AI Module**: Disease prediction (ML), drug interaction checking, smart scheduling, health risk prediction, RAG chatbot
-- **Reporting Module**: Revenue reports, patient reports, disease statistics, department performance
-- **Notification Module**: Email notifications, SMS notifications, appointment reminders
-- **Telehealth Module**: Video consultations, real-time communication
-- **Payment Module**: Stripe integration, PDF receipt generation
+- **Patient Management & Duplicate Detection**: Registration, search, probabilistic deduplication, medical history tracking
+- **OPD Queue & Command Center**: Real-time queue tickets, calling counters, waiting-room display, department transfers
+- **Doctor Consultation & CDSS**: Unified patient chart, ICD-10 coding, drug-allergy alerts, locked encounters, auditable addenda
+- **Nurse & Triage Module**: Vital signs recording, ESI acuity categorization, patient monitoring, critical vitals broadcast
+- **Laboratory Module**: Test requests, specimen collection, result uploads, critical value alerts
+- **Pharmacy Module**: FEFO batch tracking, inventory management, medicine dispensing, low stock alerts
+- **Cashier & Billing Module**: Multi-currency invoices, TeleBirr, CBE Birr, Stripe, POS receipts, shift Z-reports
+- **Ward & Bed Management**: Interactive bed occupancy grid, admissions, transfers, discharge summaries
+- **Staff Shifts & Duty System**: Active clock-in/out gating, department roster tracking, clinical handover summaries
+- **AI Module**: Disease prediction (ML), medical image analysis (CNN), drug interaction checking, RAG chatbot
+- **Reporting Module**: Daily/monthly OPD reports, revenue telemetry, disease incidence statistics
+- **Notification Module**: Socket.io emergency alerts, email notifications, SMS reminders
+- **Telehealth Module**: WebRTC video consultations, real-time doctor-patient communication
 
-### Security Features
-- JWT Authentication
-- Role-based permissions (10 user roles)
-- Audit logs
-- Encrypted passwords (bcrypt)
-- Rate limiting
-- CORS protection
-- Helmet security headers
+### Security & Compliance Features
+- JWT Authentication with Refresh Tokens
+- Strict Role-Based Access Control (RBAC across 10 user roles)
+- Cryptographic SHA-256 HMAC Patient QR Wristbands
+- Bedside Two-Identifier Patient Verification & Mismatch Logging
+- Immutable Finalized Clinical Records & Auditable Append-Only Addenda
+- Rate Limiting, Helmet Security Headers, CORS, and SQL Injection Prevention
+- Comprehensive Audit Trail for Patient Records, QR Scans, and Billing Transactions
 
 ## Technology Stack
 

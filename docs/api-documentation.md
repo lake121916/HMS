@@ -2207,6 +2207,535 @@ Authorization: Bearer <JWT_TOKEN>
 
 ---
 
+## 17. Outpatient Department (OPD) & Queue Management
+
+The Outpatient Department (OPD) module coordinates the live flow of clinic encounters, real-time ticket issuance, calling counters, patient transfer, and waitroom display monitors.
+
+### GET /opd/dashboard-metrics
+Fetches high-level executive and clinical telemetry for the OPD command center.
+
+**Headers:**
+```
+Authorization: Bearer <JWT_TOKEN>
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "totalPatientsToday": 142,
+    "waitingPatients": 18,
+    "inTriage": 5,
+    "waitingForDoctor": 8,
+    "inConsultation": 12,
+    "completedConsultations": 99,
+    "cancelledVisits": 3,
+    "emergencyReferrals": 4,
+    "doctorAvailability": {
+      "onDuty": 7,
+      "inConsultation": 5,
+      "available": 2
+    },
+    "averageWaitTimeMinutes": 16.4,
+    "averageConsultDurationMinutes": 14.8,
+    "hourlyArrivals": [
+      { "hour": "08:00", "count": 22 },
+      { "hour": "09:00", "count": 35 },
+      { "hour": "10:00", "count": 41 },
+      { "hour": "11:00", "count": 28 }
+    ]
+  }
+}
+```
+
+### GET /opd/live-tracker
+Real-time tracking of active OPD encounters grouped by stage (Waiting, Triage, Doctor Queue, Consultation, Completed).
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "waiting": [
+      {
+        "id": 401,
+        "ticketNumber": "A-024",
+        "patientName": "Hanna Bekele",
+        "mrn": "AKEH-2026-0042",
+        "priority": "normal",
+        "department": "General Medicine",
+        "waitTimeMinutes": 12
+      }
+    ],
+    "inTriage": [],
+    "inConsultation": []
+  }
+}
+```
+
+### GET /opd/display
+Public waiting-room display feed returning current called tokens and room assignments. Designed for digital signage monitors without requiring full user authentication.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "nowCalling": [
+      {
+        "ticketNumber": "A-021",
+        "room": "Room 102",
+        "doctorName": "Dr. Abebe Tesfaye",
+        "calledAt": "2026-11-18T06:15:00Z"
+      }
+    ],
+    "upNext": [
+      { "ticketNumber": "A-022", "room": "Room 104" },
+      { "ticketNumber": "A-023", "room": "Room 101" }
+    ],
+    "hospitalAnnouncement": "Welcome to Alem Ketema Enat General Hospital OPD"
+  }
+}
+```
+
+### POST /opd
+Registers a new OPD queue ticket for an encounter.
+
+**Permissions:** `receptionist`, `nurse`, `doctor`, `admin`, `super_admin`
+
+**Request Body:**
+```json
+{
+  "encounterId": 301,
+  "patientId": 42,
+  "departmentId": 1,
+  "doctorId": 5,
+  "priority": "urgent",
+  "notes": "Complaining of persistent high fever and chills"
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "OPD queue ticket issued successfully",
+  "data": {
+    "id": 88,
+    "ticketNumber": "U-007",
+    "priority": "urgent",
+    "status": "WAITING",
+    "issuedAt": "2026-11-18T06:20:00Z"
+  }
+}
+```
+
+### POST /opd/:id/call
+Calls a specific ticket number to the physician's or nurse's consultation room.
+
+**Permissions:** `doctor`, `nurse`, `admin`, `super_admin`
+
+**Request Body:**
+```json
+{
+  "roomNumber": "Consultation Room 3",
+  "counterId": 2
+}
+```
+
+### POST /opd/:id/start
+Marks patient consultation as actively started.
+
+### POST /opd/:id/complete
+Marks consultation as finished, freeing the physician room and advancing the patient encounter to downstream services.
+
+### POST /opd/:id/skip
+Skips an absent patient and places the ticket into skipped state.
+
+**Request Body:**
+```json
+{
+  "reason": "Patient did not respond after 3 verbal calls"
+}
+```
+
+### POST /opd/:id/recall
+Recalls a skipped or deferred ticket back to the top of the active queue.
+
+### POST /opd/transfer
+Transfers a patient encounter from one OPD department/specialty to another.
+
+**Permissions:** `doctor`, `nurse`, `receptionist`, `admin`, `super_admin`
+
+**Request Body:**
+```json
+{
+  "encounterId": 301,
+  "targetDepartmentId": 3,
+  "targetDoctorId": 8,
+  "reason": "Pediatric consultation required",
+  "priority": "urgent"
+}
+```
+
+---
+
+## 18. Patient Registration Safety & Duplicate Detection
+
+Prevents accidental creation of duplicate patient records and ensures clean medical identity records.
+
+### POST /patients/check-duplicate
+Evaluates proposed registration details using phonetic and exact field matching.
+
+**Permissions:** `receptionist`, `nurse`, `doctor`, `admin`, `super_admin`
+
+**Request Body:**
+```json
+{
+  "firstName": "Hanna",
+  "lastName": "Bekele",
+  "dateOfBirth": "1990-05-14",
+  "phone": "+251911223344",
+  "nationalId": "ETH-10293847"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "isDuplicate": true,
+    "confidenceScore": 0.94,
+    "potentialMatches": [
+      {
+        "id": 42,
+        "mrn": "AKEH-2026-0042",
+        "firstName": "Hanna",
+        "lastName": "Bekele",
+        "phone": "+251911223344",
+        "dateOfBirth": "1990-05-14",
+        "matchReason": "Exact phone and national ID match"
+      }
+    ]
+  }
+}
+```
+
+### POST /patients/emergency-unidentified
+Enrolls an unconscious, incapacitated, or unidentified trauma patient under safe pseudo-identity identifiers (`TRAUMA-M-001`, `UNKNOWN-F-002`) with wristband generation.
+
+---
+
+## 19. Patient QR Security & Wristband Identity Verification
+
+Implements hospital-wide positive patient identification using cryptographically signed QR wristbands and point-of-care verification.
+
+### POST /patients/scan
+Validates a scanned QR wristband token and fetches authorized patient clinical context.
+
+**Permissions:** All authenticated clinical and administrative roles
+
+**Request Body:**
+```json
+{
+  "qrContent": "AKEH|42|AKEH-2026-0042|7a8f9c1b3d..."
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "patient": {
+      "id": 42,
+      "mrn": "AKEH-2026-0042",
+      "fullName": "Hanna Bekele",
+      "gender": "female",
+      "dateOfBirth": "1990-05-14",
+      "age": 36,
+      "bloodType": "O+",
+      "allergies": [
+        { "allergen": "Penicillin", "severity": "severe" }
+      ]
+    },
+    "activeEncounter": {
+      "id": 301,
+      "status": "IN_CONSULTATION",
+      "department": "General Medicine",
+      "doctorName": "Dr. Abebe Tesfaye"
+    },
+    "wristbandValid": true
+  }
+}
+```
+
+### POST /patients/qr/confirm-verification
+Records a verified bedside two-identifier safety confirmation (name + date of birth/MRN cross-check).
+
+**Request Body:**
+```json
+{
+  "patient_id": 42,
+  "encounter_id": 301,
+  "verification_method": "VERBAL_AND_WRISTBAND_SCAN"
+}
+```
+
+### POST /patients/qr/report-mismatch
+Submits an immediate clinical safety incident alert when physical wristband data conflicts with patient verbal statements or bedside chart.
+
+### POST /patients/:id/wristband-printed
+Audits when a thermal wristband has been freshly printed for the patient.
+
+### POST /patients/:id/qr/revoke
+Invalidates an active patient QR wristband (e.g. damaged, soiled, or detached).
+
+### POST /patients/:id/qr/replace
+Generates a new secure replacement token and signs a replacement wristband.
+
+### GET /patients/qr/audit-events
+Retrieves cryptographic QR scan audit logs, including scanning practitioner ID, location, timestamp, and verification results.
+
+---
+
+## 20. Staff Shift Duty & Handover Management
+
+Ensures that workload routing and clinical actions are strictly aligned with actively on-duty healthcare personnel.
+
+### GET /shifts/on-duty
+Returns all personnel currently verified on active duty, grouped by department and clinical specialty.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "userId": 5,
+      "fullName": "Dr. Abebe Tesfaye",
+      "role": "doctor",
+      "department": "General Medicine",
+      "onDuty": true,
+      "clockedInAt": "2026-11-18T07:00:00Z",
+      "activeEncounterCount": 2
+    },
+    {
+      "userId": 12,
+      "fullName": "Sr. Tigist Mengistu",
+      "role": "nurse",
+      "department": "Triage",
+      "onDuty": true,
+      "clockedInAt": "2026-11-18T06:45:00Z"
+    }
+  ]
+}
+```
+
+### PUT /shifts/:id/toggle-duty
+Toggles a health professional's duty status (`on_duty = true/false`) with real-time broadcast.
+
+**Permissions:** Self, or `admin`, `super_admin`, `hospital_manager`
+
+**Request Body:**
+```json
+{
+  "onDuty": true,
+  "notes": "Starting morning OPD outpatient shift"
+}
+```
+
+### POST /shifts/handover
+Records a clinical shift handover report summarizing pending patients, critical test follow-ups, and resuscitation orders.
+
+**Permissions:** `doctor`, `admin`, `super_admin`
+
+**Request Body:**
+```json
+{
+  "outgoingDoctorId": 5,
+  "incomingDoctorId": 9,
+  "departmentId": 1,
+  "criticalPatientIds": [42, 67],
+  "handoverNotes": "Patient Hanna Bekele (AKEH-2026-0042) awaiting urgent CBC and malaria smear results.",
+  "pendingLabOrders": 3
+}
+```
+
+### PUT /shifts/handovers/:id/acknowledge
+Incoming physician formally signs off on handover receipt.
+
+---
+
+## 21. Clinical Governance & Auditable Consultation Amendments
+
+Implements clinical decision support system (CDSS) safety gates, immutable finalized notes, and auditable amendments.
+
+### POST /encounters/:id/start-consultation
+Transitions encounter status to `IN_CONSULTATION` and binds the treating physician.
+
+### POST /encounters/:id/complete-consultation
+Signs off and permanently finalizes a consultation note.
+
+**Permissions:** `doctor`, `admin`, `super_admin`
+
+**Request Body:**
+```json
+{
+  "chiefComplaint": "Persistent fever, chills, and productive cough for 4 days",
+  "historyOfPresentIllness": "Patient reports onset of fever 4 days ago with associated fatigue...",
+  "physicalExamination": "BP 120/80 mmHg, HR 88 bpm, SpO2 97%, Chest: bilateral vesicular sounds",
+  "icd10Code": "J06.9",
+  "diagnosis": "Acute upper respiratory tract infection, unspecified",
+  "treatmentPlan": "Hydration, paracetamol as needed, rest, return if fever persists > 48h",
+  "followUpDays": 5,
+  "prescriptions": [
+    {
+      "medicineId": 104,
+      "dosage": "500mg",
+      "frequency": "TID",
+      "durationDays": 5,
+      "instructions": "Take after meals"
+    }
+  ],
+  "labOrderIds": [55],
+  "radiologyOrderIds": []
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Consultation finalized successfully and locked against modification",
+  "data": {
+    "encounterId": 301,
+    "status": "COMPLETED",
+    "isLocked": true,
+    "signedAt": "2026-11-18T07:45:00Z"
+  }
+}
+```
+
+### POST /consultations/:id/addenda
+Appends an auditable, timestamped clinical correction or follow-up note to an already locked encounter record.
+
+**Permissions:** `doctor`, `admin`, `super_admin`
+
+**Request Body:**
+```json
+{
+  "reason": "Lab result review follow-up",
+  "content": "Follow-up note: CBC reviewed at 08:30. WBC within normal range (6.2 x 10^9/L). No antibiotics indicated at this time."
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Auditable addendum appended successfully",
+  "data": {
+    "id": 14,
+    "consultationId": 301,
+    "authorId": 5,
+    "authorName": "Dr. Abebe Tesfaye",
+    "createdAt": "2026-11-18T08:35:00Z",
+    "content": "Follow-up note: CBC reviewed at 08:30..."
+  }
+}
+```
+
+### GET /consultations/:id/history
+Retrieves the complete immutable clinical ledger of an encounter, including the original signed consultation and all subsequent chronological addenda.
+
+---
+
+## 22. Cashier Operations & Local Electronic Payments (TeleBirr & CBE Birr)
+
+Handles billing settlement, invoice auditing, and electronic mobile payments for the Ethiopian banking ecosystem.
+
+### GET /cashier/invoices/unpaid
+Lists all pending outpatient and inpatient billing items awaiting payment.
+
+### POST /cashier/payments/verify-reference
+Performs anti-fraud verification and duplicate transaction checks on mobile money reference codes.
+
+**Permissions:** `cashier`, `admin`, `super_admin`
+
+**Request Body:**
+```json
+{
+  "paymentMethod": "telebirr",
+  "referenceNumber": "TLB-9988776655",
+  "expectedAmount": 450.00
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "verified": true,
+    "provider": "telebirr",
+    "referenceNumber": "TLB-9988776655",
+    "paidAmount": 450.00,
+    "currency": "ETB",
+    "payerPhone": "+251911******"
+  }
+}
+```
+
+### POST /cashier/payments/process
+Processes payment across Cash, TeleBirr, CBE Birr, Chapa, or Insurance copay, generating official hospital receipts.
+
+**Permissions:** `cashier`, `admin`, `super_admin`, `receptionist`
+
+**Request Body:**
+```json
+{
+  "invoiceIds": [108, 109],
+  "patientId": 42,
+  "encounterId": 301,
+  "paymentMethod": "telebirr",
+  "referenceNumber": "TLB-9988776655",
+  "amountPaid": 450.00,
+  "discountAmount": 0.00,
+  "cashierNotes": "Settled via TeleBirr USSD confirmation"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Payment processed and receipt generated",
+  "data": {
+    "paymentId": 820,
+    "receiptIdentifier": "REC-2026-0820",
+    "totalAmount": 450.00,
+    "settledAt": "2026-11-18T08:50:00Z"
+  }
+}
+```
+
+### GET /cashier/receipt/:receiptIdentifier
+Retrieves receipt data formatted for 80mm thermal receipt printers.
+
+### POST /cashier/receipts/:id/reprint
+Audits and issues duplicate receipt re-prints with formal watermark.
+
+### POST /cashier/shifts/open
+Opens cashier register session with starting cash float.
+
+### POST /cashier/shifts/:id/close
+Closes register session with end-of-day balance and generates Z-Report.
+
+---
+
 ## Error Responses
 
 ### 400 Bad Request

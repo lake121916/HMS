@@ -12,7 +12,8 @@
 7. **Pharmacist** - Pharmacy staff
 8. **Cashier** - Billing staff
 9. **Hospital Manager** - Operations manager
-10. **Patient** - Hospital patient
+10. **OPD Coordinator** - Outpatient queue conductor and triage assignment coordinator
+11. **Patient** - Hospital patient
 
 ### Use Case Diagram
 
@@ -620,5 +621,148 @@ Overview: The financial dashboard provides fast, role-appropriate access to bill
 
 ### Settings
 - Billing settings: tax, discounts, invoice templates, payment gateways.
+
+---
+
+## 11. Outpatient Department (OPD) Command Center & Queue Management
+
+The OPD Command Center orchestrates patient flow from intake to discharge, minimizing waiting times and preventing bottle-necks across clinics.
+
+```
+                  ┌──────────────────────────────────────────────┐
+                  │    OPD COMMAND CENTER & QUEUE MANAGEMENT     │
+                  └──────────────────────────────────────────────┘
+                                         │
+        ┌────────────────────────────────┼────────────────────────────────┐
+        │                                │                                │
+   ┌────▼──────────────┐          ┌──────▼──────────────┐          ┌──────▼──────────────┐
+   │    RECEPTIONIST   │          │   OPD COORDINATOR   │          │       DOCTOR        │
+   └────┬──────────────┘          └──────┬──────────────┘          └──────┬──────────────┘
+        │                                │                                │
+        ├────────────────────────────────┼────────────────────────────────┤
+        │                                │                                │
+   ┌────▼────────────────────────────────▼────────────────────────────────▼────┐
+   │                           OPD QUEUE CAPABILITIES                          │
+   ├───────────────────────────────────────────────────────────────────────────┤
+   │  • Issue OPD Ticket with Acuity Priority (Emergency, Urgent, Normal)      │
+   │  • Multi-Stage Patient Flow: Registration -> Triage -> Consultation -> Out│
+   │  • Automated Ticket Call & Counter Voice Announcement                     │
+   │  • Skip / No-Show Handling with Configurable Grace Windows               │
+   │  • Recall Skipped Patient to Active Doctor Queue                          │
+   │  • Inter-Clinic Departmental Transfer (e.g., General Med -> Pediatrics)  │
+   │  • Live Waiting-Room Public Display with Audio Chime and Stage Telemetry  │
+   │  • Real-Time Queue Telemetry: Total Today, Waiting, In-Consult, Completed │
+   │  • Average Waiting Time & Service Duration KPI Tracking                   │
+   └───────────────────────────────────────────────────────────────────────────┘
+```
+
+### Key Use Cases:
+- **Issue Ticket**: Generates automated sequential prefix tokens (`A-001`, `P-002`, `E-001`) correlated with patient encounter.
+- **Call Next Patient**: Physician or nurse pulls next eligible patient matching assigned clinic and duty status.
+- **Skip & Grace Period**: Moves unresponding patient to deferred list; permits recall without losing queue history.
+- **Transfer Encounter**: Safely routes patient to secondary clinic or diagnostic station without re-registration.
+- **Waiting-Room Display**: High-contrast, accessibility-ready digital signage tracking calling counters and doctor rooms.
+
+---
+
+## 12. OPD Coordinator Desk & Patient Journey Orchestration
+
+The OPD Coordinator balances acuity, physician specialty matching, and clinic workloads.
+
+### Primary Actor: OPD Coordinator / Charge Nurse
+- **Acuity-Driven Triage Prioritization**: Reviews triage vitals and escalates unstable patients (ESI 1-2) directly to Emergency or Senior Consultants.
+- **Physician Workload Balancing**: Real-time inspection of active doctor rosters, patient queues, and consult runtimes.
+- **Dynamic Consultation Assignment**: Dispatches triaged encounters to on-duty doctors based on current backlog and specialty.
+- **Department Capacity Monitoring**: Identifies clinical bottlenecks (e.g., Radiology backups or Lab turnaround delays) and coordinates relief staffing.
+
+---
+
+## 13. Patient Identification, Duplicate Detection & Cryptographic QR Wristbands
+
+Guarantees positive patient identification at all points of care, eliminates identity fraud, and prevents accidental duplicate patient creation.
+
+```
+                    ┌────────────────────────────────────────┐
+                    │    POSITIVE PATIENT IDENTITY & QR      │
+                    └────────────────────────────────────────┘
+                                        │
+           ┌────────────────────────────┴────────────────────────────┐
+           │                                                         │
+   ┌───────▼──────────────┐                                  ┌───────▼──────────────┐
+   │ RECEPTION / ADMISSION│                                  │ CLINICAL WORKER      │
+   └───────┬──────────────┘                                  └───────┬──────────────┘
+           │                                                         │
+   ┌───────▼─────────────────────────────────┐               ┌───────▼─────────────────────────────────┐
+   │   REGISTRATION & ENROLLMENT SAFETY      │               │   POINT-OF-CARE QR IDENTITY CHECK       │
+   ├─────────────────────────────────────────┤               ├─────────────────────────────────────────┤
+   │ • Probabilistic Duplicate Detection     │               │ • Mobile / Desktop Camera QR Scan       │
+   │   (Name Levenshtein, Phone, DOB, Kebele)│               │ • Cryptographic SHA-256 HMAC Token Check│
+   │ • Conflict Resolution & Merge Workflow  │               │ • Role-Decoupled Clinical Context Fetch │
+   │ • Emergency Unidentified Patient Intake │               │ • Two-Identifier Bedside Verification   │
+   │ • Tamper-Evident Thermal Wristband Print│               │ • Identity Mismatch Incident Reporting │
+   │ • Token Invalidation & Wristband Re-issue│              │ • Immutable QR Scan Audit Trail Log     │
+   └─────────────────────────────────────────┘               └─────────────────────────────────────────┘
+```
+
+### Key Use Cases:
+- **Check Duplicate Patient**: Runs multi-factor phonetic and exact field matching prior to persisting new records.
+- **Print Secure Wristband**: Generates printable thermal wristbands with QR payload containing encrypted, signed patient verification tokens.
+- **Universal Point-of-Care Scan**: Receptionists, nurses, doctors, phlebotomists, and cashiers scan wristband to instantly open the correct active chart without manual typing.
+- **Two-Identifier Clinical Safety**: Mandates cross-checking verbal name/DOB with physical wristband prior to medication administration or blood draw.
+- **Report Identity Mismatch**: Instant safety incident flagging if wristband data conflicts with verbal or chart identity.
+
+---
+
+## 14. Authoritative Staff Shift Duty & Roster Lifecycle
+
+Enforces that only verified, actively clocked-in healthcare personnel can take consultations, administer medications, or process orders.
+
+### Primary Actors: All Clinical & Administrative Staff
+- **Clock-In / Clock-Out**: Staff toggle duty status from the global navigation bar or dedicated shift management portal.
+- **Active Duty Gating**: Automated routing rules prevent assigning queue tickets or consultations to off-duty doctors.
+- **Shift Handover Documentation**: Outgoing physicians record pending critical patients, outstanding lab results, and resuscitation status; incoming physicians review and digitally acknowledge.
+- **Department Roster Telemetry**: Administrators inspect real-time staff counts on-duty across General OPD, Emergency, Pediatrics, ICU, Laboratory, and Cashier counters.
+
+---
+
+## 15. Clinical Governance, CDSS & Auditable Consultation Amendments
+
+Provides doctors with a unified clinical chart, intelligent safety checks, and strict audit compliance.
+
+### Primary Actor: Doctor / Specialist
+- **Unified Clinical Chart**: Single-pane review of chief complaint, medical history, allergies, past encounters, and vital trends.
+- **Clinical Decision Support System (CDSS)**: Automatic real-time cross-referencing of prescribed medications against patient allergy records and drug-drug interaction databases.
+- **ICD-10 Diagnostic Coding**: Standardized disease classification with instant fuzzy search.
+- **Integrated Diagnostic Orders**: In-consultation ordering for Laboratory tests and Radiology imaging.
+- **Immutable Encounter Finalization**: Once signed and completed, the primary consultation note is permanently locked against deletion or silent alteration.
+- **Auditable Addenda / Amendments**: Any post-finalization clinical notes, corrections, or follow-up insights must be recorded as append-only addenda stamped with author ID and timestamp.
+
+---
+
+## 16. Multi-Channel Cashier Operations & Local Electronic Payments
+
+Facilitates streamlined settlement of inpatient and outpatient invoices with support for Ethiopian payment systems.
+
+### Primary Actors: Cashier, Patient, Finance Officer
+- **Unpaid Invoice Queue**: Centralized retrieval of consultation, laboratory, radiology, pharmacy, and bed charges.
+- **TeleBirr Integration**: Electronic mobile money settlement via USSD / API reference verification with automated receipt generation.
+- **CBE Birr Integration**: Commercial Bank of Ethiopia mobile money verification and reconciliation.
+- **Cash & POS Card Processing**: High-speed physical cash collection with change calculation.
+- **POS Receipt Generation & Reprint**: Generation of thermal-printer friendly receipts with verifiable receipt identifiers and audit-logged reprints.
+- **Cashier Shift Register & Z-Reports**: Formal shift open balance, continuous transaction ledger, closing reconciliation, and supervisory handover review.
+
+---
+
+## 17. Unified Responsive Global Navigation & Accessibility
+
+Provides a consistent, high-performance user experience across desktop and mobile form factors.
+
+### Primary Actors: All System Users
+- **Role-Governed Navigation**: Desktop sidebar (`>= 1024px`) and mobile navigation (`< 1024px`) adapt strictly to user RBAC privileges.
+- **Dynamic Workload Badges**: Real-time counters showing live waiting patients on triage, doctor queue, laboratory, and pharmacy badges.
+- **Omnisearch Launcher (`Ctrl+K`)**: Instant system-wide search for patients, records, and departmental tools.
+- **Quick Point-of-Care QR Launcher**: Global header and mobile dock buttons provide instant camera barcode/QR scanning from any screen.
+- **Mobile Touch Dock**: 5 primary thumb-zone touch targets (`Menu`, `Workbench`, `Scan QR`, `Queue`, `Duty Status`).
+
 
 

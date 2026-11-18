@@ -530,6 +530,256 @@
        │                   │                   │                   │                   │
 ```
 
+### 16. Outpatient Department (OPD) End-to-End Patient Journey
+
+```
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+│ Receptionist │   │ Triage Nurse │   │OPDCoordinator│   │    Doctor    │   │   Backend    │   │   Database   │
+└──────┬───────┘   └──────┬───────┘   └──────┬───────┘   └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
+       │                  │                  │                  │                  │                  │
+       │ Check Duplicate  │                  │                  │                  │                  │
+       │ & Register       │                  │                  │                  │                  │
+       │──────────────────┼──────────────────┼──────────────────┼─────────────────>│                  │
+       │                  │                  │                  │                  │ Check Existing   │
+       │                  │                  │                  │                  │─────────────────>│
+       │                  │                  │                  │                  │<─────────────────│
+       │                  │                  │                  │                  │ Create Encounter │
+       │                  │                  │                  │                  │ & Issue Ticket   │
+       │                  │                  │                  │                  │─────────────────>│
+       │                  │                  │                  │                  │<─────────────────│
+       │<─────────────────┼──────────────────┼──────────────────┼──────────────────│                  │
+       │ Print Wristband  │                  │                  │                  │                  │
+       │                  │                  │                  │                  │                  │
+       │ Route to Triage  │                  │                  │                  │                  │
+       │─────────────────>│                  │                  │                  │                  │
+       │                  │ Record Vitals &  │                  │                  │                  │
+       │                  │ Acuity Category  │                  │                  │                  │
+       │                  │──────────────────┼──────────────────┼─────────────────>│                  │
+       │                  │                  │                  │                  │ Persist Vitals & │
+       │                  │                  │                  │                  │ Update Status    │
+       │                  │                  │                  │                  │─────────────────>│
+       │                  │                  │                  │                  │<─────────────────│
+       │                  │<─────────────────┼──────────────────┼──────────────────│                  │
+       │                  │                  │                  │                  │                  │
+       │                  │                  │ Inspect Triage   │                  │                  │
+       │                  │                  │ & Clinic Loads   │                  │                  │
+       │                  │                  │──────────────────┼─────────────────>│                  │
+       │                  │                  │<─────────────────┼──────────────────│                  │
+       │                  │                  │ Assign to Doctor │                  │                  │
+       │                  │                  │ (Check On-Duty)  │                  │                  │
+       │                  │                  │──────────────────┼─────────────────>│                  │
+       │                  │                  │                  │                  │ Validate Duty &  │
+       │                  │                  │                  │                  │ Queue Transition │
+       │                  │                  │                  │                  │─────────────────>│
+       │                  │                  │                  │                  │<─────────────────│
+       │                  │                  │<─────────────────┼──────────────────│                  │
+       │                  │                  │                  │                  │                  │
+       │                  │                  │                  │ Call Patient     │                  │
+       │                  │                  │                  │ From Queue       │                  │
+       │                  │                  │                  │─────────────────>│ Broadcast Call   │
+       │                  │                  │                  │                  │ to Waiting Room  │
+       │                  │                  │                  │                  │─────────────────>│
+       │                  │                  │                  │                  │                  │
+       │                  │                  │                  │ Conduct Consult, │                  │
+       │                  │                  │                  │ CDSS Verification│                  │
+       │                  │                  │                  │ & Finalize       │                  │
+       │                  │                  │                  │─────────────────>│                  │
+       │                  │                  │                  │                  │ Lock Record &    │
+       │                  │                  │                  │                  │ Route Orders     │
+       │                  │                  │                  │                  │─────────────────>│
+       │                  │                  │                  │                  │<─────────────────│
+       │                  │                  │                  │<─────────────────│                  │
+       │                  │                  │                  │                  │                  │
+```
+
+### 17. Hospital-Wide Cryptographic QR Wristband Verification Sequence
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│Clinical Staff│    │ Handheld / UI│    │   Backend    │    │ Cryptography │    │   Database   │
+└──────┬───────┘    └──────┬───────┘    └──────┬───────┘    └──────┬───────┘    └──────┬───────┘
+       │                   │                   │                   │                   │
+       │ Scan Patient      │                   │                   │                   │
+       │ Wristband QR Code │                   │                   │                   │
+       │──────────────────>│                   │                   │                   │
+       │                   │ POST /patients/   │                   │                   │
+       │                   │ scan (qrContent)  │                   │                   │
+       │                   │──────────────────>│                   │                   │
+       │                   │                   │ Validate HMAC /   │                   │
+       │                   │                   │ Signature Token   │                   │
+       │                   │                   │──────────────────>│                   │
+       │                   │                   │                   │ Verify Digest     │
+       │                   │                   │<──────────────────│ Validated         │
+       │                   │                   │                   │                   │
+       │                   │                   │ Query Patient &   │                   │
+       │                   │                   │ Active Encounter  │                   │
+       │                   │                   │──────────────────────────────────────>│
+       │                   │                   │<──────────────────────────────────────│
+       │                   │                   │                   │                   │
+       │                   │                   │ Log QR Audit Event│                   │
+       │                   │                   │ (Actor, ScanTime) │                   │
+       │                   │                   │──────────────────────────────────────>│
+       │                   │<──────────────────│                   │                   │
+       │ Display Patient   │                   │                   │                   │
+       │ Summary & Vitals  │                   │                   │                   │
+       │<──────────────────│                   │                   │                   │
+       │                   │                   │                   │                   │
+       │ Perform 2-ID      │                   │                   │                   │
+       │ Verbal Check      │                   │                   │                   │
+       │ (Name & DOB/MRN)  │                   │                   │                   │
+       │──────────────────>│                   │                   │                   │
+       │                   │ POST /patients/qr/│                   │                   │
+       │                   │ confirm-verify    │                   │                   │
+       │                   │──────────────────>│                   │                   │
+       │                   │                   │ Log Two-Identifier│                   │
+       │                   │                   │ Safety Confirmation                   │
+       │                   │                   │──────────────────────────────────────>│
+       │                   │<──────────────────│                   │                   │
+       │ Access Safe Chart │                   │                   │                   │
+       │<──────────────────│                   │                   │                   │
+       │                   │                   │                   │                   │
+```
+
+### 18. Staff Shift Duty & Roster Lifecycle Sequence
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│Health Worker │    │ Global Nav / │    │   Backend    │    │ Socket.io /  │    │   Database   │
+│ (Doc / Nurse)│    │ Shift Portal │    │ (Shift Svc)  │    │ Notification │    │ (Shift & DB) │
+└──────┬───────┘    └──────┬───────┘    └──────┬───────┘    └──────┬───────┘    └──────┬───────┘
+       │                   │                   │                   │                   │
+       │ Click "Clock In"  │                   │                   │                   │
+       │ Duty Toggle       │                   │                   │                   │
+       │──────────────────>│                   │                   │                   │
+       │                   │ PUT /shifts/:id/  │                   │                   │
+       │                   │ toggle-duty       │                   │                   │
+       │                   │──────────────────>│                   │                   │
+       │                   │                   │ Update Shift Duty │                   │
+       │                   │                   │ on_duty = true    │                   │
+       │                   │                   │──────────────────────────────────────>│
+       │                   │                   │<──────────────────────────────────────│
+       │                   │                   │ Broadcast Roster  │                   │
+       │                   │                   │ Update to Dept    │                   │
+       │                   │                   │──────────────────>│                   │
+       │                   │<──────────────────│                   │                   │
+       │ Status: "ON DUTY" │                   │                   │                   │
+       │ Active in Queue   │                   │                   │                   │
+       │<──────────────────│                   │                   │                   │
+       │                   │                   │                   │                   │
+       │ [End of Shift]    │                   │                   │                   │
+       │ Submit Shift      │                   │                   │                   │
+       │ Handover Summary  │                   │                   │                   │
+       │──────────────────>│                   │                   │                   │
+       │                   │ POST /shifts/     │                   │                   │
+       │                   │ handover          │                   │                   │
+       │                   │──────────────────>│ Record Handover   │                   │
+       │                   │                   │ Notes & Patients  │                   │
+       │                   │                   │──────────────────────────────────────>│
+       │                   │                   │ Notify Next Shift │                   │
+       │                   │                   │──────────────────>│                   │
+       │                   │                   │ Toggle on_duty    │                   │
+       │                   │                   │ on_duty = false   │                   │
+       │                   │                   │──────────────────────────────────────>│
+       │                   │<──────────────────│                   │                   │
+       │ Status: "OFF DUTY"│                   │                   │                   │
+       │<──────────────────│                   │                   │                   │
+       │                   │                   │                   │                   │
+```
+
+### 19. Immutable Clinical Consultation & Auditable Addenda Sequence
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│    Doctor    │    │ Consultation │    │   Backend    │    │ CDSS Engine  │    │   Database   │
+│              │    │     Page     │    │              │    │  (Drug/Allgy)│    │              │
+└──────┬───────┘    └──────┬───────┘    └──────┬───────┘    └──────┬───────┘    └──────┬───────┘
+       │                   │                   │                   │                   │
+       │ Prescribe Meds    │                   │                   │                   │
+       │ & Lab Orders      │                   │                   │                   │
+       │──────────────────>│                   │                   │                   │
+       │                   │ Evaluate Clinical │                   │                   │
+       │                   │ Decision Rules    │                   │                   │
+       │                   │──────────────────>│                   │                   │
+       │                   │                   │ Cross-Check Meds  │                   │
+       │                   │                   │ vs Allergies/Rx   │                   │
+       │                   │                   │──────────────────>│                   │
+       │                   │                   │<──────────────────│ Safe / Warnings   │
+       │                   │<──────────────────│                   │                   │
+       │ Display Alerts    │                   │                   │                   │
+       │ (if any)          │                   │                   │                   │
+       │<──────────────────│                   │                   │                   │
+       │                   │                   │                   │                   │
+       │ Sign & Complete   │                   │                   │                   │
+       │ Consultation      │                   │                   │                   │
+       │──────────────────>│ POST /encounters/ │                   │                   │
+       │                   │ :id/complete-cons │                   │                   │
+       │                   │──────────────────>│ Lock Encounter    │                   │
+       │                   │                   │ is_locked = true  │                   │
+       │                   │                   │ status = COMPLETED│                   │
+       │                   │                   │──────────────────────────────────────>│
+       │                   │<──────────────────│                   │                   │
+       │ Consultation      │                   │                   │                   │
+       │ Locked (Read-Only)│                   │                   │                   │
+       │<──────────────────│                   │                   │                   │
+       │                   │                   │                   │                   │
+       │ [Later: Need to   │                   │                   │                   │
+       │ Add Addendum]     │                   │                   │                   │
+       │ Enter Amendment   │                   │                   │                   │
+       │──────────────────>│ POST /consults/   │                   │                   │
+       │                   │ :id/addenda       │                   │                   │
+       │                   │──────────────────>│ Validate Doctor & │                   │
+       │                   │                   │ Append Note with  │                   │
+       │                   │                   │ Timestamp & Hash  │                   │
+       │                   │                   │──────────────────────────────────────>│
+       │                   │<──────────────────│                   │                   │
+       │ Addendum Visible  │                   │                   │                   │
+       │ in Audit History  │                   │                   │                   │
+       │<──────────────────│                   │                   │                   │
+       │                   │                   │                   │                   │
+```
+
+### 20. Cashier Multi-Channel Payment & TeleBirr / CBE Birr Settlement Sequence
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│   Cashier    │    │ Cashier POS  │    │   Backend    │    │ TeleBirr /   │    │   Database   │
+│              │    │  Interface   │    │              │    │ CBE Birr API │    │              │
+└──────┬───────┘    └──────┬───────┘    └──────┬───────┘    └──────┬───────┘    └──────┬───────┘
+       │                   │                   │                   │                   │
+       │ Select Encounter /│                   │                   │                   │
+       │ Unpaid Invoice    │                   │                   │                   │
+       │──────────────────>│ GET /invoices/    │                   │                   │
+       │                   │ unpaid            │                   │                   │
+       │                   │──────────────────>│                   │                   │
+       │                   │<──────────────────│ Retrieve Items    │                   │
+       │ Display Balance   │                   │                   │                   │
+       │<──────────────────│                   │                   │                   │
+       │                   │                   │                   │                   │
+       │ Patient Pays via  │                   │                   │                   │
+       │ TeleBirr/CBE Birr │                   │                   │                   │
+       │ (Enters Ref No.)  │                   │                   │                   │
+       │──────────────────>│                   │                   │                   │
+       │                   │ POST /cashier/    │                   │                   │
+       │                   │ verify-reference  │                   │                   │
+       │                   │──────────────────>│ Verify Unique Ref │                   │
+       │                   │                   │ Anti-Replay Check │                   │
+       │                   │                   │──────────────────>│                   │
+       │                   │                   │<──────────────────│ Verified          │
+       │                   │<──────────────────│                   │                   │
+       │ Process Payment   │                   │                   │                   │
+       │──────────────────>│ POST /cashier/    │                   │                   │
+       │                   │ payments/process  │                   │                   │
+       │                   │──────────────────>│ Create Ledger     │                   │
+       │                   │                   │ Mark Invoices PAID│                   │
+       │                   │                   │ Generate ReceiptNo│                   │
+       │                   │                   │──────────────────────────────────────>│
+       │                   │<──────────────────│                   │                   │
+       │ Print Formal POS  │                   │                   │                   │
+       │ Receipt / QR Stamp│                   │                   │                   │
+       │<──────────────────│                   │                   │                   │
+       │                   │                   │                   │                   │
+```
+
 ### Legend
 
 - **Horizontal arrows**: Message/Request flow

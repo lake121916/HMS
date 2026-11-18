@@ -929,3 +929,157 @@
                   │ End          │
                   └──────────────┘
 ```
+
+
+---
+
+### 16. Outpatient Department (OPD) End-to-End Patient Flow Activity
+
+```
+┌───────────────────────┐
+│     Receptionist      │
+└───────────┬───────────┘
+            │
+            ▼
+┌───────────────────────┐
+│ Check Patient For     │
+│ Probabilistic Dupes   │
+└───────────┬───────────┘
+            │
+            ├─────────────────────────────────┐
+            │ Duplicate Found                 │ Unique / Verified
+            ▼                                 ▼
+┌───────────────────────┐         ┌───────────────────────┐
+│ Re-use / Merge MRN    │         │ Register New Patient  │
+│ Record                │         │ & Generate MRN        │
+└───────────┬───────────┘         └───────────┬───────────┘
+            │                                 │
+            └────────────────┬────────────────┘
+                             │
+                             ▼
+                  ┌───────────────────────┐
+                  │ Print Encrypted QR    │
+                  │ Patient Wristband     │
+                  └──────────┬────────────┘
+                             │
+                             ▼
+                  ┌───────────────────────┐
+                  │ Issue OPD Token       │
+                  │ & Route to Triage     │
+                  └──────────┬────────────┘
+                             │
+                             ▼
+                  ┌───────────────────────┐
+                  │  Triage Nurse Vital   │
+                  │  Signs & ESI Acuity   │
+                  └──────────┬────────────┘
+                             │
+                             ├─────────────────────────────────┐
+                             │ ESI 1 (Resuscitation)           │ ESI 3-5 (Routine / Stable)
+                             ▼                                 ▼
+                  ┌───────────────────────┐         ┌───────────────────────┐
+                  │ Direct Route to       │         │ Queue for OPD         │
+                  │ Emergency Trauma      │         │ Coordinator Desk      │
+                  └───────────────────────┘         └──────────┬────────────┘
+                                                               │
+                                                               ▼
+                                                    ┌───────────────────────┐
+                                                    │ OPD Coordinator       │
+                                                    │ Dynamic Assignment    │
+                                                    └──────────┬────────────┘
+                                                               │
+                                                               ▼
+                                                    ┌───────────────────────┐
+                                                    │ Physician Consultation│
+                                                    │ & CDSS Prescription   │
+                                                    └──────────┬────────────┘
+                                                               │
+                                                               ▼
+                                                    ┌───────────────────────┐
+                                                    │ Finalize & Lock Note  │
+                                                    │ (Addenda Audited)     │
+                                                    └──────────┬────────────┘
+                                                               │
+                                                               ▼
+                                                    ┌───────────────────────┐
+                                                    │ Cashier Settlement    │
+                                                    │ (TeleBirr / CBE / Cash│
+                                                    └──────────┬────────────┘
+                                                               │
+                                                               ▼
+                                                    ┌───────────────────────┐
+                                                    │ Pharmacy Dispense /   │
+                                                    │ Laboratory Worklist   │
+                                                    └──────────┬────────────┘
+                                                               │
+                                                               ▼
+                                                    ┌───────────────────────┐
+                                                    │ End                   │
+                                                    └───────────────────────┘
+```
+
+---
+
+### 17. Staff Shift Duty & Roster Lifecycle Activity
+
+```
+┌───────────────────────┐
+│   Healthcare Staff    │
+└───────────┬───────────┘
+            │
+            ▼
+┌───────────────────────┐
+│ Open Global Nav /     │
+│ Mobile Touch Dock     │
+└───────────┬───────────┘
+            │
+            ▼
+┌───────────────────────┐
+│ Click "Clock In"      │
+│ Duty Switch           │
+└───────────┬───────────┘
+            │
+            ▼
+┌───────────────────────┐
+│ Backend Validates     │
+│ Shift Eligibility     │
+└───────────┬───────────┘
+            │
+            ├─────────────────────────────────┐
+            │ Active                          │ Inactive / Denied
+            ▼                                 ▼
+┌───────────────────────┐         ┌───────────────────────┐
+│ Mark on_duty = true   │         │ Display Error Alert   │
+│ & Broadcast Roster    │         └───────────────────────┘
+└───────────┬───────────┘
+            │
+            ▼
+┌───────────────────────┐
+│ Receive Queued        │
+│ Patient Consultations │
+└───────────┬───────────┘
+            │
+            ▼
+┌───────────────────────┐
+│ [Shift Concludes]     │
+│ Fill Out Clinical     │
+│ Handover Summary      │
+└───────────┬───────────┘
+            │
+            ▼
+┌───────────────────────┐
+│ Incoming Colleague    │
+│ Digitally Acknowledges│
+└───────────┬───────────┘
+            │
+            ▼
+┌───────────────────────┐
+│ Mark on_duty = false  │
+│ (Off Duty)            │
+└───────────┬───────────┘
+            │
+            ▼
+┌───────────────────────┐
+│ End                   │
+└───────────────────────┘
+```
