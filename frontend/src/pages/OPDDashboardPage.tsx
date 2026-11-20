@@ -372,7 +372,7 @@ export const OPDDashboardPage: React.FC = () => {
                 Alem Ketema Enat Hospital
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+            <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white flex items-start sm:items-center gap-3 break-words">
               <Building2 className="w-8 h-8 text-cyan-400" />
               <span>{language === 'am' ? 'የተመላላሽ ሕክምና (OPD) ማዕከላዊ ዳሽቦርድ' : 'Outpatient Department Command Center'}</span>
             </h1>
@@ -426,7 +426,7 @@ export const OPDDashboardPage: React.FC = () => {
       </div>
 
       {/* ── 2. TOP 10 OPERATIONAL KPI CARDS ─────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Total Today */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
@@ -590,7 +590,7 @@ export const OPDDashboardPage: React.FC = () => {
         </div>
 
         {/* Interactive Station Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">
+        <div className="grid grid-cols-1 min-[360px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-3.5">
           {/* 1. Reception */}
           <div
             onClick={() => navigate('/reception-workflow')}

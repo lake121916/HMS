@@ -592,11 +592,11 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
             </button>
 
             {/* Mobile Logo Brand */}
-            <Link to="/" className="lg:hidden flex items-center gap-2 select-none">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-xs">
+            <Link to="/" className="lg:hidden flex items-center gap-1.5 sm:gap-2 select-none shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-xs shrink-0">
                 AKEH
               </div>
-              <span className="font-extrabold text-xs text-white truncate max-w-[120px] sm:max-w-none">
+              <span className="hidden min-[380px]:inline-block font-extrabold text-xs text-white truncate max-w-[75px] min-[420px]:max-w-[120px] sm:max-w-none">
                 Alem Ketema
               </span>
             </Link>
@@ -636,12 +636,12 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
           </div>
 
           {/* Right Action Icons */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Mobile Search Button (< sm) */}
             <button
               type="button"
               onClick={() => setQuickSearchOpen(true)}
-              className="sm:hidden flex items-center justify-center w-8 h-8 rounded-xl border border-navy-700/80 bg-navy-900/60 text-cyan-400 hover:bg-navy-800 transition cursor-pointer"
+              className="sm:hidden flex items-center justify-center w-8 h-8 rounded-xl border border-navy-700/80 bg-navy-900/60 text-cyan-400 hover:bg-navy-800 transition cursor-pointer shrink-0"
               title="Search patient"
             >
               <Search className="w-4 h-4" />

@@ -447,7 +447,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
 
       {/* ── Priority Metrics KPI Cards ── */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 min-[360px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {[
             { label: 'Total Accounts', value: stats.totalUsers, icon: Users, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' },
             { label: 'Active Users', value: stats.activeUsers, icon: CheckCircle, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' },
@@ -1024,7 +1024,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 min-[360px]:grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
               <span className="text-[11px] font-bold text-gray-400 uppercase">Total Queued / Processed</span>
               <p className="text-xl font-extrabold text-gray-900 dark:text-white mt-1">{notificationQueue.length}</p>

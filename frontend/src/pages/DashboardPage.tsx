@@ -115,11 +115,11 @@ const DashboardPage: React.FC = () => {
         badge={user?.role === 'super_admin' ? 'Super Admin' : 'Executive Overview'}
         icon={Building2}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
               onClick={() => navigate('/opd')}
-              className="h-9 px-3.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/25 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+              className="h-9 px-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/25 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               <Activity className="w-4 h-4" />
               <span>OPD Hub</span>
@@ -127,19 +127,19 @@ const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/reports')}
-              className="h-9 px-3.5 rounded-xl bg-navy-800 hover:bg-navy-700 text-slate-200 border border-navy-700 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+              className="h-9 px-3 rounded-xl bg-navy-800 hover:bg-navy-700 text-slate-200 border border-navy-700 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">Analytics</span>
+              <span>Analytics</span>
             </button>
             <button
               type="button"
               onClick={fetchDashboardData}
               disabled={loading}
-              className="h-9 px-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white text-xs font-bold shadow-xs transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              className="h-9 px-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white text-xs font-bold shadow-xs transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shrink-0"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Refresh</span>
+              <span>Refresh</span>
             </button>
           </div>
         }
@@ -165,7 +165,7 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* ── 3. Luminous Gradient Statistic Cards ─────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-7 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-1 min-[360px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-7 gap-3 sm:gap-4">
         <StatisticCard
           title="Total Patients"
           amharicTitle="ጠቅላላ ታካሚዎች"

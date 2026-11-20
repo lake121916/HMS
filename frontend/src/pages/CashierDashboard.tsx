@@ -387,7 +387,7 @@ const CashierDashboard: React.FC = () => {
       {activeTab === 'dashboard' && stats && (
         <div className="space-y-6">
           {/* Main Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 min-[360px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             <StatCard label="Today's Collections" value={`${fmt(stats.todayPayments)} ETB`} icon={DollarSign} color="bg-emerald-50 text-emerald-600" />
             <StatCard label="Completed Transactions" value={stats.todayTransactions} icon={Clock} color="bg-blue-50 text-blue-600" />
             <StatCard label="Unpaid Invoices" value={stats.unpaidInvoices} icon={FileText} color="bg-red-50 text-red-600" />
@@ -409,7 +409,7 @@ const CashierDashboard: React.FC = () => {
               ) : null}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
               <StatCard label="Cash (Drawer)" value={`${fmt(stats.cashPayments)} ETB`} icon={DollarSign} color="bg-green-50 text-green-600" />
               <StatCard label="Card (POS)" value={`${fmt(stats.cardPayments)} ETB`} icon={CreditCard} color="bg-blue-50 text-blue-600" />
               <StatCard label="Telebirr (Till 654321)" value={`${fmt(stats.telebirrPayments)} ETB`} icon={Smartphone} color="bg-purple-50 text-purple-600" />

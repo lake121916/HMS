@@ -217,7 +217,7 @@ const RadiologyPage: React.FC = () => {
       />
 
       {/* ── Metric Cards ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <StatisticCard
           title="Total Imaging Orders"
           amharicTitle="ጠቅላላ ትእዛዞች"

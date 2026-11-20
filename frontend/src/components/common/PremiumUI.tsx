@@ -28,38 +28,38 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   actions,
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-navy-800/80 transition-colors">
-      <div className="flex items-center gap-3.5 min-w-0">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-slate-200 dark:border-navy-800/80 transition-colors">
+      <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0">
         {Icon && (
-          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-cyan-500/20 via-blue-500/10 to-teal-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 shadow-xs">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-cyan-500/20 via-blue-500/10 to-teal-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 shadow-xs mt-0.5 sm:mt-0">
             <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         )}
-        <div className="min-w-0">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+            <h1 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight break-words">
               {title}
             </h1>
             {amharicTitle && (
-              <span className="text-xs sm:text-sm font-amharic font-semibold text-slate-700 dark:text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/20">
+              <span className="text-xs sm:text-sm font-amharic font-semibold text-slate-700 dark:text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/20 break-words">
                 {amharicTitle}
               </span>
             )}
             {badge && (
-              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 shadow-2xs">
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 shadow-2xs shrink-0">
                 {badge}
               </span>
             )}
           </div>
           {subtitle && (
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 leading-normal">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 leading-normal break-words">
               {subtitle}
             </p>
           )}
         </div>
       </div>
       {actions && (
-        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+        <div className="w-full sm:w-auto flex flex-wrap items-center gap-2 pt-1 sm:pt-0 shrink-0">
           {actions}
         </div>
       )}
@@ -96,20 +96,20 @@ export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1.5 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-cyan-300">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-cyan-300 break-words">
               Alem Ketema Enat General Hospital
             </span>
             {departmentName && (
               <>
                 <span className="text-slate-500">•</span>
-                <span className="text-xs text-slate-300 font-semibold">{departmentName}</span>
+                <span className="text-xs text-slate-300 font-semibold break-words">{departmentName}</span>
               </>
             )}
           </div>
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white">
+          <h2 className="text-lg sm:text-2xl lg:text-3xl font-black tracking-tight text-white break-words">
             Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-200 to-teal-200">{userName}</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed max-w-2xl">
+          <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed max-w-2xl break-words">
             Active workspace assigned as <span className="text-cyan-300 font-bold capitalize">{roleName}</span>. Real-time clinical telemetry and synchronized queues active.
           </p>
         </div>
@@ -131,11 +131,11 @@ export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({
           )}
 
           {metrics && metrics.length > 0 && (
-            <div className="flex items-center justify-between sm:justify-start gap-2.5 sm:gap-4 divide-x divide-white/10 bg-black/35 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/10 w-full sm:w-auto overflow-x-auto no-scrollbar">
+            <div className="grid grid-cols-3 gap-2 w-full sm:w-auto sm:flex sm:items-center sm:gap-4 sm:divide-x sm:divide-white/10 bg-black/35 backdrop-blur-md p-2.5 sm:px-3.5 sm:py-2 rounded-xl border border-white/10">
               {metrics.map((m, idx) => (
-                <div key={idx} className={idx > 0 ? 'pl-2.5 sm:pl-4' : ''}>
-                  <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{m.label}</div>
-                  <div className="text-sm sm:text-base font-extrabold text-cyan-300 font-mono">{m.value}</div>
+                <div key={idx} className={`text-center sm:text-left ${idx > 0 ? 'sm:pl-4 border-l border-white/10 sm:border-l-0' : ''}`}>
+                  <div className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold tracking-wider truncate">{m.label}</div>
+                  <div className="text-xs sm:text-base font-extrabold text-cyan-300 font-mono">{m.value}</div>
                 </div>
               ))}
             </div>
@@ -230,37 +230,37 @@ export const StatisticCard: React.FC<StatisticCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white dark:bg-navy-900 dark:bg-gradient-to-br ${styles.cardBg} p-4 sm:p-5 border border-slate-200 dark:${styles.borderColor} shadow-xs min-h-[136px] sm:min-h-[144px] transition-all duration-200 ${styles.glowHover} ${
+      className={`relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white dark:bg-navy-900 dark:bg-gradient-to-br ${styles.cardBg} p-3.5 sm:p-5 border border-slate-200 dark:${styles.borderColor} shadow-xs min-h-[128px] sm:min-h-[144px] transition-all duration-200 ${styles.glowHover} ${
         onClick ? 'cursor-pointer active:scale-[0.99] hover:-translate-y-0.5' : ''
       } ${className}`}
     >
       <div>
-        <div className="flex items-start justify-between gap-2.5 mb-2">
+        <div className="flex items-start justify-between gap-2 mb-1.5 sm:mb-2">
           <div className="min-w-0 flex-1">
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-snug line-clamp-2 block" title={title}>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-snug line-clamp-2 block break-words" title={title}>
               {title}
             </span>
             {amharicTitle && (
-              <span className="text-[11px] font-amharic text-slate-500 dark:text-slate-400 leading-tight block mt-0.5 truncate" title={amharicTitle}>
+              <span className="text-[10px] sm:text-[11px] font-amharic text-slate-500 dark:text-slate-400 leading-tight block mt-0.5 break-words" title={amharicTitle}>
                 {amharicTitle}
               </span>
             )}
           </div>
-          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center shrink-0 ${styles.iconBg} ${styles.iconColor} shadow-xs`}>
+          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center shrink-0 ${styles.iconBg} ${styles.iconColor} shadow-xs`}>
             <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
 
-        <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none mt-1">
+        <div className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none mt-1 break-words">
           {value}
         </div>
       </div>
 
       {(change !== undefined || subtitle) && (
-        <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-xs gap-2">
+        <div className="mt-2.5 sm:mt-3 pt-2 sm:pt-2.5 border-t border-slate-100 dark:border-white/5 flex flex-wrap items-center justify-between text-xs gap-1 sm:gap-2">
           {change !== undefined && (
             <div
-              className={`inline-flex items-center gap-1 font-bold ${
+              className={`inline-flex items-center gap-1 font-bold shrink-0 text-[10px] sm:text-xs ${
                 changeType === 'positive'
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : changeType === 'negative'
@@ -268,13 +268,13 @@ export const StatisticCard: React.FC<StatisticCardProps> = ({
                   : 'text-slate-500 dark:text-slate-400'
               }`}
             >
-              {changeType === 'positive' && <TrendingUp className="w-3.5 h-3.5" />}
-              {changeType === 'negative' && <TrendingDown className="w-3.5 h-3.5" />}
+              {changeType === 'positive' && <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+              {changeType === 'negative' && <TrendingDown className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
               <span>{change}</span>
             </div>
           )}
           {subtitle && (
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate text-right ml-auto">
+            <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 leading-tight text-right ml-auto break-words">
               {subtitle}
             </span>
           )}
