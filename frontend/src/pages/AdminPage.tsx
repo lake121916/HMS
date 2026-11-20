@@ -387,22 +387,22 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
     return matchesSearch && matchesStatus;
   });
 
-  const inputClass = "w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all";
+  const inputClass = "w-full px-4 py-2.5 border border-slate-200 dark:border-navy-700/80 rounded-xl text-sm bg-white dark:bg-navy-900 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all";
 
   return (
     <RoleGuard allowedRoles={['super_admin']}>
     <div className="space-y-6">
       {/* ── Priority 1: Header Command Banner & Quick Actions ── */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-4 sm:p-6 rounded-2xl sm:rounded-3xl text-white shadow-xl">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-navy-900 via-navy-850 to-[#071329] border border-cyan-500/25 p-4 sm:p-6 rounded-2xl sm:rounded-3xl text-white shadow-xl">
         <div className="space-y-1.5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center border border-blue-400/30">
-              <Shield className="w-6 h-6 text-blue-400" />
+            <div className="w-10 h-10 bg-cyan-500/20 rounded-xl flex items-center justify-center border border-cyan-400/30">
+              <Shield className="w-6 h-6 text-cyan-400" />
             </div>
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
                 Super Admin Control Center
-                <span className="text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 px-2 py-0.5 rounded-full">
                   System Live
                 </span>
               </h1>
@@ -417,20 +417,20 @@ const AdminPage: React.FC<AdminPageProps> = ({ initialTab }) => {
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => setTab('add_user')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
           >
             <UserPlus className="w-4 h-4" /> Add User (Full Requirements)
           </button>
           <button
             onClick={() => setTab('roles')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 bg-navy-800 hover:bg-navy-750 text-slate-200 border border-navy-700 font-semibold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
           >
-            <ShieldCheck className="w-4 h-4" /> System Roles
+            <ShieldCheck className="w-4 h-4 text-cyan-400" /> System Roles
           </button>
           <button
             onClick={fetchAll}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-slate-700/80 hover:bg-slate-600 text-slate-200 text-xs font-medium rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-navy-800 hover:bg-navy-750 border border-navy-700 text-slate-200 text-xs font-medium rounded-xl transition-all disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </button>

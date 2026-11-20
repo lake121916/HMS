@@ -484,12 +484,12 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
               onClick={() => isDrawer && setSidebarOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-xs transition-all relative group cursor-pointer ${
                 isActive
-                  ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-navy-800/60'
+                  ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shadow-xs'
+                  : 'text-slate-400 hover:text-white hover:bg-navy-800/70 border border-transparent'
               }`}
               title={isCollapsed && !isDrawer ? item.name : undefined}
             >
-              <Icon className={`w-4 h-4 shrink-0 transition-transform ${isActive ? 'text-cyan-500 scale-110' : 'group-hover:scale-105'}`} />
+              <Icon className={`w-4 h-4 shrink-0 transition-transform ${isActive ? 'text-cyan-400 scale-110' : 'group-hover:text-cyan-400 group-hover:scale-105'}`} />
               {(!isCollapsed || isDrawer) && (
                 <span className="truncate">{item.name}</span>
               )}
@@ -497,10 +497,22 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
                 <span className={`ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
                   isActive
                     ? 'bg-cyan-500 text-white'
-                    : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                 }`}>
                   {badgeCount}
                 </span>
+              )}
+
+              {/* Collapsed Tooltip */}
+              {isCollapsed && !isDrawer && (
+                <div className="hidden group-hover:flex absolute left-full ml-3 px-3 py-1.5 bg-navy-900 text-white text-xs font-bold rounded-xl shadow-2xl border border-navy-700 whitespace-nowrap z-50 pointer-events-none items-center gap-2">
+                  <span>{item.name}</span>
+                  {badgeCount !== null && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-cyan-500 text-white font-mono">
+                      {badgeCount}
+                    </span>
+                  )}
+                </div>
               )}
             </Link>
           );
@@ -657,16 +669,16 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
             )}
 
             {/* Staff Role Badge (>= lg) */}
-            <div className="hidden lg:flex items-center gap-2 pl-2 pr-3 py-1 rounded-xl bg-navy-900/60 border border-navy-700/60">
+            <div className="hidden lg:flex items-center gap-2 pl-2 pr-3 h-9 rounded-xl bg-navy-900 border border-navy-700/80 shadow-2xs">
               <ProfileAvatar
                 userId={user?.id || 0}
                 hasPhoto={!!user?.profilePhotoUpdatedAt}
                 photoVersion={user?.profilePhotoUpdatedAt}
                 initials={(user?.firstName?.[0] || 'U').toUpperCase()}
-                className="w-6 h-6 rounded-lg bg-cyan-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0"
+                className="w-6 h-6 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0"
               />
               <div className="text-left leading-tight min-w-0">
-                <span className="block text-xs font-bold text-slate-100 truncate max-w-[120px]">
+                <span className="block text-xs font-bold text-white truncate max-w-[120px]">
                   {user?.firstName} {user?.lastName}
                 </span>
                 <span className="block text-[9px] font-extrabold uppercase tracking-wider text-cyan-400">
@@ -686,10 +698,11 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
               <button
                 type="button"
                 onClick={() => setThemeOpen(!themeOpen)}
-                className="p-1.5 sm:p-2 rounded-xl text-slate-300 hover:bg-navy-800 transition cursor-pointer"
+                className="h-9 w-9 rounded-xl flex items-center justify-center text-slate-300 hover:text-cyan-400 bg-navy-900 border border-navy-700/80 hover:border-cyan-500/40 transition cursor-pointer"
                 title="Customize Theme"
+                aria-label="Customize Theme"
               >
-                <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-500" />
+                <Palette className="w-4 h-4 text-cyan-400" />
               </button>
 
               {themeOpen && (
@@ -752,12 +765,13 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
               <button
                 type="button"
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="relative p-1.5 sm:p-2 rounded-xl text-slate-300 hover:bg-navy-800 transition cursor-pointer"
+                className="relative h-9 w-9 rounded-xl flex items-center justify-center text-slate-300 hover:text-cyan-400 bg-navy-900 border border-navy-700/80 hover:border-cyan-500/40 transition cursor-pointer"
                 aria-label="Notifications"
+                title="Notifications"
               >
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-rose-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold leading-none animate-pulse">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold leading-none animate-pulse">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -793,14 +807,15 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
               <button
                 type="button"
                 onClick={() => setSettingsOpen(prev => !prev)}
-                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border transition flex items-center justify-center cursor-pointer shrink-0 ${
+                className={`h-9 w-9 rounded-xl border transition flex items-center justify-center cursor-pointer shrink-0 ${
                   settingsOpen
-                    ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400'
-                    : 'bg-navy-800 hover:bg-navy-700 border-navy-700 text-slate-200'
+                    ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-400'
+                    : 'bg-navy-900 hover:bg-navy-800 border-navy-700/80 hover:border-cyan-500/40 text-slate-200'
                 }`}
                 title="Account Settings"
+                aria-label="Account Settings"
               >
-                <Settings className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 ${settingsOpen ? 'rotate-90 text-cyan-400' : ''}`} />
+                <Settings className={`w-4 h-4 transition-transform duration-200 ${settingsOpen ? 'rotate-90 text-cyan-400' : ''}`} />
               </button>
 
               {/* Settings Dropdown Popover */}
@@ -947,32 +962,31 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
 
       {/* ── MOBILE BOTTOM NAVIGATION DOCK (< lg / Phones) ──────────── */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden h-16 bg-navy-950/95 backdrop-blur-lg border-t border-navy-800/80 px-2 flex items-center justify-around select-none">
-        {/* 1. Role Workbench */}
+        {/* 1. Full Department & System Drawer Menu */}
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          className="flex flex-col items-center justify-center min-w-[48px] h-12 py-1 px-1.5 rounded-xl text-slate-300 hover:text-cyan-400 active:scale-95 transition cursor-pointer"
+          title="Open Navigation Menu"
+          aria-label="Open Navigation Menu"
+        >
+          <Menu className="w-5 h-5" />
+          <span className="text-[10px] font-semibold tracking-tight mt-0.5">{language === 'am' ? 'ዝርዝር' : 'Menu'}</span>
+        </button>
+
+        {/* 2. Role Workbench */}
         <Link
           to={getRoleWorkbenchUrl(user?.role || '')}
-          className={`flex flex-col items-center justify-center min-w-[54px] py-1 px-1.5 rounded-xl transition cursor-pointer ${
+          className={`flex flex-col items-center justify-center min-w-[48px] h-12 py-1 px-1.5 rounded-xl transition cursor-pointer ${
             location.pathname === getRoleWorkbenchUrl(user?.role || '')
-              ? 'text-cyan-600 dark:text-cyan-400 font-extrabold'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              ? 'text-cyan-400 font-extrabold bg-cyan-500/10'
+              : 'text-slate-400 hover:text-slate-200'
           }`}
           title="Workbench"
+          aria-label="Workbench"
         >
           <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight mt-0.5">{language === 'am' ? 'ሥራ' : 'Workbench'}</span>
-        </Link>
-
-        {/* 2. OPD Command Hub */}
-        <Link
-          to="/opd"
-          className={`flex flex-col items-center justify-center min-w-[54px] py-1 px-1.5 rounded-xl transition cursor-pointer ${
-            location.pathname === '/opd'
-              ? 'text-cyan-600 dark:text-cyan-400 font-extrabold'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-          }`}
-          title="OPD Command Center"
-        >
-          <Building2 className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight mt-0.5">OPD</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-0.5">{language === 'am' ? 'ሥራ' : 'Workbench'}</span>
         </Link>
 
         {/* 3. Center Elevated Action: Quick Patient QR Scanner */}
@@ -980,50 +994,73 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
           <button
             type="button"
             onClick={() => setPatientScannerOpen(true)}
-            className="flex flex-col items-center justify-center -mt-5 w-12 h-12 rounded-full bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-lg active:scale-95 transition border-2 border-white dark:border-navy-950 cursor-pointer"
+            className="flex flex-col items-center justify-center -mt-5 w-12 h-12 rounded-full bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-xl active:scale-95 transition border-2 border-navy-950 cursor-pointer"
             title="Scan Patient Wristband"
+            aria-label="Scan Patient QR Wristband"
           >
             <Scan className="w-5 h-5" />
           </button>
         ) : (
           <Link
             to="/appointments"
-            className={`flex flex-col items-center justify-center min-w-[54px] py-1 px-1.5 rounded-xl transition cursor-pointer ${
+            className={`flex flex-col items-center justify-center min-w-[48px] h-12 py-1 px-1.5 rounded-xl transition cursor-pointer ${
               location.pathname === '/appointments'
-                ? 'text-cyan-600 dark:text-cyan-400 font-extrabold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                ? 'text-cyan-400 font-extrabold bg-cyan-500/10'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
             title="Appointments"
+            aria-label="Appointments"
           >
             <Calendar className="w-5 h-5" />
-            <span className="text-[10px] tracking-tight mt-0.5">Appts</span>
+            <span className="text-[10px] font-semibold tracking-tight mt-0.5">Appts</span>
           </Link>
         )}
 
         {/* 4. Smart Queue */}
         <Link
           to="/queue-management"
-          className={`flex flex-col items-center justify-center min-w-[54px] py-1 px-1.5 rounded-xl transition cursor-pointer ${
+          className={`flex flex-col items-center justify-center min-w-[48px] h-12 py-1 px-1.5 rounded-xl transition cursor-pointer ${
             location.pathname === '/queue-management'
-              ? 'text-cyan-600 dark:text-cyan-400 font-extrabold'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              ? 'text-cyan-400 font-extrabold bg-cyan-500/10'
+              : 'text-slate-400 hover:text-slate-200'
           }`}
           title="Smart Queue"
+          aria-label="Smart Queue"
         >
           <Radio className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight mt-0.5">{language === 'am' ? 'ተራ' : 'Queue'}</span>
+          <span className="text-[10px] font-semibold tracking-tight mt-0.5">{language === 'am' ? 'ተራ' : 'Queue'}</span>
         </Link>
 
-        {/* 5. Full Department & System Drawer Menu */}
-        <button
-          type="button"
-          onClick={() => setSidebarOpen(true)}
-          className="flex flex-col items-center justify-center min-w-[54px] py-1 px-1.5 rounded-xl text-slate-700 dark:text-slate-300 hover:text-cyan-500 active:scale-95 transition cursor-pointer"
-          title="Open Navigation Menu"
-        >
-          <Menu className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight mt-0.5">{language === 'am' ? 'ዝርዝር' : 'Menu'}</span>
-        </button>
+        {/* 5. Duty Status / OPD Hub */}
+        {['doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier'].includes(user?.role || '') ? (
+          <button
+            type="button"
+            onClick={() => setDutyModalOpen(true)}
+            className="flex flex-col items-center justify-center min-w-[48px] h-12 py-1 px-1.5 rounded-xl text-slate-300 hover:text-cyan-400 active:scale-95 transition cursor-pointer"
+            title="Shift Duty Status"
+            aria-label="Shift Duty Status"
+          >
+            <div className="relative">
+              <Clock className="w-5 h-5 text-emerald-400" />
+              <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${dutyStatus?.isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
+            </div>
+            <span className="text-[10px] font-semibold tracking-tight mt-0.5">{dutyStatus?.isOnDuty ? 'On Duty' : 'Off Duty'}</span>
+          </button>
+        ) : (
+          <Link
+            to="/opd"
+            className={`flex flex-col items-center justify-center min-w-[48px] h-12 py-1 px-1.5 rounded-xl transition cursor-pointer ${
+              location.pathname === '/opd'
+                ? 'text-cyan-400 font-extrabold bg-cyan-500/10'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="OPD Command Center"
+            aria-label="OPD Command Center"
+          >
+            <Building2 className="w-5 h-5" />
+            <span className="text-[10px] font-semibold tracking-tight mt-0.5">OPD</span>
+          </Link>
+        )}
       </nav>
 
       {/* ── MAIN CONTENT WORKSPACE WRAPPER ─────────────────────────── */}

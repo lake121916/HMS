@@ -170,7 +170,7 @@ const DoctorDashboardPage: React.FC = () => {
       )}
 
       {/* ── 2. Gradient Statistic Cards ─────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5 sm:gap-4">
         {doctorCards.map((card, idx) => (
           <StatisticCard
             key={idx}
@@ -209,7 +209,7 @@ const DoctorDashboardPage: React.FC = () => {
                   <div
                     key={item.id}
                     onClick={() => navigate('/consultation')}
-                    className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 hover:border-cyan-500/40 hover:bg-slate-100/60 dark:hover:bg-slate-800/80 transition-all cursor-pointer group"
+                    className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-navy-900 border border-slate-200/80 dark:border-navy-800 hover:border-cyan-500/40 hover:bg-slate-100/60 dark:hover:bg-navy-850 transition-all cursor-pointer group"
                   >
                     <div className="min-w-0 pr-3">
                       <div className="flex items-center gap-2">

@@ -321,15 +321,15 @@ const CashierDashboard: React.FC = () => {
       </div>
 
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 rounded-3xl text-white shadow-xl">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-navy-900 via-navy-850 to-[#071329] border border-cyan-500/25 p-6 rounded-3xl text-white shadow-xl">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center border border-emerald-400/30">
-            <DollarSign className="w-6 h-6 text-emerald-400" />
+          <div className="w-12 h-12 bg-cyan-500/20 rounded-2xl flex items-center justify-center border border-cyan-400/30">
+            <DollarSign className="w-6 h-6 text-cyan-400" />
           </div>
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
               Cashier & Billing Terminal
-              <span className="text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2.5 py-0.5 rounded-full">
+              <span className="text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 px-2.5 py-0.5 rounded-full">
                 ETB Currency / ብር
               </span>
             </h1>
@@ -343,7 +343,7 @@ const CashierDashboard: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowScannerModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
           >
             <QrCode className="w-4 h-4" /> Scan Patient QR
           </button>
@@ -351,7 +351,7 @@ const CashierDashboard: React.FC = () => {
           <button
             onClick={fetchDashboardData}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 bg-navy-800 hover:bg-navy-750 border border-navy-700 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </button>
@@ -359,7 +359,7 @@ const CashierDashboard: React.FC = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+      <div className="flex gap-2 border-b border-slate-200 dark:border-navy-800 overflow-x-auto">
         {[
           { id: 'dashboard', label: 'Dashboard Overview', icon: TrendingUp },
           { id: 'unpaid', label: 'Unpaid Invoices', icon: FileText },
@@ -372,10 +372,10 @@ const CashierDashboard: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-bold rounded-t-2xl transition-all whitespace-nowrap ${
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-bold rounded-t-2xl transition-all whitespace-nowrap cursor-pointer ${
               activeTab === tab.id
-                ? 'bg-emerald-600 text-white shadow-md'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                ? 'bg-cyan-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-navy-800/80'
             }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}

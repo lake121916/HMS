@@ -14,16 +14,16 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ label, value, icon: Icon, color, trend }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-all">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</span>
-        <div className={`p-2 rounded-xl ${color}`}>
+    <div className="bg-white dark:bg-navy-900 rounded-2xl border border-slate-200 dark:border-navy-800 p-5 shadow-xs hover:border-cyan-500/30 transition-all flex flex-col justify-between min-h-[120px]">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider leading-snug line-clamp-2">{label}</span>
+        <div className={`p-2 rounded-xl shrink-0 ${color}`}>
           <Icon className="w-4 h-4" />
         </div>
       </div>
-      <p className="text-2xl font-black text-gray-900 dark:text-white">{value}</p>
+      <p className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{value}</p>
       {trend && (
-        <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+        <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${trend.isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
           {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
         </div>
       )}

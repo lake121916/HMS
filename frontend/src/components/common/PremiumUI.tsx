@@ -28,38 +28,38 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   actions,
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-navy-800/80 transition-colors">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-navy-800/80 transition-colors">
+      <div className="flex items-center gap-3.5 min-w-0">
         {Icon && (
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500/20 via-blue-500/10 to-teal-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 shadow-xs">
-            <Icon className="w-5 h-5" />
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-cyan-500/20 via-blue-500/10 to-teal-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 shadow-xs">
+            <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         )}
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               {title}
             </h1>
             {amharicTitle && (
-              <span className="text-xs font-amharic text-slate-400 hidden md:inline">
-                ({amharicTitle})
+              <span className="text-xs sm:text-sm font-amharic font-semibold text-slate-700 dark:text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/20">
+                {amharicTitle}
               </span>
             )}
             {badge && (
-              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 shadow-2xs">
                 {badge}
               </span>
             )}
           </div>
           {subtitle && (
-            <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 leading-normal">
               {subtitle}
             </p>
           )}
         </div>
       </div>
       {actions && (
-        <div className="flex items-center gap-2 flex-wrap sm:self-center">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
           {actions}
         </div>
       )}
@@ -88,15 +88,15 @@ export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({
   metrics,
 }) => {
   return (
-    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-blue-900 via-slate-900 to-cyan-950 p-4 sm:p-6 text-white border border-cyan-500/20 shadow-xl">
+    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-navy-900 via-navy-850 to-[#071329] p-4 sm:p-6 lg:p-7 text-white border border-cyan-500/25 shadow-xl">
       {/* Decorative background glow accents */}
       <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-1/3 -mb-8 w-48 h-48 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
 
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
+        <div className="space-y-1.5 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-cyan-300">
               Alem Ketema Enat General Hospital
             </span>
             {departmentName && (
@@ -106,10 +106,10 @@ export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({
               </>
             )}
           </div>
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-            Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-200">{userName}</span>
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-white">
+            Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-200 to-teal-200">{userName}</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 font-medium">
+          <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed max-w-2xl">
             Active workspace assigned as <span className="text-cyan-300 font-bold capitalize">{roleName}</span>. Real-time clinical telemetry and synchronized queues active.
           </p>
         </div>
@@ -122,7 +122,7 @@ export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                 isOnDuty
                   ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                  : 'bg-white/10 text-slate-300 border-white/20 hover:bg-white/15'
+                  : 'bg-navy-800 text-slate-300 border-navy-700 hover:bg-navy-750'
               }`}
             >
               <span className={`w-2.5 h-2.5 rounded-full ${isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
@@ -131,10 +131,10 @@ export const WelcomeBanner: React.FC<WelcomeBannerProps> = ({
           )}
 
           {metrics && metrics.length > 0 && (
-            <div className="flex items-center gap-3 divide-x divide-white/10 bg-black/25 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/10">
+            <div className="flex items-center justify-between sm:justify-start gap-2.5 sm:gap-4 divide-x divide-white/10 bg-black/35 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/10 w-full sm:w-auto overflow-x-auto no-scrollbar">
               {metrics.map((m, idx) => (
-                <div key={idx} className={idx > 0 ? 'pl-3' : ''}>
-                  <div className="text-[10px] text-slate-400 uppercase font-bold">{m.label}</div>
+                <div key={idx} className={idx > 0 ? 'pl-2.5 sm:pl-4' : ''}>
+                  <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{m.label}</div>
                   <div className="text-sm sm:text-base font-extrabold text-cyan-300 font-mono">{m.value}</div>
                 </div>
               ))}
@@ -170,46 +170,46 @@ const variantStyles: Record<StatVariant, {
   glowHover: string;
 }> = {
   cyan: {
-    cardBg: 'from-cyan-500/10 via-slate-900/60 to-slate-900/90',
+    cardBg: 'from-cyan-500/15 via-navy-900/80 to-navy-950/95',
     iconBg: 'bg-cyan-500/15 border-cyan-500/30',
     iconColor: 'text-cyan-400',
-    borderColor: 'border-cyan-500/25',
-    glowHover: 'hover:shadow-[0_12px_28px_-8px_rgba(6,182,212,0.25)]',
+    borderColor: 'border-cyan-500/30',
+    glowHover: 'hover:shadow-[0_12px_28px_-8px_rgba(6,182,212,0.3)] hover:border-cyan-500/50',
   },
   teal: {
-    cardBg: 'from-teal-500/10 via-slate-900/60 to-slate-900/90',
+    cardBg: 'from-teal-500/15 via-navy-900/80 to-navy-950/95',
     iconBg: 'bg-teal-500/15 border-teal-500/30',
     iconColor: 'text-teal-400',
-    borderColor: 'border-teal-500/25',
-    glowHover: 'hover:shadow-[0_12px_28px_-8px_rgba(20,184,166,0.25)]',
+    borderColor: 'border-teal-500/30',
+    glowHover: 'hover:shadow-[0_12px_28px_-8px_rgba(20,184,166,0.3)] hover:border-teal-500/50',
   },
   blue: {
-    cardBg: 'from-blue-500/10 via-slate-900/60 to-slate-900/90',
+    cardBg: 'from-blue-500/15 via-navy-900/80 to-navy-950/95',
     iconBg: 'bg-blue-500/15 border-blue-500/30',
     iconColor: 'text-blue-400',
-    borderColor: 'border-blue-500/25',
-    glowHover: 'hover:shadow-[0_12px_28px_-8px_rgba(59,130,246,0.25)]',
+    borderColor: 'border-blue-500/30',
+    glowHover: 'hover:shadow-[0_12px_28px_-8px_rgba(59,130,246,0.3)] hover:border-blue-500/50',
   },
   purple: {
-    cardBg: 'from-purple-500/10 via-slate-900/60 to-slate-900/90',
+    cardBg: 'from-purple-500/15 via-navy-900/80 to-navy-950/95',
     iconBg: 'bg-purple-500/15 border-purple-500/30',
     iconColor: 'text-purple-400',
-    borderColor: 'border-purple-500/25',
-    glowHover: 'hover:shadow-[0_12px_28px_-8px_rgba(168,85,247,0.25)]',
+    borderColor: 'border-purple-500/30',
+    glowHover: 'hover:shadow-[0_12px_28px_-8px_rgba(168,85,247,0.3)] hover:border-purple-500/50',
   },
   amber: {
-    cardBg: 'from-amber-500/10 via-slate-900/60 to-slate-900/90',
+    cardBg: 'from-amber-500/15 via-navy-900/80 to-navy-950/95',
     iconBg: 'bg-amber-500/15 border-amber-500/30',
     iconColor: 'text-amber-400',
-    borderColor: 'border-amber-500/25',
-    glowHover: 'hover:shadow-[0_12px_28px_-8px_rgba(245,158,11,0.25)]',
+    borderColor: 'border-amber-500/30',
+    glowHover: 'hover:shadow-[0_12px_28px_-8px_rgba(245,158,11,0.3)] hover:border-amber-500/50',
   },
   rose: {
-    cardBg: 'from-rose-500/10 via-slate-900/60 to-slate-900/90',
+    cardBg: 'from-rose-500/15 via-navy-900/80 to-navy-950/95',
     iconBg: 'bg-rose-500/15 border-rose-500/30',
     iconColor: 'text-rose-400',
-    borderColor: 'border-rose-500/25',
-    glowHover: 'hover:shadow-[0_12px_28px_-8px_rgba(244,63,94,0.25)]',
+    borderColor: 'border-rose-500/30',
+    glowHover: 'hover:shadow-[0_12px_28px_-8px_rgba(244,63,94,0.3)] hover:border-rose-500/50',
   },
 };
 
@@ -230,29 +230,29 @@ export const StatisticCard: React.FC<StatisticCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 dark:bg-gradient-to-br ${styles.cardBg} p-4 sm:p-5 border border-slate-200/80 dark:${styles.borderColor} shadow-xs transition-all duration-200 ${styles.glowHover} ${
-        onClick ? 'cursor-pointer active:scale-[0.99]' : ''
+      className={`relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white dark:bg-navy-900 dark:bg-gradient-to-br ${styles.cardBg} p-4 sm:p-5 border border-slate-200 dark:${styles.borderColor} shadow-xs min-h-[136px] sm:min-h-[144px] transition-all duration-200 ${styles.glowHover} ${
+        onClick ? 'cursor-pointer active:scale-[0.99] hover:-translate-y-0.5' : ''
       } ${className}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">
+      <div>
+        <div className="flex items-start justify-between gap-2.5 mb-2">
+          <div className="min-w-0 flex-1">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-snug line-clamp-2 block" title={title}>
               {title}
             </span>
             {amharicTitle && (
-              <span className="text-[11px] font-amharic text-slate-400 dark:text-slate-500">
-                • {amharicTitle}
+              <span className="text-[11px] font-amharic text-slate-500 dark:text-slate-400 leading-tight block mt-0.5 truncate" title={amharicTitle}>
+                {amharicTitle}
               </span>
             )}
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
-            {value}
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center shrink-0 ${styles.iconBg} ${styles.iconColor} shadow-xs`}>
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         </div>
 
-        <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl border flex items-center justify-center shrink-0 ${styles.iconBg} ${styles.iconColor} shadow-xs`}>
-          <Icon className="w-5 h-5" />
+        <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none mt-1">
+          {value}
         </div>
       </div>
 
@@ -274,7 +274,7 @@ export const StatisticCard: React.FC<StatisticCardProps> = ({
             </div>
           )}
           {subtitle && (
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 truncate text-right ml-auto">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate text-right ml-auto">
               {subtitle}
             </span>
           )}
@@ -350,7 +350,7 @@ export const WorkflowTabs: React.FC<WorkflowTabsProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`bg-slate-100/90 dark:bg-slate-900/80 p-1.5 rounded-2xl flex gap-1.5 overflow-x-auto text-xs font-semibold border border-slate-200/80 dark:border-slate-800/80 ${className}`}>
+    <div className={`bg-slate-100/90 dark:bg-navy-950/90 p-1.5 rounded-2xl flex gap-1.5 overflow-x-auto text-xs font-semibold border border-slate-200 dark:border-navy-800/80 ${className}`}>
       {tabs.map(tab => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;
@@ -362,18 +362,18 @@ export const WorkflowTabs: React.FC<WorkflowTabsProps> = ({
             onClick={() => onChange(tab.id)}
             className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer select-none ${
               isActive
-                ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-300 shadow-xs font-extrabold border border-slate-200/80 dark:border-cyan-500/30'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-white dark:bg-navy-900 text-cyan-600 dark:text-cyan-300 shadow-xs font-extrabold border border-slate-200/80 dark:border-cyan-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-navy-800/50'
             }`}
           >
             {Icon && <Icon className="w-4 h-4 shrink-0" />}
             <span className="truncate">{tab.label}</span>
             {tab.count !== undefined && (
               <span
-                className={`px-1.5 py-0.2 rounded-full text-[10px] font-black font-mono leading-tight ${
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-black font-mono leading-tight ${
                   isActive
                     ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-300 border border-cyan-500/25'
-                    : 'bg-slate-200/80 dark:bg-slate-750 text-slate-600 dark:text-slate-400'
+                    : 'bg-slate-200/80 dark:bg-navy-800 text-slate-600 dark:text-slate-400'
                 }`}
               >
                 {tab.count}
@@ -437,7 +437,7 @@ export const PatientCard: React.FC<PatientCardProps> = ({
   const hasAllergy = safetyFlags?.allergies && safetyFlags.allergies.toLowerCase() !== 'none';
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 p-4 shadow-xs transition-all space-y-3">
+    <div className="rounded-2xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 p-4 sm:p-5 shadow-xs transition-all space-y-3 hover:border-cyan-500/30">
       <div className="flex items-start justify-between gap-2.5">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 text-cyan-500 dark:text-cyan-300 font-black text-sm flex items-center justify-center shrink-0 border border-cyan-500/30">
@@ -469,8 +469,8 @@ export const PatientCard: React.FC<PatientCardProps> = ({
       </div>
 
       {chiefComplaint && (
-        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-white/5 text-xs space-y-0.5">
-          <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-navy-950/70 border border-slate-100 dark:border-navy-800 text-xs space-y-0.5">
+          <div className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-400 tracking-wider">
             Chief Concern / Complaint
           </div>
           <div className="text-slate-900 dark:text-slate-100 font-semibold">{chiefComplaint}</div>
@@ -498,7 +498,7 @@ export const PatientCard: React.FC<PatientCardProps> = ({
 
       {/* Expandable Meta details */}
       {expanded && (
-        <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-850/60 border border-slate-200/60 dark:border-slate-800/80 text-xs grid grid-cols-2 gap-2 animate-fadeIn">
+        <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-navy-950/90 border border-slate-200/60 dark:border-navy-800 text-xs grid grid-cols-2 gap-2 animate-fadeIn">
           {encounterNumber && (
             <div>
               <span className="text-[10px] text-slate-400 uppercase font-bold block">Encounter</span>
@@ -526,7 +526,7 @@ export const PatientCard: React.FC<PatientCardProps> = ({
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-navy-800">
         <button
           type="button"
           onClick={() => setExpanded(prev => !prev)}
@@ -566,8 +566,8 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 p-4 sm:p-5 shadow-xs transition-colors ${className}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 dark:border-slate-800/80">
+    <div className={`rounded-2xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 p-4 sm:p-5 shadow-xs transition-colors ${className}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 dark:border-navy-800/80">
         <div>
           <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white tracking-tight">
             {title}
@@ -601,8 +601,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   action,
 }) => {
   return (
-    <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 p-8 sm:p-12 text-center shadow-xs">
-      <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
+    <div className="rounded-2xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 p-8 sm:p-12 text-center shadow-xs">
+      <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-navy-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
         <Icon className="w-6 h-6" />
       </div>
       <h4 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">{title}</h4>

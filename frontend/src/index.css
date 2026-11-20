@@ -3,13 +3,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-body.font-amharic {
-  font-family: 'Noto Sans Ethiopic', 'Nyala', 'Abyssinica SIL', system-ui, sans-serif;
-  letter-spacing: 0.01em;
-}
-
+body.font-amharic,
 .font-amharic {
   font-family: 'Noto Sans Ethiopic', 'Nyala', 'Abyssinica SIL', system-ui, sans-serif;
+  letter-spacing: 0.015em;
+  line-height: 1.55;
 }
 
 @layer base {
@@ -297,5 +295,33 @@ body.font-amharic {
     background: linear-gradient(135deg, rgba(15, 29, 56, 0.92) 0%, rgba(10, 19, 41, 0.96) 100%);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(56, 189, 248, 0.12);
+  }
+}
+
+/* ─── Enterprise Healthcare Data Tables & Component Primitives ───────────── */
+@layer components {
+  /* Enterprise Data Table */
+  .enterprise-table-container {
+    @apply w-full overflow-hidden rounded-2xl border border-slate-200 dark:border-navy-800 bg-white dark:bg-navy-900 shadow-xs;
+  }
+  .enterprise-table {
+    @apply w-full text-left border-collapse text-xs sm:text-sm;
+  }
+  .enterprise-th {
+    @apply px-4 py-3 bg-slate-50 dark:bg-navy-950/80 text-[11px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-navy-800/80 select-none;
+  }
+  .enterprise-td {
+    @apply px-4 py-3.5 border-b border-slate-100 dark:border-navy-800/60 text-slate-800 dark:text-slate-200 font-medium;
+  }
+  .enterprise-tr {
+    @apply hover:bg-slate-50/80 dark:hover:bg-navy-850/60 transition-colors;
+  }
+
+  /* Enterprise Interactive Buttons */
+  .btn-enterprise-primary {
+    @apply h-9 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-xs transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer;
+  }
+  .btn-enterprise-secondary {
+    @apply h-9 px-4 rounded-xl bg-navy-800 hover:bg-navy-750 text-slate-200 border border-navy-700 font-semibold text-xs shadow-2xs transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer;
   }
 }

@@ -127,7 +127,7 @@ const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/reports')}
-              className="h-9 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:bg-slate-200 transition flex items-center gap-1.5 cursor-pointer"
+              className="h-9 px-3.5 rounded-xl bg-navy-800 hover:bg-navy-700 text-slate-200 border border-navy-700 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
             >
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">Analytics</span>
@@ -165,7 +165,7 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* ── 3. Luminous Gradient Statistic Cards ─────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-7 gap-3.5 sm:gap-4">
         <StatisticCard
           title="Total Patients"
           amharicTitle="ጠቅላላ ታካሚዎች"
@@ -189,12 +189,12 @@ const DashboardPage: React.FC = () => {
           onClick={() => navigate('/doctors')}
         />
         <StatisticCard
-          title="Departments"
+          title="Clinical Units"
           amharicTitle="ክፍሎች"
           value={adminStats?.totalDepartments ?? 8}
           icon={Building2}
           variant="purple"
-          subtitle="Active Units"
+          subtitle="Departments"
           onClick={() => navigate('/departments-admin')}
         />
         <StatisticCard
@@ -218,7 +218,7 @@ const DashboardPage: React.FC = () => {
           onClick={() => navigate('/beds')}
         />
         <StatisticCard
-          title="Staff Users"
+          title="Staff on Duty"
           amharicTitle="ሰራተኞች"
           value={adminStats?.activeUsers ?? '—'}
           icon={Shield}
@@ -227,7 +227,7 @@ const DashboardPage: React.FC = () => {
           onClick={() => navigate('/user-management')}
         />
         <StatisticCard
-          title="Today Revenue"
+          title="Today's Revenue"
           amharicTitle="የዛሬ ገቢ"
           value={stats?.todayRevenue != null ? `ETB ${Number(stats.todayRevenue).toLocaleString()}` : 'ETB 0'}
           icon={CreditCard}
