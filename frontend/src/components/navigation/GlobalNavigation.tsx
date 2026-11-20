@@ -18,6 +18,8 @@ import { useRoleAccess } from '../../hooks/useRoleAccess';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import LanguageSwitcher from '../LanguageSwitcher';
+import NetworkSyncStatus from '../common/NetworkSyncStatus';
+import PrinterSettingsModal from '../common/PrinterSettingsModal';
 import PatientQuickSearchModal from '../PatientQuickSearchModal';
 import WristbandScannerModal from '../WristbandScannerModal';
 import CriticalAlertChimeModal from '../CriticalAlertChimeModal';
@@ -29,7 +31,7 @@ import {
   BarChart2, CreditCard, Settings, Bell,
   Palette, Sun, Moon, RefreshCw, ClipboardCheck,
   UserCheck, Building2, Receipt, Package, Scan,
-  ChevronLeft, ChevronRight, Search,
+  ChevronLeft, ChevronRight, Search, Printer,
   Baby, GraduationCap, BookOpen, GitBranch, Radio
 } from 'lucide-react';
 
@@ -74,6 +76,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
   const [dutyModalOpen, setDutyModalOpen] = useState(false);
   const [quickSearchOpen, setQuickSearchOpen] = useState(false);
   const [patientScannerOpen, setPatientScannerOpen] = useState(false);
+  const [printerModalOpen, setPrinterModalOpen] = useState(false);
 
   // Notifications State
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -672,6 +675,9 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
               </div>
             </div>
 
+            {/* Network & Offline Synchronization Status */}
+            <NetworkSyncStatus />
+
             {/* Language Switcher */}
             <LanguageSwitcher variant="pill" />
 
@@ -824,6 +830,15 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
                   >
                     <Clock className="w-4 h-4 text-emerald-500" />
                     <span>{language === 'am' ? 'የተረኝነት ሁኔታ' : 'Duty Clock In / Out'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setSettingsOpen(false); setPrinterModalOpen(true); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-100 dark:hover:bg-navy-800 text-left cursor-pointer"
+                  >
+                    <Printer className="w-4 h-4 text-cyan-400" />
+                    <span>{language === 'am' ? 'የፕሪንተር ማስተካከያ' : 'Thermal Printer Setup'}</span>
                   </button>
 
                   <div className="h-px bg-slate-100 dark:bg-navy-800 my-1" />
@@ -1083,6 +1098,12 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
           </div>
         </div>
       )}
+
+      {/* ── THERMAL PRINTER SETTINGS MODAL ────────────────────────── */}
+      <PrinterSettingsModal
+        isOpen={printerModalOpen}
+        onClose={() => setPrinterModalOpen(false)}
+      />
     </>
   );
 };

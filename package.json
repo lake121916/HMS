@@ -11,6 +11,7 @@
     "backend:test": "npm --prefix backend test",
     "frontend": "npm --prefix frontend dev",
     "frontend:build": "npm --prefix frontend run build",
+    "test:e2e": "npm --prefix frontend run test:e2e",
     "test": "npm --prefix backend test"
   },
   "engines": {

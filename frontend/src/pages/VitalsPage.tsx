@@ -23,6 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useVitals, useCreateVital, useUpdateVital, useDeleteVital } from '../hooks/useApi';
 import api from '../services/api';
 import WristbandScannerModal from '../components/WristbandScannerModal';
+import offlineVitalsService from '../services/offlineVitalsService';
 
 interface Vital {
   id: number;
@@ -324,6 +325,34 @@ const VitalsPage: React.FC = () => {
         setShowModal(false);
       }
     } catch (err: any) {
+      if (selectedEncounter && typeof navigator !== 'undefined' && (!navigator.onLine || !err.response)) {
+        try {
+          await offlineVitalsService.enqueue({
+            encounter_id: selectedEncounter.id,
+            patient_id: selectedEncounter.patient_id,
+            patient_name: `${selectedEncounter.first_name} ${selectedEncounter.last_name}`,
+            patient_mrn: selectedEncounter.encounter_number || `ENC-${selectedEncounter.id}`,
+            vitals: {
+              temperature: form.temperature,
+              blood_pressure_systolic: form.blood_pressure_systolic,
+              blood_pressure_diastolic: form.blood_pressure_diastolic,
+              heart_rate: form.heart_rate,
+              respiratory_rate: form.respiratory_rate,
+              oxygen_saturation: form.oxygen_saturation,
+              weight: form.weight,
+              height: form.height,
+              pain_score: form.pain_score,
+              blood_glucose: form.blood_glucose,
+              notes: form.notes
+            }
+          });
+          showToast('success', 'Network offline: Vitals saved to local queue. Will sync automatically when connection restores.');
+          setShowModal(false);
+          return;
+        } catch (enqueueErr) {
+          console.error('Failed to enqueue offline vitals:', enqueueErr);
+        }
+      }
       showToast('error', err.response?.data?.message || 'Failed to save vitals');
     } finally {
       setSubmitting(false);

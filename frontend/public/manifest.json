@@ -1,12 +1,13 @@
 {
-  "short_name": "Alem Ketema HMS",
-  "name": "Alem Ketema Enat Hospital Management System",
-  "description": "Hospital Operations, Clinical Workflow & Patient Management for Alem Ketema Enat Hospital",
+  "short_name": "AKEH-HMS",
+  "name": "AKEH Hospital Management System",
+  "description": "Alem Ketema Enat General Hospital Management System - Clinical Operations, OPD Queue & Offline Resilience",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "theme_color": "#0f172a",
-  "background_color": "#0f172a",
+  "orientation": "any",
+  "theme_color": "#070e1e",
+  "background_color": "#070e1e",
+  "categories": ["medical", "health", "productivity"],
   "icons": [
     {
       "src": "/vite.svg",

@@ -140,6 +140,71 @@ router.post('/pending-operations', authenticate, async (req, res) => {
             );
           }
 
+        } else if (operation_type === 'record_vitals') {
+          const {
+            encounter_id, patient_id, temperature, blood_pressure_systolic,
+            blood_pressure_diastolic, heart_rate, respiratory_rate, oxygen_saturation,
+            weight, height, pain_score, blood_glucose, notes
+          } = payload;
+
+          if (!encounter_id) {
+            throw new Error('encounter_id is required for offline vitals recording');
+          }
+
+          // Verify encounter exists and check status
+          const encRes = await client.query('SELECT patient_id, status FROM patient_encounters WHERE id = $1', [encounter_id]);
+          if (!encRes.rows.length) {
+            throw new Error(`Encounter ${encounter_id} not found on server`);
+          }
+          const targetPatientId = patient_id || encRes.rows[0].patient_id;
+          const currentStatus = (encRes.rows[0].status || '').toUpperCase();
+
+          // Calculate BMI
+          let calculatedBmi = null;
+          const numWeight = parseFloat(weight);
+          const numHeight = parseFloat(height);
+          if (!isNaN(numWeight) && !isNaN(numHeight) && numHeight > 0) {
+            calculatedBmi = +(numWeight / Math.pow(numHeight / 100, 2)).toFixed(2);
+          }
+
+          const vitalsRes = await client.query(
+            `INSERT INTO vitals (
+              patient_id, encounter_id, nurse_id, temperature,
+              blood_pressure_systolic, blood_pressure_diastolic, heart_rate,
+              respiratory_rate, oxygen_saturation, weight, height, blood_glucose,
+              pain_score, bmi, notes, recorded_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, COALESCE($16::timestamp, NOW()))
+            RETURNING id`,
+            [
+              targetPatientId,
+              encounter_id,
+              req.user.id,
+              temperature ? parseFloat(temperature) : null,
+              blood_pressure_systolic ? parseInt(blood_pressure_systolic, 10) : null,
+              blood_pressure_diastolic ? parseInt(blood_pressure_diastolic, 10) : null,
+              heart_rate ? parseInt(heart_rate, 10) : null,
+              respiratory_rate ? parseInt(respiratory_rate, 10) : null,
+              oxygen_saturation ? parseFloat(oxygen_saturation) : null,
+              numWeight || null,
+              numHeight || null,
+              blood_glucose ? parseFloat(blood_glucose) : null,
+              pain_score !== undefined && pain_score !== null ? parseInt(pain_score, 10) : null,
+              calculatedBmi,
+              notes ? `${notes} [Synced from offline queue]` : '[Synced from offline queue]',
+              client_timestamp || null
+            ]
+          );
+          serverEntityId = vitalsRes.rows[0].id;
+
+          // If encounter is still in WAITING_FOR_VITALS or RECORDING_VITALS, advance it safely
+          if (['WAITING_FOR_VITALS', 'RECORDING_VITALS'].includes(currentStatus)) {
+            await client.query(
+              `UPDATE patient_encounters SET status = 'WAITING_FOR_OPD_COORDINATOR', updated_at = NOW() WHERE id = $1`,
+              [encounter_id]
+            );
+          }
+
         } else {
           // Generic draft log
           serverEntityId = null;

@@ -17,6 +17,7 @@ import {
 import WristbandScannerModal from '../components/WristbandScannerModal';
 import PatientJourneyHandoff from '../components/workflow/PatientJourneyHandoff';
 import PatientIdentityBanner from '../components/PatientIdentityBanner';
+import offlineVitalsService from '../services/offlineVitalsService';
 
 interface TriageEncounter {
   id: number;
@@ -333,6 +334,33 @@ const TriageDashboard: React.FC = () => {
       setStageTab('completed');
     } catch (err: any) {
       console.error('Triage error:', err);
+      // Healthcare resilience: if network drops or request timed out, buffer in local IndexedDB queue
+      if (typeof navigator !== 'undefined' && (!navigator.onLine || !err.response)) {
+        try {
+          await offlineVitalsService.enqueue({
+            encounter_id: selected.id,
+            patient_id: selected.patient_id,
+            patient_name: `${selected.first_name} ${selected.last_name}`,
+            patient_mrn: selected.encounter_number || `ENC-${selected.id}`,
+            vitals: {
+              temperature: vitals.temperature,
+              blood_pressure_systolic: vitals.blood_pressure_systolic,
+              blood_pressure_diastolic: vitals.blood_pressure_diastolic,
+              heart_rate: vitals.heart_rate,
+              respiratory_rate: vitals.respiratory_rate,
+              oxygen_saturation: vitals.oxygen_saturation,
+              weight: vitals.weight,
+              height: vitals.height,
+              notes: vitals.chief_complaint
+            }
+          });
+          showToast('success', 'Network offline: Triage vitals saved to local queue. Will sync automatically when connection restores.');
+          setSelected(null);
+          return;
+        } catch (enqueueErr) {
+          console.error('Failed to enqueue offline vitals:', enqueueErr);
+        }
+      }
       const serverMsg = err.response?.data?.message || err.message || 'Failed to complete triage assessment.';
       showToast('error', serverMsg);
     } finally {
