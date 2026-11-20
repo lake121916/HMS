@@ -15,6 +15,21 @@ export default {
     },
     extend: {
       colors: {
+        navy: {
+          50: '#f0f4fc',
+          100: '#dce5f8',
+          200: '#bfd2f3',
+          300: '#94b5ec',
+          400: '#6290e2',
+          500: '#3e6fd7',
+          600: '#2a53c3',
+          700: '#1c2d54',
+          750: '#16223f',
+          800: '#0f1d38',
+          850: '#0c172e',
+          900: '#0a1329',
+          950: '#070e1e',
+        },
         blue: {
           50: "hsl(var(--blue-50) / <alpha-value>)",
           100: "hsl(var(--blue-100) / <alpha-value>)",

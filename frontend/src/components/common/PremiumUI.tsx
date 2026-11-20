@@ -28,7 +28,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   actions,
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80 dark:border-slate-800/80 transition-colors">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-navy-800/80 transition-colors">
       <div className="flex items-center gap-3">
         {Icon && (
           <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-cyan-500/20 via-blue-500/10 to-teal-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shrink-0 shadow-xs">
@@ -37,22 +37,22 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         )}
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
               {title}
             </h1>
             {amharicTitle && (
-              <span className="text-xs font-amharic text-slate-500 dark:text-slate-400 hidden md:inline">
+              <span className="text-xs font-amharic text-slate-400 hidden md:inline">
                 ({amharicTitle})
               </span>
             )}
             {badge && (
-              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 border border-cyan-500/20">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
                 {badge}
               </span>
             )}
           </div>
           {subtitle && (
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
               {subtitle}
             </p>
           )}

@@ -5,7 +5,7 @@ import OfflineStatusBanner from './OfflineStatusBanner';
 
 const Layout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-navy-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
+    <div className="min-h-screen bg-navy-950 text-slate-100 flex flex-col font-sans transition-colors duration-200">
       <OfflineStatusBanner />
       <GlobalNavigation>
         <main className="p-2.5 sm:p-4 lg:p-8">

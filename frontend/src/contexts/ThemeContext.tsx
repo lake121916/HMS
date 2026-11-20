@@ -27,8 +27,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const [isDark, setIsDarkState] = useState<boolean>(() => {
+    // Enforce master Midnight Navy theme as the standard default for all sessions
+    const migrated = localStorage.getItem('hms-theme-midnight-v1');
+    if (!migrated) {
+      localStorage.setItem('hms-theme-midnight-v1', 'true');
+      localStorage.setItem('hms-theme-dark', 'true');
+      document.documentElement.classList.add('dark');
+      return true;
+    }
     const saved = localStorage.getItem('hms-theme-dark');
-    return saved ? saved === 'true' : false;
+    return saved !== null ? saved === 'true' : true;
   });
 
   // Apply theme configurations to document element
@@ -45,8 +53,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
+      document.documentElement.style.backgroundColor = '#070e1e';
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
+      document.documentElement.style.backgroundColor = '';
     }
     localStorage.setItem('hms-theme-dark', String(isDark));
   }, [isDark]);
@@ -58,7 +70,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const resetTheme = () => {
     setHueState(DEFAULT_HUE);
     setSaturationState(DEFAULT_SATURATION);
-    setIsDarkState(false);
+    setIsDarkState(true);
+    document.documentElement.classList.add('dark');
   };
 
   return (

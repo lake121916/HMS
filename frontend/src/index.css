@@ -29,27 +29,26 @@ body.font-amharic {
     --blue-800: var(--theme-hue) var(--theme-saturation) 37%;
     --blue-900: var(--theme-hue) var(--theme-saturation) 28%;
 
-    /* Site color palette (medical/professional exact tokens) */
-    /* Light Mode: #F8FAFC canvas, #FFFFFF cards, #E2E8F0 borders, #0B2545 sidebar, #0D9488 primary teal */
-    --background: 210 40% 98%;
-    --foreground: 222.2 47.4% 11.2%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
-    --primary: 173 80% 32%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 212 72% 16%;
+    /* Master Midnight Navy color palette (Healthcare SaaS Master Theme) */
+    --background: 222 55% 7%;      /* #070e1e - Deep rich midnight healthcare navy */
+    --foreground: 210 40% 98%;     /* #f8fafc */
+    --card: 222 45% 13%;            /* #0f1d38 - Elevated navy card */
+    --card-foreground: 210 40% 98%;
+    --popover: 222 45% 13%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 187 92% 43%;         /* #06b6d4 - Luminous healthcare cyan */
+    --primary-foreground: 222 55% 7%;
+    --secondary: 222 60% 10%;       /* #0a1329 - Sidebar / navigation navy */
     --secondary-foreground: 210 40% 98%;
-    --muted: 215.4 16.3% 46.9%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 173 80% 32%;
+    --muted: 217 24% 56%;
+    --muted-foreground: 217 24% 65%;
+    --accent: 173 80% 42%;          /* #14b8a6 - Clinical medical teal */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 173 80% 32%;
+    --border: 222 35% 20%;          /* #1c2d54 subtle navy border */
+    --input: 222 35% 20%;
+    --ring: 187 92% 43%;
     --success: 152 76% 36%;
     --success-foreground: 210 40% 98%;
     --warning: 38 92% 50%;
@@ -89,17 +88,26 @@ body.font-amharic {
   html {
     overflow-y: scroll;
     scrollbar-gutter: stable;
-    color-scheme: light;
+    color-scheme: dark;
+    background-color: #070e1e;
   }
   html.dark {
     color-scheme: dark;
+    background-color: #070e1e;
   }
   html, body {
     overflow-x: clip;
   }
   body {
+    background-color: #070e1e;
+    color: #f8fafc;
+    min-height: 100vh;
     @apply bg-background text-foreground;
     scroll-behavior: smooth;
+  }
+  #root {
+    min-height: 100vh;
+    background-color: #070e1e;
   }
   select, input, textarea {
     color: #111827;

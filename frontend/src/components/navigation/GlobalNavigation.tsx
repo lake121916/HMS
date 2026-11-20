@@ -515,22 +515,22 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
       <aside
         onMouseEnter={() => sidebarCollapsed && setSidebarHovered(true)}
         onMouseLeave={() => sidebarCollapsed && setSidebarHovered(false)}
-        className={`hidden lg:flex flex-col fixed inset-y-0 left-0 z-40 bg-white/95 dark:bg-navy-950/95 backdrop-blur-md border-r border-slate-200 dark:border-navy-800/80 transition-all duration-300 select-none ${
+        className={`hidden lg:flex flex-col fixed inset-y-0 left-0 z-40 bg-navy-950/95 backdrop-blur-md border-r border-navy-800/80 transition-all duration-300 select-none ${
           isCollapsed ? 'w-18' : 'w-64'
         }`}
       >
         {/* Brand Header */}
-        <div className="h-16 px-4 flex items-center justify-between border-b border-slate-200 dark:border-navy-800/80 shrink-0">
+        <div className="h-16 px-4 flex items-center justify-between border-b border-navy-800/80 shrink-0">
           <Link to="/" className="flex items-center gap-3 min-w-0 group">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md group-hover:scale-105 transition-transform shrink-0">
               AKEH
             </div>
             {!isCollapsed && (
               <div className="min-w-0 leading-tight">
-                <span className="block font-black text-xs text-slate-900 dark:text-white truncate">
+                <span className="block font-black text-xs text-white truncate">
                   {language === 'am' ? 'ዓለም ከተማ ሆስፒታል' : 'Alem Ketema Hospital'}
                 </span>
-                <span className="block text-[10px] font-bold text-cyan-600 dark:text-cyan-400 capitalize truncate">
+                <span className="block text-[10px] font-bold text-cyan-400 capitalize truncate">
                   {formatRoleName(user?.role)}
                 </span>
               </div>
@@ -544,11 +544,11 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
         </div>
 
         {/* Sidebar Footer with Collapse Toggle */}
-        <div className="p-3 border-t border-slate-200 dark:border-navy-800/80 shrink-0">
+        <div className="p-3 border-t border-navy-800/80 shrink-0">
           <button
             type="button"
             onClick={() => setSidebarCollapsed(prev => !prev)}
-            className="w-full flex items-center justify-center gap-2 p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-navy-800/60 transition cursor-pointer text-xs font-semibold"
+            className="w-full flex items-center justify-center gap-2 p-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-navy-800/60 transition cursor-pointer text-xs font-semibold"
             title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
           >
             {sidebarCollapsed ? (
@@ -564,7 +564,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
       </aside>
 
       {/* ── TOP NAVIGATION BAR (All screen sizes) ───────────────────── */}
-      <header className={`sticky top-0 z-30 h-14 sm:h-16 px-3 sm:px-6 bg-white/95 dark:bg-navy-950/95 backdrop-blur-md border-b border-slate-200 dark:border-navy-800/80 shadow-xs transition-all duration-300 ${
+      <header className={`sticky top-0 z-30 h-14 sm:h-16 px-3 sm:px-6 bg-navy-950/95 backdrop-blur-md border-b border-navy-800/80 shadow-xs transition-all duration-300 ${
         isCollapsed ? 'lg:pl-22' : 'lg:pl-70'
       }`}>
         <div className="h-full flex items-center justify-between gap-3">
@@ -573,7 +573,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-slate-100 dark:bg-navy-900 border border-slate-200 dark:border-navy-700/80 text-slate-700 dark:text-slate-200 active:scale-95 transition cursor-pointer"
+              className="lg:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-navy-900 border border-navy-700/80 text-slate-200 active:scale-95 transition cursor-pointer"
               aria-label="Open Navigation Menu"
             >
               <Menu className="w-5 h-5" />
@@ -584,38 +584,38 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-xs">
                 AKEH
               </div>
-              <span className="font-extrabold text-xs text-slate-900 dark:text-white truncate max-w-[120px] sm:max-w-none">
+              <span className="font-extrabold text-xs text-white truncate max-w-[120px] sm:max-w-none">
                 Alem Ketema
               </span>
             </Link>
 
             {/* Desktop Patient Search & QR Scanner Pill (>= sm) */}
-            <div className="hidden sm:flex items-center rounded-xl border border-slate-200 dark:border-navy-700/80 bg-slate-50 dark:bg-navy-900/60 p-0.5 shadow-2xs hover:border-cyan-500/50 transition">
+            <div className="hidden sm:flex items-center rounded-xl border border-navy-700/80 bg-navy-900/60 p-0.5 shadow-2xs hover:border-cyan-500/50 transition">
               <button
                 type="button"
                 onClick={() => setQuickSearchOpen(true)}
-                className="flex items-center gap-2 px-2.5 py-1 text-slate-600 dark:text-slate-300 hover:text-cyan-500 text-xs transition rounded-lg cursor-pointer"
+                className="flex items-center gap-2 px-2.5 py-1 text-slate-300 hover:text-cyan-400 text-xs transition rounded-lg cursor-pointer"
                 title="Search patient by Name, Phone, or MRN (Ctrl + K)"
               >
-                <Search className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+                <Search className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                 <span className="truncate max-w-[130px] sm:max-w-xs font-semibold">
                   {language === 'am' ? 'ታካሚ ፈልግ...' : 'Find patient...'}
                 </span>
-                <kbd className="hidden md:inline-block font-mono text-[10px] bg-white dark:bg-navy-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-navy-700 text-slate-400">
+                <kbd className="hidden md:inline-block font-mono text-[10px] bg-navy-800 px-1.5 py-0.5 rounded border border-navy-700 text-slate-400">
                   Ctrl+K
                 </kbd>
               </button>
 
               {canScanPatientQr && (
                 <>
-                  <div className="h-4 w-px bg-slate-200 dark:bg-navy-700 mx-0.5" />
+                  <div className="h-4 w-px bg-navy-700 mx-0.5" />
                   <button
                     type="button"
                     onClick={() => setPatientScannerOpen(true)}
-                    className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 rounded-lg transition cursor-pointer"
+                    className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-teal-400 hover:bg-teal-950/40 rounded-lg transition cursor-pointer"
                     title="Scan Patient QR Wristband"
                   >
-                    <Scan className="h-3.5 w-3.5 text-teal-500" />
+                    <Scan className="h-3.5 w-3.5 text-teal-400" />
                     <span className="hidden md:inline">Scan QR</span>
                   </button>
                 </>
@@ -629,7 +629,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
             <button
               type="button"
               onClick={() => setQuickSearchOpen(true)}
-              className="sm:hidden flex items-center justify-center w-8 h-8 rounded-xl border border-slate-200 dark:border-navy-700/80 bg-slate-50 dark:bg-navy-900/60 text-cyan-600 dark:text-cyan-400 hover:bg-slate-100 dark:hover:bg-navy-800 transition cursor-pointer"
+              className="sm:hidden flex items-center justify-center w-8 h-8 rounded-xl border border-navy-700/80 bg-navy-900/60 text-cyan-400 hover:bg-navy-800 transition cursor-pointer"
               title="Search patient"
             >
               <Search className="w-4 h-4" />
@@ -642,8 +642,8 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
                 onClick={() => setDutyModalOpen(true)}
                 className={`hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition cursor-pointer shrink-0 ${
                   dutyStatus?.isOnDuty
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                    : 'bg-slate-100 text-slate-600 dark:bg-navy-800 dark:text-slate-400 border-slate-300 dark:border-navy-700'
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                    : 'bg-navy-800 text-slate-400 border-navy-700'
                 }`}
                 title="Click to view duty details and clock in / out"
               >
@@ -657,7 +657,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
             )}
 
             {/* Staff Role Badge (>= lg) */}
-            <div className="hidden lg:flex items-center gap-2 pl-2 pr-3 py-1 rounded-xl bg-slate-50 dark:bg-navy-900/60 border border-slate-200 dark:border-navy-700/60">
+            <div className="hidden lg:flex items-center gap-2 pl-2 pr-3 py-1 rounded-xl bg-navy-900/60 border border-navy-700/60">
               <ProfileAvatar
                 userId={user?.id || 0}
                 hasPhoto={!!user?.profilePhotoUpdatedAt}
@@ -666,10 +666,10 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
                 className="w-6 h-6 rounded-lg bg-cyan-600 text-white flex items-center justify-center font-bold text-[11px] shrink-0"
               />
               <div className="text-left leading-tight min-w-0">
-                <span className="block text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[120px]">
+                <span className="block text-xs font-bold text-slate-100 truncate max-w-[120px]">
                   {user?.firstName} {user?.lastName}
                 </span>
-                <span className="block text-[9px] font-extrabold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
+                <span className="block text-[9px] font-extrabold uppercase tracking-wider text-cyan-400">
                   {formatRoleName(user?.role)}
                 </span>
               </div>
@@ -686,16 +686,16 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
               <button
                 type="button"
                 onClick={() => setThemeOpen(!themeOpen)}
-                className="p-1.5 sm:p-2 rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-navy-800 transition cursor-pointer"
+                className="p-1.5 sm:p-2 rounded-xl text-slate-300 hover:bg-navy-800 transition cursor-pointer"
                 title="Customize Theme"
               >
                 <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-500" />
               </button>
 
               {themeOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-navy-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-navy-700 p-4 z-50">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-navy-800 mb-3">
-                    <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <div className="absolute right-0 mt-2 w-72 bg-navy-900 rounded-2xl shadow-2xl border border-navy-700 p-4 z-50">
+                  <div className="flex items-center justify-between pb-2 border-b border-navy-800 mb-3">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
                       <Palette className="w-4 h-4 text-cyan-500" /> Theme Accent
                     </span>
                     <button
@@ -707,11 +707,11 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold">Dark Mode</span>
+                      <span className="text-xs text-slate-300 font-semibold">Dark Mode</span>
                       <button
                         type="button"
                         onClick={() => setIsDark(!isDark)}
-                        className="p-1.5 rounded-lg border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 text-slate-700 dark:text-slate-200 cursor-pointer"
+                        className="p-1.5 rounded-lg border border-navy-700 bg-navy-950 text-slate-200 cursor-pointer"
                       >
                         {isDark ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-slate-500" />}
                       </button>
@@ -726,7 +726,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
                         max="360"
                         value={hue}
                         onChange={(e) => setHue(parseInt(e.target.value))}
-                        className="w-full h-1.5 bg-slate-200 dark:bg-navy-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                        className="w-full h-1.5 bg-navy-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                       />
                     </div>
                     <div>
@@ -739,7 +739,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
                         max="100"
                         value={saturation}
                         onChange={(e) => setSaturation(parseInt(e.target.value))}
-                        className="w-full h-1.5 bg-slate-200 dark:bg-navy-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                        className="w-full h-1.5 bg-navy-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                       />
                     </div>
                   </div>
@@ -752,7 +752,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
               <button
                 type="button"
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="relative p-1.5 sm:p-2 rounded-xl text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-navy-800 transition cursor-pointer"
+                className="relative p-1.5 sm:p-2 rounded-xl text-slate-300 hover:bg-navy-800 transition cursor-pointer"
                 aria-label="Notifications"
               >
                 <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -764,21 +764,21 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-navy-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-navy-700 z-50 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-navy-800">
-                    <span className="text-xs font-bold text-slate-900 dark:text-white">Notifications</span>
+                <div className="absolute right-0 mt-2 w-80 bg-navy-900 rounded-2xl shadow-2xl border border-navy-700 z-50 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-navy-800">
+                    <span className="text-xs font-bold text-white">Notifications</span>
                     {unreadCount > 0 && (
-                      <button onClick={markAllRead} className="text-[11px] text-cyan-600 hover:underline cursor-pointer">Mark all read</button>
+                      <button onClick={markAllRead} className="text-[11px] text-cyan-400 hover:underline cursor-pointer">Mark all read</button>
                     )}
                   </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-navy-800/80">
+                  <div className="max-h-72 overflow-y-auto divide-y divide-navy-800/80">
                     {notifications.length === 0 ? (
                       <p className="text-xs text-slate-400 text-center py-6">No notifications</p>
                     ) : (
                       notifications.map(n => (
-                        <div key={n.id} className={`p-3 text-xs ${!n.is_read ? 'bg-cyan-50/50 dark:bg-cyan-950/20' : ''}`}>
-                          <p className="font-bold text-slate-900 dark:text-white">{n.title}</p>
-                          <p className="text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{n.message}</p>
+                        <div key={n.id} className={`p-3 text-xs ${!n.is_read ? 'bg-cyan-950/30' : ''}`}>
+                          <p className="font-bold text-white">{n.title}</p>
+                          <p className="text-slate-400 mt-0.5 line-clamp-2">{n.message}</p>
                           <span className="text-[10px] text-slate-400 mt-1 block">{new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                       ))
@@ -795,18 +795,18 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
                 onClick={() => setSettingsOpen(prev => !prev)}
                 className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border transition flex items-center justify-center cursor-pointer shrink-0 ${
                   settingsOpen
-                    ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-500'
-                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-navy-800 dark:hover:bg-navy-700 border-slate-200 dark:border-navy-700 text-slate-700 dark:text-slate-200'
+                    ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400'
+                    : 'bg-navy-800 hover:bg-navy-700 border-navy-700 text-slate-200'
                 }`}
                 title="Account Settings"
               >
-                <Settings className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 ${settingsOpen ? 'rotate-90 text-cyan-500' : ''}`} />
+                <Settings className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 ${settingsOpen ? 'rotate-90 text-cyan-400' : ''}`} />
               </button>
 
               {/* Settings Dropdown Popover */}
               {settingsOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700 rounded-2xl shadow-2xl p-2 z-50 text-slate-800 dark:text-white">
-                  <div className="px-3 py-2.5 border-b border-slate-100 dark:border-navy-800 mb-1">
+                <div className="absolute right-0 mt-2 w-64 bg-navy-900 border border-navy-700 rounded-2xl shadow-2xl p-2 z-50 text-white">
+                  <div className="px-3 py-2.5 border-b border-navy-800 mb-1">
                     <p className="text-xs font-bold truncate">{user?.firstName} {user?.lastName}</p>
                     <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
                     <span className={`mt-1.5 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase inline-block ${getRoleColor(user?.role || 'patient')}`}>
@@ -817,38 +817,38 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
                   <button
                     type="button"
                     onClick={() => { setSettingsOpen(false); navigate('/dashboard'); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-100 dark:hover:bg-navy-800 text-left cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-navy-800 text-left cursor-pointer"
                   >
-                    <User className="w-4 h-4 text-cyan-500" />
+                    <User className="w-4 h-4 text-cyan-400" />
                     <span>{language === 'am' ? 'የግል መገለጫ' : 'Account Details'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => { setSettingsOpen(false); setDutyModalOpen(true); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-100 dark:hover:bg-navy-800 text-left cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-navy-800 text-left cursor-pointer"
                   >
-                    <Clock className="w-4 h-4 text-emerald-500" />
+                    <Clock className="w-4 h-4 text-emerald-400" />
                     <span>{language === 'am' ? 'የተረኝነት ሁኔታ' : 'Duty Clock In / Out'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => { setSettingsOpen(false); setPrinterModalOpen(true); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-slate-100 dark:hover:bg-navy-800 text-left cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-navy-800 text-left cursor-pointer"
                   >
                     <Printer className="w-4 h-4 text-cyan-400" />
                     <span>{language === 'am' ? 'የፕሪንተር ማስተካከያ' : 'Thermal Printer Setup'}</span>
                   </button>
 
-                  <div className="h-px bg-slate-100 dark:bg-navy-800 my-1" />
+                  <div className="h-px bg-navy-800 my-1" />
 
                   <button
                     type="button"
                     onClick={() => { setSettingsOpen(false); logout(); navigate('/login'); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:bg-rose-950/40 text-left cursor-pointer"
                   >
-                    <LogOut className="w-4 h-4 text-rose-500" />
+                    <LogOut className="w-4 h-4 text-rose-400" />
                     <span>{language === 'am' ? 'ውጣ' : 'Sign Out'}</span>
                   </button>
                 </div>
@@ -868,41 +868,41 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
           />
 
           {/* Drawer Content */}
-          <div className="relative w-72 max-w-[85vw] bg-white dark:bg-navy-950 h-full flex flex-col shadow-2xl border-r border-slate-200 dark:border-navy-800 z-10">
+          <div className="relative w-72 max-w-[85vw] bg-navy-950 h-full flex flex-col shadow-2xl border-r border-navy-800 z-10">
             {/* Drawer Header */}
-            <div className="h-16 px-4 flex items-center justify-between border-b border-slate-200 dark:border-navy-800 shrink-0">
+            <div className="h-16 px-4 flex items-center justify-between border-b border-navy-800 shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-xs">
                   AKEH
                 </div>
-                <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                <span className="font-extrabold text-sm text-white">
                   Alem Ketema Hospital
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setSidebarOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Quick Actions in Drawer */}
-            <div className="p-3 border-b border-slate-100 dark:border-navy-800 flex items-center gap-2">
+            <div className="p-3 border-b border-navy-800 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => { setSidebarOpen(false); setQuickSearchOpen(true); }}
-                className="flex-1 py-2 px-3 bg-slate-100 dark:bg-navy-900 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 py-2 px-3 bg-navy-900 rounded-xl text-xs font-bold text-slate-300 flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <Search className="w-3.5 h-3.5 text-cyan-500" />
+                <Search className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Search</span>
               </button>
               {canScanPatientQr && (
                 <button
                   type="button"
                   onClick={() => { setSidebarOpen(false); setPatientScannerOpen(true); }}
-                  className="flex-1 py-2 px-3 bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 py-2 px-3 bg-cyan-500/15 text-cyan-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Scan className="w-3.5 h-3.5" />
                   <span>Scan QR</span>
@@ -916,18 +916,18 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
             </div>
 
             {/* Drawer Footer with Duty & Logout */}
-            <div className="p-4 border-t border-slate-200 dark:border-navy-800 space-y-2 shrink-0">
+            <div className="p-4 border-t border-navy-800 space-y-2 shrink-0">
               {['doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier'].includes(user?.role || '') && (
                 <button
                   type="button"
                   onClick={() => { setSidebarOpen(false); setDutyModalOpen(true); }}
-                  className="w-full py-2 px-3 rounded-xl border border-slate-200 dark:border-navy-700 text-xs font-bold flex items-center justify-between cursor-pointer"
+                  className="w-full py-2 px-3 rounded-xl border border-navy-700 bg-navy-900 text-xs font-bold flex items-center justify-between cursor-pointer text-slate-200"
                 >
                   <span className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${dutyStatus?.isOnDuty ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
                     <span>Duty Shift Status</span>
                   </span>
-                  <span className="text-[11px] text-cyan-500 font-extrabold">
+                  <span className="text-[11px] text-cyan-400 font-extrabold">
                     {dutyStatus?.isOnDuty ? 'On Duty' : 'Off Duty'}
                   </span>
                 </button>
@@ -935,7 +935,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
               <button
                 type="button"
                 onClick={() => { setSidebarOpen(false); logout(); navigate('/login'); }}
-                className="w-full py-2.5 px-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-3 rounded-xl bg-rose-950/40 text-rose-400 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
                 <span>{language === 'am' ? 'ውጣ' : 'Sign Out'}</span>
@@ -946,7 +946,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
       )}
 
       {/* ── MOBILE BOTTOM NAVIGATION DOCK (< lg / Phones) ──────────── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden h-16 bg-white/95 dark:bg-navy-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-navy-800/80 px-2 flex items-center justify-around select-none">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden h-16 bg-navy-950/95 backdrop-blur-lg border-t border-navy-800/80 px-2 flex items-center justify-around select-none">
         {/* 1. Role Workbench */}
         <Link
           to={getRoleWorkbenchUrl(user?.role || '')}
