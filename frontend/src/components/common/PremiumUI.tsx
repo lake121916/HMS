@@ -37,22 +37,22 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-            <h1 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight break-words">
+            <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight leading-tight break-words">
               {title}
             </h1>
             {amharicTitle && (
-              <span className="text-xs sm:text-sm font-amharic font-semibold text-slate-700 dark:text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/20 break-words">
+              <span className="text-xs sm:text-sm font-amharic font-semibold text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-lg border border-cyan-500/20 break-words">
                 {amharicTitle}
               </span>
             )}
             {badge && (
-              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 shadow-2xs shrink-0">
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-2xs shrink-0">
                 {badge}
               </span>
             )}
           </div>
           {subtitle && (
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 leading-normal break-words">
+            <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-normal break-words">
               {subtitle}
             </p>
           )}
