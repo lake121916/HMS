@@ -424,19 +424,6 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
     }
   };
 
-  const getRoleWorkbenchUrl = (role: string): string => {
-    switch (role) {
-      case 'receptionist': return '/reception-workflow';
-      case 'nurse': return '/nurse';
-      case 'doctor': return '/consultation';
-      case 'lab_technician': return '/lab-dashboard';
-      case 'pharmacist': return '/pharmacy';
-      case 'cashier': return '/cashier-workflow';
-      case 'patient': return '/patient-portal';
-      default: return '/dashboard';
-    }
-  };
-
   const getWorkloadBadge = (itemId: string, href: string): number | null => {
     const role = user?.role || '';
     if (role === 'nurse' && (itemId === 'nurse_worklist' || href === '/nurse')) {
@@ -969,113 +956,10 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
         </div>
       )}
 
-      {/* ── MOBILE BOTTOM NAVIGATION DOCK (< lg / Phones) ──────────── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden h-16 bg-navy-950/95 backdrop-blur-lg border-t border-navy-800/80 px-2 flex items-center justify-around select-none">
-        {/* 1. Full Department & System Drawer Menu */}
-        <button
-          type="button"
-          onClick={() => setSidebarOpen(true)}
-          className="flex flex-col items-center justify-center min-w-[48px] h-12 py-1 px-1.5 rounded-xl text-slate-300 hover:text-cyan-400 active:scale-95 transition cursor-pointer"
-          title="Open Navigation Menu"
-          aria-label="Open Navigation Menu"
-        >
-          <Menu className="w-5 h-5" />
-          <span className="text-[10px] font-semibold tracking-tight mt-0.5">{language === 'am' ? 'ዝርዝር' : 'Menu'}</span>
-        </button>
-
-        {/* 2. Role Workbench */}
-        <Link
-          to={getRoleWorkbenchUrl(user?.role || '')}
-          className={`flex flex-col items-center justify-center min-w-[48px] h-12 py-1 px-1.5 rounded-xl transition cursor-pointer ${
-            location.pathname === getRoleWorkbenchUrl(user?.role || '')
-              ? 'text-cyan-400 font-extrabold bg-cyan-500/10'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-          title="Workbench"
-          aria-label="Workbench"
-        >
-          <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px] font-semibold tracking-tight mt-0.5">{language === 'am' ? 'ሥራ' : 'Workbench'}</span>
-        </Link>
-
-        {/* 3. Center Elevated Action: Quick Patient QR Scanner */}
-        {canScanPatientQr ? (
-          <button
-            type="button"
-            onClick={() => setPatientScannerOpen(true)}
-            className="flex flex-col items-center justify-center -mt-5 w-12 h-12 rounded-full bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-xl active:scale-95 transition border-2 border-navy-950 cursor-pointer"
-            title="Scan Patient Wristband"
-            aria-label="Scan Patient QR Wristband"
-          >
-            <Scan className="w-5 h-5" />
-          </button>
-        ) : (
-          <Link
-            to="/appointments"
-            className={`flex flex-col items-center justify-center min-w-[48px] h-12 py-1 px-1.5 rounded-xl transition cursor-pointer ${
-              location.pathname === '/appointments'
-                ? 'text-cyan-400 font-extrabold bg-cyan-500/10'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-            title="Appointments"
-            aria-label="Appointments"
-          >
-            <Calendar className="w-5 h-5" />
-            <span className="text-[10px] font-semibold tracking-tight mt-0.5">Appts</span>
-          </Link>
-        )}
-
-        {/* 4. Smart Queue */}
-        <Link
-          to="/queue-management"
-          className={`flex flex-col items-center justify-center min-w-[48px] h-12 py-1 px-1.5 rounded-xl transition cursor-pointer ${
-            location.pathname === '/queue-management'
-              ? 'text-cyan-400 font-extrabold bg-cyan-500/10'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-          title="Smart Queue"
-          aria-label="Smart Queue"
-        >
-          <Radio className="w-5 h-5" />
-          <span className="text-[10px] font-semibold tracking-tight mt-0.5">{language === 'am' ? 'ተራ' : 'Queue'}</span>
-        </Link>
-
-        {/* 5. Duty Status / OPD Hub */}
-        {['doctor', 'nurse', 'lab_technician', 'pharmacist', 'cashier'].includes(user?.role || '') ? (
-          <button
-            type="button"
-            onClick={() => setDutyModalOpen(true)}
-            className="flex flex-col items-center justify-center min-w-[48px] h-12 py-1 px-1.5 rounded-xl text-slate-300 hover:text-cyan-400 active:scale-95 transition cursor-pointer"
-            title="Shift Duty Status"
-            aria-label="Shift Duty Status"
-          >
-            <div className="relative">
-              <Clock className="w-5 h-5 text-emerald-400" />
-              <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${dutyStatus?.isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
-            </div>
-            <span className="text-[10px] font-semibold tracking-tight mt-0.5">{dutyStatus?.isOnDuty ? 'On Duty' : 'Off Duty'}</span>
-          </button>
-        ) : (
-          <Link
-            to="/opd"
-            className={`flex flex-col items-center justify-center min-w-[48px] h-12 py-1 px-1.5 rounded-xl transition cursor-pointer ${
-              location.pathname === '/opd'
-                ? 'text-cyan-400 font-extrabold bg-cyan-500/10'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-            title="OPD Command Center"
-            aria-label="OPD Command Center"
-          >
-            <Building2 className="w-5 h-5" />
-            <span className="text-[10px] font-semibold tracking-tight mt-0.5">OPD</span>
-          </Link>
-        )}
-      </nav>
-
       {/* ── MAIN CONTENT WORKSPACE WRAPPER ─────────────────────────── */}
       <div className={`transition-all duration-300 min-w-0 ${
         isCollapsed ? 'lg:pl-18' : 'lg:pl-64'
-      } pb-20 lg:pb-0`}>
+      }`}>
         {children}
       </div>
 
