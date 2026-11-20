@@ -69,7 +69,7 @@ const CashierDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  
+
   // Modals
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -262,31 +262,27 @@ const CashierDashboard: React.FC = () => {
     <div className="space-y-6">
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-2xl shadow-xl border text-sm font-semibold flex items-center gap-2 transition-all ${
-          toast.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-2xl shadow-xl border text-sm font-semibold flex items-center gap-2 transition-all ${toast.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
+          }`}>
           {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <AlertTriangle className="w-5 h-5 text-red-500" />}
           <span>{toast.msg}</span>
         </div>
       )}
 
       {/* ── Active Cashier Shift Notification Bar ─────────────────────── */}
-      <div className={`p-4 rounded-3xl border flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md ${
-        currentShift
-          ? 'bg-gradient-to-r from-emerald-950/80 via-slate-900 to-teal-950/80 border-emerald-800/40 text-white'
-          : 'bg-gradient-to-r from-amber-950/80 via-slate-900 to-orange-950/80 border-amber-800/40 text-white'
-      }`}>
+      <div className={`p-4 rounded-3xl border flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md ${currentShift
+        ? 'bg-gradient-to-r from-emerald-950/80 via-slate-900 to-teal-950/80 border-emerald-800/40 text-white'
+        : 'bg-gradient-to-r from-amber-950/80 via-slate-900 to-orange-950/80 border-amber-800/40 text-white'
+        }`}>
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black ${
-            currentShift ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/30' : 'bg-amber-500/20 text-amber-400 border border-amber-400/30'
-          }`}>
+          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black ${currentShift ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/30' : 'bg-amber-500/20 text-amber-400 border border-amber-400/30'
+            }`}>
             {currentShift ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                currentShift ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
-              }`}>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${currentShift ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                }`}>
                 {currentShift ? `Active Shift: ${currentShift.shift_number}` : 'No Active Shift'}
               </span>
               <span className="text-xs text-slate-400 font-mono">Register: {currentShift?.register_id || 'REG-01'}</span>
@@ -372,11 +368,10 @@ const CashierDashboard: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-bold rounded-t-2xl transition-all whitespace-nowrap cursor-pointer ${
-              activeTab === tab.id
-                ? 'bg-cyan-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-navy-800/80'
-            }`}
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-bold rounded-t-2xl transition-all whitespace-nowrap cursor-pointer ${activeTab === tab.id
+              ? 'bg-cyan-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-navy-800/80'
+              }`}
           >
             <tab.icon className="w-4 h-4" /> {tab.label}
           </button>
@@ -509,13 +504,12 @@ const CashierDashboard: React.FC = () => {
                         {payment.provider_reference || '—'}
                       </td>
                       <td className="px-5 py-4">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                          payment.verification_status === 'VERIFIED'
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                            : payment.verification_status === 'REJECTED'
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${payment.verification_status === 'VERIFIED'
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                          : payment.verification_status === 'REJECTED'
                             ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300'
                             : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                        }`}>
+                          }`}>
                           {payment.verification_status || 'VERIFIED'}
                         </span>
                       </td>

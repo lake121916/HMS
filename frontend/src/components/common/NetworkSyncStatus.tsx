@@ -130,7 +130,7 @@ export const NetworkSyncStatus: React.FC = () => {
 
       {/* ── Offline Synchronization Dashboard Modal ── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="w-full max-w-xl bg-[#0a1329] border border-cyan-500/25 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-cyan-500/15 bg-[#070e1e]">

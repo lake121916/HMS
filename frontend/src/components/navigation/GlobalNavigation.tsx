@@ -576,7 +576,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
       </aside>
 
       {/* ── TOP NAVIGATION BAR (All screen sizes) ───────────────────── */}
-      <header className={`sticky top-0 z-30 h-14 sm:h-16 px-3 sm:px-6 bg-navy-950/95 backdrop-blur-md border-b border-navy-800/80 shadow-xs transition-all duration-300 ${
+      <header className={`sticky top-0 z-50 h-14 sm:h-16 px-3 sm:px-6 bg-navy-950/95 backdrop-blur-md border-b border-navy-800/80 shadow-xs transition-all duration-300 ${
         isCollapsed ? 'lg:pl-22' : 'lg:pl-70'
       }`}>
         <div className="h-full flex items-center justify-between gap-3">
@@ -706,7 +706,10 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
               </button>
 
               {themeOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-navy-900 rounded-2xl shadow-2xl border border-navy-700 p-4 z-50">
+                <div
+                  className="absolute right-0 mt-2 w-72 bg-[#0a1329] rounded-2xl shadow-2xl border border-navy-700/80 p-4 z-[60]"
+                  style={{ backgroundColor: '#0a1329' }}
+                >
                   <div className="flex items-center justify-between pb-2 border-b border-navy-800 mb-3">
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
                       <Palette className="w-4 h-4 text-cyan-500" /> Theme Accent
@@ -778,7 +781,10 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-navy-900 rounded-2xl shadow-2xl border border-navy-700 z-50 overflow-hidden">
+                <div
+                  className="absolute right-0 mt-2 w-80 bg-[#0a1329] rounded-2xl shadow-2xl border border-navy-700/80 z-[60] overflow-hidden"
+                  style={{ backgroundColor: '#0a1329' }}
+                >
                   <div className="flex items-center justify-between px-4 py-3 border-b border-navy-800">
                     <span className="text-xs font-bold text-white">Notifications</span>
                     {unreadCount > 0 && (
@@ -820,7 +826,10 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
 
               {/* Settings Dropdown Popover */}
               {settingsOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-navy-900 border border-navy-700 rounded-2xl shadow-2xl p-2 z-50 text-white">
+                <div
+                  className="absolute right-0 mt-2 w-64 bg-[#0a1329] border border-cyan-500/20 dark:border-navy-700 rounded-2xl shadow-2xl p-2 z-[60] text-white"
+                  style={{ backgroundColor: '#0a1329' }}
+                >
                   <div className="px-3 py-2.5 border-b border-navy-800 mb-1">
                     <p className="text-xs font-bold truncate">{user?.firstName} {user?.lastName}</p>
                     <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
@@ -875,7 +884,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
 
       {/* ── MOBILE SLIDE-OVER NAVIGATION DRAWER (< lg) ──────────────── */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex">
+        <div className="fixed inset-0 z-[90] lg:hidden flex">
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
@@ -1085,7 +1094,7 @@ export const GlobalNavigation: React.FC<GlobalNavigationProps> = ({ children }) 
 
       {/* Duty Status Modal */}
       {dutyModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
           <div className="w-full max-w-md bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700 rounded-2xl shadow-2xl p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-navy-800">
               <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">

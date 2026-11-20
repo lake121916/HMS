@@ -96,7 +96,7 @@ export const PatientQuickSearchModal: React.FC<PatientQuickSearchModalProps> = (
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-slate-950/60 backdrop-blur-sm transition-all"
+      className="fixed inset-0 z-[100] flex items-start justify-center pt-20 px-4 bg-slate-950/60 backdrop-blur-sm transition-all"
       onClick={onClose}
     >
       <div

@@ -78,7 +78,7 @@ export const CriticalAlertChimeModal: React.FC = () => {
   if (!activeAlert) return null;
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-xl px-4 animate-in slide-in-from-top-4 duration-300">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[110] w-full max-w-xl px-4 animate-in slide-in-from-top-4 duration-300">
       <div className="bg-red-600 dark:bg-red-950 text-white rounded-2xl shadow-2xl border-2 border-red-400 p-4 relative overflow-hidden ring-4 ring-red-500/30">
         {/* Pulsing indicator strip */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-300 via-red-300 to-amber-300 animate-pulse" />

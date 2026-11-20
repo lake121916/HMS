@@ -346,9 +346,8 @@ export const OPDDashboardPage: React.FC = () => {
     <div className="space-y-6 pb-12">
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 text-white transition-all transform animate-in fade-in slide-in-from-top-2 ${
-          toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-xl flex items-center space-x-3 text-white transition-all transform animate-in fade-in slide-in-from-top-2 ${toast.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'
+          }`}>
           {toast.type === 'error' ? <AlertTriangle className="w-5 h-5 flex-shrink-0" /> : <CheckCircle2 className="w-5 h-5 flex-shrink-0" />}
           <span className="text-sm font-semibold">{toast.message}</span>
         </div>
@@ -773,25 +772,23 @@ export const OPDDashboardPage: React.FC = () => {
           ]).map((doc, idx) => (
             <div
               key={doc.id || idx}
-              className={`p-4 rounded-xl border transition-all ${
-                doc.status === 'In Consultation'
-                  ? 'border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-950/20'
-                  : doc.status === 'Available'
+              className={`p-4 rounded-xl border transition-all ${doc.status === 'In Consultation'
+                ? 'border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-950/20'
+                : doc.status === 'Available'
                   ? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/30 dark:bg-emerald-950/20'
                   : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 opacity-70'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
                   Room {idx + 1}
                 </span>
-                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                  doc.status === 'In Consultation'
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300'
-                    : doc.status === 'Available'
+                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${doc.status === 'In Consultation'
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300'
+                  : doc.status === 'Available'
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
                     : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
-                }`}>
+                  }`}>
                   {doc.status}
                 </span>
               </div>
@@ -893,24 +890,22 @@ export const OPDDashboardPage: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-800/40 p-2 rounded-xl">
-                    <span className={`px-2 py-0.5 rounded-md font-semibold text-[11px] ${
-                      item.currentStage === 'CONSULTATION'
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                        : item.currentStage === 'WAITING_FOR_DOCTOR'
+                    <span className={`px-2 py-0.5 rounded-md font-semibold text-[11px] ${item.currentStage === 'CONSULTATION'
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                      : item.currentStage === 'WAITING_FOR_DOCTOR'
                         ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
                         : item.currentStage === 'TRIAGE'
-                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-                        : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
-                    }`}>
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                          : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                      }`}>
                       {item.currentStage.replace(/_/g, ' ')}
                     </span>
                     <div className="text-right">
                       <div className="text-slate-900 dark:text-white font-medium">{item.consultation_room || 'Room 1'}</div>
                       <div className="text-[10px] text-slate-500">{item.doctor_name || 'General OPD'}</div>
                     </div>
-                    <div className={`inline-flex items-center gap-1 font-mono text-[11px] font-bold ${
-                      isLongWait ? 'text-red-600 dark:text-red-400 animate-pulse' : 'text-slate-600 dark:text-slate-400'
-                    }`}>
+                    <div className={`inline-flex items-center gap-1 font-mono text-[11px] font-bold ${isLongWait ? 'text-red-600 dark:text-red-400 animate-pulse' : 'text-slate-600 dark:text-slate-400'
+                      }`}>
                       <Clock className="w-3 h-3" />
                       <span>{item.elapsedMinutes}m</span>
                     </div>
@@ -1015,26 +1010,24 @@ export const OPDDashboardPage: React.FC = () => {
 
                       {/* Current Stage */}
                       <td className="px-4 py-3">
-                        <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${
-                          item.currentStage === 'CONSULTATION'
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200'
-                            : item.currentStage === 'WAITING_FOR_DOCTOR'
+                        <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${item.currentStage === 'CONSULTATION'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200'
+                          : item.currentStage === 'WAITING_FOR_DOCTOR'
                             ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border border-purple-200'
                             : item.currentStage === 'TRIAGE'
-                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border border-amber-200'
-                            : item.currentStage === 'COMPLETED'
-                            ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                            : 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300'
-                        }`}>
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border border-amber-200'
+                              : item.currentStage === 'COMPLETED'
+                                ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                                : 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300'
+                          }`}>
                           {item.currentStage.replace(/_/g, ' ')}
                         </span>
                       </td>
 
                       {/* Wait Time */}
                       <td className="px-4 py-3">
-                        <div className={`inline-flex items-center space-x-1 font-mono font-bold ${
-                          isLongWait ? 'text-red-600 dark:text-red-400 animate-pulse' : 'text-slate-700 dark:text-slate-300'
-                        }`}>
+                        <div className={`inline-flex items-center space-x-1 font-mono font-bold ${isLongWait ? 'text-red-600 dark:text-red-400 animate-pulse' : 'text-slate-700 dark:text-slate-300'
+                          }`}>
                           <Clock className="w-3.5 h-3.5" />
                           <span>{item.elapsedMinutes} min</span>
                         </div>
